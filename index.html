@@ -83,6 +83,8 @@
   td{padding:10px}
   .row-actions{display:flex; gap:8px}
   .mini{padding:6px 10px; border-radius:10px; background:#112a52; border:1px solid rgba(255,255,255,.08); color:#cfe2ff; font-size:12px; cursor:pointer}
+  #clients .row-actions .mini{transition:transform .2s ease}
+  #clients .row-actions .mini:hover{transform:scale(1.05)}
   /* SECTION HANDLING */
   section{display:none; animation:fade .2s ease}
   section.active{display:block}
@@ -228,36 +230,16 @@
 
     <!-- INVOICES -->
     <section id="invoices">
-      <div class="grid cols-2">
-        <div class="card">
-          <h3>Invoices</h3>
-          <table>
-            <thead><tr><th>#</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              <tr><td>INV-2025-0042</td><td>Acme LLC</td><td>2025-08-12</td><td>$1,200</td><td><span class="tag">Sent</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
-              <tr><td>INV-2025-0041</td><td>Riada Co</td><td>2025-08-08</td><td>$2,400</td><td><span class="tag ok">Paid</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
-              <tr><td>INV-2025-0040</td><td>Nasma Group</td><td>2025-08-05</td><td>$1,050</td><td><span class="tag warn">Due Soon</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="card">
-          <h3>New Invoice</h3>
-          <div class="muted" style="margin-bottom:10px">Quick add (mock UI)</div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
-            <input placeholder="Client" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Issue Date" type="date" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="From" type="date" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="To" type="date" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Amount" type="number" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <select style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-              <option>USD</option><option>JOD</option><option>SAR</option><option>AED</option>
-            </select>
-          </div>
-          <div style="display:flex; gap:10px; margin-top:12px">
-            <button class="btn" onclick="alert('Create Invoice')">Create</button>
-            <button class="mini">Add Line Items</button>
-          </div>
-        </div>
+      <div class="card">
+        <h3>Invoices</h3>
+        <table>
+          <thead><tr><th>#</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>INV-2025-0042</td><td>Acme LLC</td><td>2025-08-12</td><td>$1,200</td><td><span class="tag">Sent</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+            <tr><td>INV-2025-0041</td><td>Riada Co</td><td>2025-08-08</td><td>$2,400</td><td><span class="tag ok">Paid</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+            <tr><td>INV-2025-0040</td><td>Nasma Group</td><td>2025-08-05</td><td>$1,050</td><td><span class="tag warn">Due Soon</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -455,7 +437,16 @@
 <div id="client-modal" class="modal">
   <div class="modal-content">
     <button class="close">&times;</button>
-    <p>Client details here</p>
+    <h3 id="client-name"></h3>
+    <div class="muted" id="client-email"></div>
+    <p><strong>Phone:</strong> <span id="client-phone"></span></p>
+    <p><strong>Country:</strong> <span id="client-country"></span></p>
+    <p><strong>Joined:</strong> <span id="client-joined"></span></p>
+    <p><strong>Status:</strong> <span id="client-status"></span></p>
+    <p><strong>Notes:</strong></p>
+    <p id="client-notes"></p>
+    <h4>Invoices</h4>
+    <ul id="client-invoices"></ul>
   </div>
 </div>
 
@@ -488,9 +479,61 @@
   });
 
   // Client modal
+  const clientsData = {
+    'Acme LLC': {
+      name: 'Acme LLC',
+      email: 'nora@acme.com',
+      phone: '+971-555-1234',
+      country: 'UAE',
+      joined: '2024-03-11',
+      status: 'Active',
+      notes: 'Important client with long-term contract.',
+      invoices: ['INV-2025-0042', 'INV-2025-0038']
+    },
+    'Riada Co': {
+      name: 'Riada Co',
+      email: 'ops@riada.co',
+      phone: '+962-6-555-2345',
+      country: 'JO',
+      joined: '2023-09-02',
+      status: 'Active',
+      notes: 'Prefers quarterly billing.',
+      invoices: ['INV-2025-0041']
+    },
+    'Nasma Group': {
+      name: 'Nasma Group',
+      email: 'it@nasma.com',
+      phone: '+966-5-555-3456',
+      country: 'SA',
+      joined: '2022-11-19',
+      status: 'Paused',
+      notes: 'Two late payments this year.',
+      invoices: ['INV-2025-0040']
+    }
+  };
+
   const clientModal = document.getElementById('client-modal');
   document.querySelectorAll('#clients .row-actions .mini').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      const row = e.target.closest('tr');
+      const name = row.children[0].textContent.trim();
+      const data = clientsData[name];
+      if (data) {
+        clientModal.querySelector('#client-name').textContent = data.name;
+        clientModal.querySelector('#client-email').textContent = data.email;
+        clientModal.querySelector('#client-phone').textContent = data.phone;
+        clientModal.querySelector('#client-country').textContent = data.country;
+        clientModal.querySelector('#client-joined').textContent = data.joined;
+        clientModal.querySelector('#client-status').textContent = data.status;
+        clientModal.querySelector('#client-notes').textContent = data.notes;
+        const list = clientModal.querySelector('#client-invoices');
+        list.innerHTML = '';
+        data.invoices.forEach(inv => {
+          const li = document.createElement('li');
+          li.textContent = inv;
+          list.appendChild(li);
+        });
+      }
       clientModal.classList.add('show');
     });
   });
