@@ -73,7 +73,7 @@ textarea,
   height: 100dvh;
   padding: 28px 18px;
   background: linear-gradient(180deg, #0a1220 0%, #0c1a30 50%, #0b1425 100%);
-  border-right: 1px solid #ffffff94;
+  border-right: 1px solid #ffffff54;
 }
 
 .brand {
@@ -83,7 +83,7 @@ textarea,
   margin-bottom: 18px;
   justify-content: flex-start;
   /* draw a full-width white line that reaches the sidebar edges */
-  border-bottom:1px solid #ffffff94;
+  border-bottom:1px solid #ffffff54;
   /* pull the brand row into the sidebar's 18px padding on both sides */
   margin: 0 -18px 18px;      /* left/right = -18px */
   /* re-add the inner spacing so the logo doesn’t hug the edge */
@@ -136,13 +136,167 @@ textarea,
   padding: 28px;
 }
 
+/* ===== New Header (Topbar) ===== */
 .topbar {
-  display: flex;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 18px;
   margin-bottom: 18px;
 }
+
+.greeting .greet-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  margin-bottom: 0.5rem;   /* tweak this value */
+
+}
+.greeting .greet-title .greet-name { color: var(--accent); }
+.greeting .greet-sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-badge {
+  background: #0a1220;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: var(--shadow);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 700;
+}
+
+.search-group { display:flex; align-items:center; gap:8px; }
+
+
+/* Icon buttons (search, bell) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.10);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.icon-btn:hover { transform: translateY(-1px); background:#112442; border-color: rgba(255,255,255,.18); }
+
+/* Animated search */
+.search-anim {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,.18);
+
+  width: 0;
+  opacity: 0;
+  padding: 0; /* closed = no padding */
+  overflow: hidden;
+  transition: width .25s ease, opacity .2s ease, padding .25s ease;
+}
+
+.search-anim input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font-size: 14px;
+  padding: 0 6px;
+}
+
+/* OPEN state */
+.search-anim.open {
+  width: clamp(200px, 28vw, 420px);
+  opacity: 1;
+  padding: 0 10px;
+}
+
+.search-group { display:flex; align-items:center; gap:8px; } /* already in your CSS */
+.search-group.sg-closed { gap: 0; }  /* 👈 new: no internal gap when closed */
+.search-group.sg-open   { gap: 8px; } /* 👈 new: restore gap when open */
+
+
+
+
+
+/* Account area */
+.account {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #203355; object-fit: cover;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.10);
+  color: var(--text);
+  cursor: pointer;
+}
+.account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: none;
+}
+.account-menu a,
+.account-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 10px;
+  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.account-menu a:hover,
+.account-menu button:hover {
+  background: #112442;
+}
+.account-menu .menu-danger { color: #fecaca; }
+.account.open .account-menu { display: block; }
+
+/* Small screens */
+@media (max-width:760px) {
+  .greeting .greet-title { font-size: 22px; }
+  .search-anim.open { width: clamp(160px, 36vw, 300px); }
+}
+
 
 .h {
   font-size: 22px;
@@ -150,27 +304,8 @@ textarea,
   letter-spacing: .2px;
 }
 
-.search {
-  flex: 1;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  background: var(--panel);
-  padding: 14px 12px;
-  border-radius: 12px;
 
-  /* New styles */
-  border: 1px solid #ffffff;                  /* solid white border */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); /* stronger shadow */
-}
 
-.search input {
-  flex: 1;
-  background: transparent;
-  border: 0;
-  outline: none;
-  color: var(--text);
-}
 
 .btn {
   padding: 14px 14px;

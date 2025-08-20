@@ -8,9 +8,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/css/styles.css">
 <script defer src="./assets/js/app.js"></script>
+<script defer src="./assets/js/topbar.js"></script>
 </head>
+
+
 <body>
 <div class="app">
+  
   <!-- SIDEBAR -->
   <aside class="side">
     <div class="brand">
@@ -32,10 +36,6 @@
   <a href="./schedule.html">
     <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
     <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./calendar.html">
-    <img src="" alt="Invoices Calendar" class="nav-icon">
-    <span class="txt">Invoices Calendar</span>
   </a>
   <a href="./revenue.html">
     <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
@@ -60,16 +60,50 @@
 </nav>
 
   </aside>
+
   <!-- MAIN -->
   <main class="main">
     <div class="topbar">
-      <div class="h">ZAtech CRM Portal</div>
-      <div class="search">
-        <span>🔎</span>
-        <input placeholder="Search clients, invoices, amounts…" />
+  <!-- LEFT: greeting -->
+  <div class="greeting">
+    <h1 class="greet-title">
+      <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+    </h1>
+    <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
+  </div>
+
+  <!-- RIGHT: HUD -->
+  <div class="hud">
+    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+
+    <!-- Search toggle + animated input -->
+    <div class="search-group sg-closed">
+      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
       </div>
-      <button class="btn" onclick="alert('New Invoice Action')">+ New Invoice</button>
     </div>
+
+
+
+    <!-- Notifications -->
+    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+
+    <!-- Account -->
+    <div class="account">
+      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+        Ahmad <span class="caret">▾</span>
+      </button>
+      <div class="account-menu" id="accountMenu" role="menu">
+        <a href="#" role="menuitem">Profile</a>
+        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
     <section id="dashboard">
       <div class="grid cols-4">
         <div class="card kpi">
