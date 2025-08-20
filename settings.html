@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZAtech CRM Portal - Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/styles.css">
+<script defer src="./assets/js/app.js"></script>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="txt">
+        <h1>ZAtech CRM</h1>
+        <p class="sub">Internal Portal</p>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="./index.html"><span>🏠</span><span class="txt">Dashboard</span></a>
+      <a href="./clients.html"><span>👥</span><span class="txt">Clients</span></a>
+      <a href="./invoices.html"><span>🧾</span><span class="txt">Invoices</span></a>
+      <a href="./schedule.html"><span>📆</span><span class="txt">Invoice Schedule</span></a>
+      <a href="./calendar.html"><span>📊</span><span class="txt">Invoices Calendar</span></a>
+      <a href="./revenue.html"><span>💹</span><span class="txt">Revenue</span></a>
+      <a href="./dues.html"><span>⏰</span><span class="txt">Dues</span></a>
+      <a href="./expenses.html"><span>💳</span><span class="txt">Expenses</span></a>
+      <a href="./opps.html"><span>🚀</span><span class="txt">Opportunities</span></a>
+      <a href="./settings.html"><span>⚙️</span><span class="txt">Settings</span></a>
+    </nav>
+  </aside>
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="h">ZAtech CRM Portal</div>
+      <div class="search">
+        <span>🔎</span>
+        <input placeholder="Search clients, invoices, amounts…" />
+      </div>
+      <button class="btn" onclick="alert('New Invoice Action')">+ New Invoice</button>
+    </div>
+    <section id="settings">
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Company Details</h3>
+          <div class="muted">Used on invoices & emails.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr; gap:10px; margin-top:10px">
+            <input placeholder="Company Name" value="ZAtech" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <input placeholder="Bank / IBAN" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <input placeholder="Address" style="grid-column:span 2;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <input placeholder="Invoice Prefix (INV-)" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <input placeholder="Default Currency (JOD/USD)" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+          </div>
+        </div>
+        <div class="card">
+          <h3>Invoice Template</h3>
+          <div class="muted">Link your Word/DOCX template for server-side generation.</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px">
+            <input placeholder="Template URL (.docx)" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <div style="display:flex;gap:10px">
+              <button class="btn" onclick="alert('Saved')">Save</button>
+              <button class="mini">Upload Template</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
