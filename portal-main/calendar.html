@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZAtech CRM Portal - Invoices Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/styles.css">
+<script defer src="./assets/js/app.js"></script>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
+    </div>
+    <nav class="nav" id="nav">
+  <a href="./index.html">
+    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+    <span class="txt">Dashboard</span>
+  </a>
+  <a href="./clients.html">
+    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+    <span class="txt">Clients</span>
+  </a>
+  <a href="./invoices.html">
+    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+    <span class="txt">Invoices</span>
+  </a>
+  <a href="./schedule.html">
+    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
+    <span class="txt">Invoice Schedule</span>
+  </a>
+  <a href="./calendar.html">
+    <img src="" alt="Invoices Calendar" class="nav-icon">
+    <span class="txt">Invoices Calendar</span>
+  </a>
+  <a href="./revenue.html">
+    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+    <span class="txt">Revenue</span>
+  </a>
+  <a href="./dues.html">
+    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+    <span class="txt">Dues</span>
+  </a>
+  <a href="./expenses.html">
+    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+    <span class="txt">Expenses</span>
+  </a>
+  <a href="./opps.html">
+    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+    <span class="txt">Opportunities</span>
+  </a>
+  <a href="./settings.html">
+    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+    <span class="txt">Settings</span>
+  </a>
+</nav>
+  </aside>
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="h">ZAtech CRM Portal</div>
+      <div class="search">
+        <span>🔎</span>
+        <input placeholder="Search clients, invoices, amounts…" />
+      </div>
+      <button class="btn" onclick="alert('New Invoice Action')">+ New Invoice</button>
+    </div>
+    <section id="calendar">
+      <div class="card">
+        <h4>Invoices Calendar (Year View)</h4>
+        <div class="muted" style="margin-bottom:10px">Compact matrix (client × month). Colors indicate Paid/Sent/Overdue.</div>
+        <div class="grid cols-3">
+          <div class="card">
+            <h3>Acme LLC — 2025</h3>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+              <span class="chip ok">Jan</span><span class="chip">Feb</span><span class="chip warn">Mar</span><span class="chip ok">Apr</span><span class="chip">May</span><span class="chip bad">Jun</span>
+              <span class="chip">Jul</span><span class="chip">Aug</span><span class="chip">Sep</span><span class="chip">Oct</span><span class="chip">Nov</span><span class="chip">Dec</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Riada Co — 2025</h3>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+              <span class="chip ok">Jan</span><span class="chip ok">Feb</span><span class="chip ok">Mar</span><span class="chip">Apr</span><span class="chip">May</span><span class="chip warn">Jun</span>
+              <span class="chip">Jul</span><span class="chip">Aug</span><span class="chip">Sep</span><span class="chip">Oct</span><span class="chip">Nov</span><span class="chip">Dec</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Nasma Group — 2025</h3>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+              <span class="chip">Jan</span><span class="chip">Feb</span><span class="chip">Mar</span><span class="chip">Apr</span><span class="chip bad">May</span><span class="chip">Jun</span>
+              <span class="chip warn">Jul</span><span class="chip">Aug</span><span class="chip">Sep</span><span class="chip">Oct</span><span class="chip">Nov</span><span class="chip">Dec</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
