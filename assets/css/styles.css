@@ -90,7 +90,7 @@ td{padding:10px}
 .info-box.notes{grid-column:1/-1}
 .info-box.notes p{margin:0}
 .section-divider{border-top:1px solid rgba(255,255,255,.08);margin-top:12px;padding-top:12px}
-#client-name{font-size:20px}
+#client-name{font-size:30px}
 #clients .row-actions .mini{padding:8px 14px;font-size:13px}
 .modal-content .close{position:absolute;top:8px;right:12px;background:none;border:0;color:var(--text);font-size:20px;cursor:pointer}
 section{animation:fade .2s ease}
