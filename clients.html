@@ -15,12 +15,8 @@
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="side">
-    <div class="brand">
-      <div class="logo"></div>
-      <div class="txt">
-        <h1>ZAtech CRM</h1>
-        <p class="sub">Internal Portal</p>
-      </div>
+    <div class="brand logo-only">
+      <img src="./assets/img/zatech-logo.png" alt="ZAtech CRM" class="brand-logo" />
     </div>
     <nav class="nav" id="nav">
       <a href="./index.html"><span>🏠</span><span class="txt">Dashboard</span></a>
@@ -69,13 +65,15 @@
   <div class="modal-content">
     <button class="close">&times;</button>
     <h3 id="client-name"></h3>
-    <div class="muted" id="client-email"></div>
-    <p><strong>Phone:</strong> <span id="client-phone"></span></p>
-    <p><strong>Country:</strong> <span id="client-country"></span></p>
-    <p><strong>Joined:</strong> <span id="client-joined"></span></p>
-    <p><strong>Status:</strong> <span id="client-status"></span></p>
-    <p><strong>Notes:</strong></p>
-    <p id="client-notes"></p>
+    <div class="client-details">
+      <div class="info-box"><span class="label">Phone</span><span id="client-phone"></span></div>
+      <div class="info-box"><span class="label">Email</span><span id="client-email"></span></div>
+      <div class="info-box"><span class="label">Country</span><span id="client-country"></span></div>
+      <div class="info-box"><span class="label">Joined</span><span id="client-joined"></span></div>
+      <div class="info-box"><span class="label">Status</span><span id="client-status"></span></div>
+      <div class="info-box notes"><span class="label">Notes</span><p id="client-notes"></p></div>
+    </div>
+    <button class="btn invoice-btn" onclick="alert('Viewing latest invoice...')">View Latest Invoice</button>
     <h4>Recent Invoices</h4>
     <table id="client-invoices" style="margin-top:10px">
       <thead><tr><th>#</th><th>Date</th><th>Total</th><th>Status</th></tr></thead>
