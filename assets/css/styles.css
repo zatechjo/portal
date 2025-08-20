@@ -1,5 +1,5 @@
 :root{
-  --bg:#0b1320;
+  --bg:#0e1730;
   --panel:#0f1b31;
   --soft:#121f3a;
   --muted:#8ea3c7;
@@ -14,7 +14,7 @@
 html,body{height:100%}
 body{
   margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
-  background: radial-gradient(1200px 600px at 20% -10%, #10264b 0%, transparent 60%), var(--bg);
+  background: radial-gradient(1200px 600px at 20% -10%, #163768 0%, transparent 60%), var(--bg);
   color:var(--text); line-height:1.4;
 }
 a{color:inherit; text-decoration:none}
@@ -24,18 +24,8 @@ a{color:inherit; text-decoration:none}
   position:sticky; top:0; height:100dvh; padding:28px 18px; background:linear-gradient(180deg, #0e1a30 0%, #0b1425 100%);
   border-right:1px solid rgba(255,255,255,.06);
 }
-.brand{display:flex; align-items:center; gap:12px; margin-bottom:18px}
-.logo-only{justify-content:center}
-.logo{width:35px; height:35px; border-radius:12px; background:linear-gradient(135deg, var(--accent) 0%, #3b82f6 100%); box-shadow: var(--shadow)}
-.logo-img {
-  width: 100px;   /* or whatever you want */
-  height: auto;   /* keeps proportions */
-  display: block;
-}
-
-.brand h1{font-size:18px; margin:0}
-.sub{font-size:12px; color:var(--muted); margin:0 0 18px}
-.brand-logo{max-width:80%; height:auto; display:block; margin-right: auto}
+.brand{display:flex; align-items:center; gap:12px; margin-bottom:18px; justify-content:flex-start}
+.brand-logo{width:120px; height:auto; display:block}
 .nav{display:flex; flex-direction:column; gap:8px; margin-top:8px}
 .nav a{
   display:flex; align-items:center; gap:10px; padding:12px 12px; border-radius:12px;
@@ -51,9 +41,10 @@ a{color:inherit; text-decoration:none}
 .search{flex:1; display:flex; gap:10px; align-items:center; background:var(--panel); padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.06)}
 .search input{flex:1; background:transparent; border:0; outline:none; color:var(--text)}
 .btn{
-  padding:10px 14px; border-radius:12px; background:linear-gradient(135deg, var(--accent), var(--accent-2));
-  color:#081423; font-weight:700; border:0; box-shadow:var(--shadow); cursor:pointer;
+  padding:10px 14px; border-radius:12px; background:#2c8ecd; color:#f3f7ff; font-weight:700; border:none;
+  box-shadow:var(--shadow); cursor:pointer; transition:background .15s ease;
 }
+.btn:hover{background:#277fb9}
 /* CARD / GRID */
 .grid{display:grid; gap:14px}
 .grid.cols-4{grid-template-columns: repeat(4, minmax(0,1fr))}
@@ -81,8 +72,8 @@ tr td:first-child{border-left:1px solid rgba(255,255,255,.06); border-top-left-r
 tr td:last-child{border-right:1px solid rgba(255,255,255,.06); border-top-right-radius:10px; border-bottom-right-radius:10px}
 td{padding:10px}
 .row-actions{display:flex; gap:8px}
-.row-actions .mini{padding:6px 10px; border-radius:10px; background:#112a52; border:1px solid rgba(255,255,255,.08); color:#cfe2ff; font-size:12px; cursor:pointer; transition:transform .18s ease}
-.row-actions .mini:hover{transform:scale(1.05)}
+.row-actions .mini{padding:6px 10px; border-radius:10px; background:#2c8ecd; border:none; color:#f3f7ff; font-size:12px; cursor:pointer; transition:transform .18s ease, background .15s}
+.row-actions .mini:hover{transform:scale(1.05); background:#277fb9}
 /* PILLTABS */
 .pilltabs{display:flex; gap:8px; margin-bottom:10px}
 .pilltabs .pill{padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.08); color:#cfe2ff; background:#10254a; cursor:pointer}
@@ -92,13 +83,15 @@ td{padding:10px}
 /* MODAL */
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000}
 .modal.show{display:flex}
-.modal-content{background:var(--panel);padding:20px;border-radius:var(--radius);position:relative;box-shadow:var(--shadow);max-width:600px;width:90%}
+.modal-content{background:var(--panel);padding:20px;border-radius:var(--radius);position:relative;box-shadow:var(--shadow);width:min(980px,96vw)}
 .client-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0 20px}
 .info-box{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .info-box .label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .info-box.notes{grid-column:1/-1}
 .info-box.notes p{margin:0}
-.invoice-btn{display:block;width:100%;margin-bottom:20px}
+.section-divider{border-top:1px solid rgba(255,255,255,.08);margin-top:12px;padding-top:12px}
+#client-name{font-size:20px}
+#clients .row-actions .mini{padding:8px 14px;font-size:13px}
 .modal-content .close{position:absolute;top:8px;right:12px;background:none;border:0;color:var(--text);font-size:20px;cursor:pointer}
 section{animation:fade .2s ease}
 @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
