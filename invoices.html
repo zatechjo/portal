@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZAtech CRM Portal - Invoices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/styles.css">
+<script defer src="./assets/js/app.js"></script>
+<script defer src="./assets/js/mock-data.js"></script>
+<script defer src="./assets/js/invoices.js"></script>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="txt">
+        <h1>ZAtech CRM</h1>
+        <p class="sub">Internal Portal</p>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="./index.html"><span>🏠</span><span class="txt">Dashboard</span></a>
+      <a href="./clients.html"><span>👥</span><span class="txt">Clients</span></a>
+      <a href="./invoices.html"><span>🧾</span><span class="txt">Invoices</span></a>
+      <a href="./schedule.html"><span>📆</span><span class="txt">Invoice Schedule</span></a>
+      <a href="./calendar.html"><span>📊</span><span class="txt">Invoices Calendar</span></a>
+      <a href="./revenue.html"><span>💹</span><span class="txt">Revenue</span></a>
+      <a href="./dues.html"><span>⏰</span><span class="txt">Dues</span></a>
+      <a href="./expenses.html"><span>💳</span><span class="txt">Expenses</span></a>
+      <a href="./opps.html"><span>🚀</span><span class="txt">Opportunities</span></a>
+      <a href="./settings.html"><span>⚙️</span><span class="txt">Settings</span></a>
+    </nav>
+  </aside>
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="h">ZAtech CRM Portal</div>
+      <div class="search">
+        <span>🔎</span>
+        <input placeholder="Search clients, invoices, amounts…" />
+      </div>
+      <button class="btn" onclick="alert('New Invoice Action')">+ New Invoice</button>
+    </div>
+    <section id="invoices">
+      <div class="card">
+        <h3>Invoices</h3>
+        <table>
+          <thead><tr><th>#</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>INV-2025-0042</td><td>Acme LLC</td><td>2025-08-12</td><td>$1,200</td><td><span class="tag">Sent</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+            <tr><td>INV-2025-0041</td><td>Riada Co</td><td>2025-08-08</td><td>$2,400</td><td><span class="tag ok">Paid</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+            <tr><td>INV-2025-0040</td><td>Nasma Group</td><td>2025-08-05</td><td>$1,050</td><td><span class="tag warn">Due Soon</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

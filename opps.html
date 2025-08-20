@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZAtech CRM Portal - Opportunities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/styles.css">
+<script defer src="./assets/js/app.js"></script>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="txt">
+        <h1>ZAtech CRM</h1>
+        <p class="sub">Internal Portal</p>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="./index.html"><span>🏠</span><span class="txt">Dashboard</span></a>
+      <a href="./clients.html"><span>👥</span><span class="txt">Clients</span></a>
+      <a href="./invoices.html"><span>🧾</span><span class="txt">Invoices</span></a>
+      <a href="./schedule.html"><span>📆</span><span class="txt">Invoice Schedule</span></a>
+      <a href="./calendar.html"><span>📊</span><span class="txt">Invoices Calendar</span></a>
+      <a href="./revenue.html"><span>💹</span><span class="txt">Revenue</span></a>
+      <a href="./dues.html"><span>⏰</span><span class="txt">Dues</span></a>
+      <a href="./expenses.html"><span>💳</span><span class="txt">Expenses</span></a>
+      <a href="./opps.html"><span>🚀</span><span class="txt">Opportunities</span></a>
+      <a href="./settings.html"><span>⚙️</span><span class="txt">Settings</span></a>
+    </nav>
+  </aside>
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="h">ZAtech CRM Portal</div>
+      <div class="search">
+        <span>🔎</span>
+        <input placeholder="Search clients, invoices, amounts…" />
+      </div>
+      <button class="btn" onclick="alert('New Invoice Action')">+ New Invoice</button>
+    </div>
+    <section id="opps">
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Pipeline</h3>
+          <table>
+            <thead><tr><th>ID</th><th>Opportunity</th><th>Client</th><th>Status</th><th>Est. Value</th><th>Last Contact</th></tr></thead>
+            <tbody>
+              <tr><td>OPP-1021</td><td>Corporate Site Revamp</td><td>Acme LLC</td><td><span class="tag warn">In Review</span></td><td>$8,000</td><td>2025-08-15</td></tr>
+              <tr><td>OPP-1016</td><td>SEO & Ads Bundle</td><td>Nasma Group</td><td><span class="tag">Proposed</span></td><td>$3,500</td><td>2025-08-14</td></tr>
+              <tr><td>OPP-1012</td><td>Shop Setup</td><td>Riada Co</td><td><span class="tag ok">Won</span></td><td>$5,400</td><td>2025-08-10</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Quick Add Opportunity</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <input placeholder="Name" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <input placeholder="Client" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <input placeholder="Estimated Value" type="number" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+            <select style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+              <option>Proposed</option><option>In Review</option><option>Won</option><option>Lost</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn" onclick="alert('Add Opportunity')">Add</button>
+            <button class="mini">Attach File</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
