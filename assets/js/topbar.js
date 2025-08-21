@@ -3,14 +3,23 @@ document.addEventListener("DOMContentLoaded", () => {
  /* ===== TODAY DATE ===== */
   const todayBadge = document.getElementById("todayBadge");
   if (todayBadge) {
-    const today = new Date();
-    const weekday = today.toLocaleDateString("en-US", { weekday: "short" });
-    const rest = today.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric"
-    });
-    todayBadge.textContent = `${weekday}, ${rest}`;
+    function updateDateTime() {
+      const now = new Date();
+      const weekday = now.toLocaleDateString("en-US", { weekday: "short" });
+      const rest = now.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+      });
+      const time = now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      todayBadge.textContent = `${weekday}, ${rest} — ${time}`;
+    }
+
+    updateDateTime();                 // show immediately
+    setInterval(updateDateTime, 60000); // refresh every minute
   }
 
   /* ===== GREETING WORD BASED ON TIME ===== */
@@ -29,6 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     greetingWord.textContent = word;
   }
+
+  
 
 
 
