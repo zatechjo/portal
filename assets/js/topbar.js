@@ -132,11 +132,6 @@ if (searchToggle && searchWrap && searchGroup) {
       }
     });
 
-    if (logout) {
-      logout.addEventListener("click", (e) => {
-        e.preventDefault();
-        alert("Logging out… (wire this to your auth later)");
-      });
-    }
+    // logout handled in auth-guard.js
   }
 });

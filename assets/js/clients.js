@@ -5,19 +5,100 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---------- Data load/save ----------
   function loadClients() {
     const fromLS = localStorage.getItem(LS_KEY);
-    if (fromLS) return JSON.parse(fromLS);        // { [clientName]: clientObj }
-
-    // Seed from mock-data.js (global clientsData)
-    if (window.clientsData) {
-      // ensure structure is an object keyed by client name
-      localStorage.setItem(LS_KEY, JSON.stringify(window.clientsData));
-      return JSON.parse(JSON.stringify(window.clientsData));
-    }
+    if (fromLS) return JSON.parse(fromLS);
     return {};
   }
   function saveClients(obj) { localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
 
   let store = loadClients();
+  if (Object.keys(store).length === 0) {
+    const dummyArr = [
+      {
+        name: "Acme LLC",
+        contactName: "Lina Faris",
+        email: "lina@acme.com",
+        phone: "+962-7-1234-5678",
+        country: "Jordan",
+        joined: "2025-08-01",
+        status: "Active",
+        address: "Amman, 4th Circle",
+        sector: "Retail",
+        notes: "Priority client.",
+        invoices: [
+          { id: "INV-2025-0001", date: "2025-08-10", total: "$1,200", status: "Paid" },
+          { id: "INV-2025-0007", date: "2025-08-18", total: "$950", status: "Sent" }
+        ]
+      },
+      {
+        name: "Riada Co",
+        contactName: "Omar Suleiman",
+        email: "omar@riada.co",
+        phone: "+962-7-9876-5432",
+        country: "Jordan",
+        joined: "2025-07-15",
+        status: "Active",
+        address: "Aqaba", 
+        sector: "Tech",
+        notes: "Quarterly billing.",
+        invoices: []
+      },
+      {
+        name: "Nasma Group",
+        contactName: "Jennifer Flynn",
+        email: "jen@nasma.com",
+        phone: "+966-5-2222-1111",
+        country: "Saudi Arabia",
+        joined: "2025-06-05",
+        status: "Paused",
+        address: "Riyadh",
+        sector: "Manufacturing",
+        notes: "Two late payments this year.",
+        invoices: [ { id: "INV-2025-0020", date: "2025-07-01", total: "$500", status: "Due" } ]
+      },
+      {
+        name: "Futura Ltd",
+        contactName: "Sara Jabari",
+        email: "sara@futura.io",
+        phone: "+971-50-123-4567",
+        country: "UAE",
+        joined: "2025-05-20",
+        status: "Active",
+        address: "Dubai Marina",
+        sector: "Fintech",
+        notes: "New client.",
+        invoices: []
+      },
+      {
+        name: "Pixel Dynamics",
+        contactName: "Ali Hassan",
+        email: "ali@pixel.io",
+        phone: "+962-7-1111-2222",
+        country: "Jordan",
+        joined: "2025-04-11",
+        status: "Active",
+        address: "Irbid",
+        sector: "Design",
+        notes: "", 
+        invoices: []
+      },
+      {
+        name: "Zenith SA",
+        contactName: "Marwa Qasim",
+        email: "marwa@zenith.sa",
+        phone: "+966-5-9999-8888",
+        country: "Saudi Arabia",
+        joined: "2025-03-10",
+        status: "Active",
+        address: "Jeddah",
+        sector: "Retail",
+        notes: "", 
+        invoices: []
+      }
+    ];
+    store = {};
+    dummyArr.forEach(c => (store[c.name] = c));
+    saveClients(store);
+  }
 
   // ---------- Table render ----------
   const tbody = document.getElementById('clients-tbody');
