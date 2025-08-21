@@ -103,7 +103,10 @@
 
     <section id="clients">
       <div class="card">
-        <h4>Clients</h4>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <h4>Clients</h4>
+          <button class="btn2" id="newClientBtn">+ New Client</button>
+        </div>
         <div class="pilltabs">
           <button class="pill active">All</button>
           <button class="pill">Active</button>
@@ -111,11 +114,7 @@
         </div>
         <table>
           <thead><tr><th>Client</th><th>Contact</th><th>Contact Name</th><th>Phone</th><th>Joined</th><th>Country</th><th>Invoices</th><th></th></tr></thead>
-          <tbody>
-            <tr><td>Acme LLC</td><td>nora@acme.com</td><td>Nora</td><td>+971-555-1234</td><td>2024-03-11</td><td>UAE</td><td>14</td><td class="row-actions"><button class="mini">More Info →</button></td></tr>
-            <tr><td>Riada Co</td><td>ops@riada.co</td><td>Operations</td><td>+962-6-555-2345</td><td>2023-09-02</td><td>JO</td><td>21</td><td class="row-actions"><button class="mini">More Info →</button></td></tr>
-            <tr><td>Nasma Group</td><td>it@nasma.com</td><td>IT</td><td>+966-5-555-3456</td><td>2022-11-19</td><td>SA</td><td>9</td><td class="row-actions"><button class="mini">More Info →</button></td></tr>
-          </tbody>
+          <tbody id="clients-tbody"></tbody>
         </table>
       </div>
     </section>
@@ -124,18 +123,76 @@
 <div id="client-modal" class="modal">
   <div class="modal-content">
     <button class="close">&times;</button>
-    <h3 id="client-name"></h3>
+    <h3 id="client-name" style="display:flex;align-items:center;gap:10px;">
+      <span id="client-name-text"></span>
+
+      <!-- Shown only in edit/create -->
+      <input id="client-name-input" class="edit-field" type="text"
+            placeholder="Client Name" style="max-width:320px;">
+
+      <button class="btn2" id="editClientBtn" style="margin-left:auto;">Edit</button>
+    </h3>
+
+
     <div class="client-details">
-      <div class="info-box"><span class="label">Contact Name</span><span id="client-contact"></span></div>
-      <div class="info-box"><span class="label">Phone Number</span><span id="client-phone"></span></div>
-      <div class="info-box"><span class="label">Email</span><span id="client-email"></span></div>
-      <div class="info-box"><span class="label">Country</span><span id="client-country"></span></div>
-      <div class="info-box"><span class="label">Joined</span><span id="client-joined"></span></div>
-      <div class="info-box"><span class="label">Status</span><span id="client-status"></span></div>
-      <div class="info-box"><span class="label">Address</span><span id="client-address"></span></div>
-      <div class="info-box"><span class="label">Sector</span><span id="client-sector"></span></div>
-      <div class="info-box notes"><span class="label">Notes</span><p id="client-notes"></p></div>
+      <div class="info-box">
+        <span class="label">Contact Name</span>
+        <span id="client-contact" class="value-clip"></span>
+        <input id="client-contact-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box">
+        <span class="label">Phone Number</span>
+        <span id="client-phone" class="value-clip"></span>
+        <input id="client-phone-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box">
+        <span class="label">Email</span>
+        <span id="client-email" class="value-clip"></span>
+        <input id="client-email-input" class="edit-field" type="email" />
+      </div>
+      <div class="info-box">
+        <span class="label">Country</span>
+        <span id="client-country" class="value-clip"></span>
+        <input id="client-country-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box">
+        <span class="label">Joined</span>
+        <span id="client-joined"></span>
+        <input id="client-joined-input" class="edit-field" type="date" />
+      </div>
+      <div class="info-box">
+        <span class="label">Status</span>
+        <span id="client-status"></span>
+        <select id="client-status-input" class="edit-field">
+          <option>Active</option>
+          <option>Paused</option>
+          <option>Archived</option>
+        </select>
+      </div>
+      <div class="info-box">
+        <span class="label">Address</span>
+        <span id="client-address" class="value-clip"></span>
+        <input id="client-address-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box">
+        <span class="label">Sector</span>
+        <span id="client-sector" class="value-clip"></span>
+        <input id="client-sector-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box notes">
+        <span class="label">Notes</span>
+        <p id="client-notes"></p>
+        <textarea id="client-notes-input" class="edit-field" rows="3"></textarea>
+      </div>
     </div>
+
+    <!-- Edit-mode actions (hidden until editing) -->
+    <div id="client-edit-actions" style="display:none; gap:8px;">
+      <button class="btn2" id="saveClientBtn">Save</button>
+      <button class="btn2" id="cancelEditBtn" style="background:#0f2c4a;">Cancel</button>
+      <span id="clientEditError" class="muted" style="color:#fecaca;margin-left:8px;"></span>
+    </div>
+
     <div class="section-divider">
       <h4>Recent Invoices</h4>
       <table id="client-invoices" style="margin-top:10px">

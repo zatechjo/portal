@@ -1,6 +1,7 @@
 const clientsData = {
   'Acme LLC': {
     name: 'Acme LLC',
+    contactName: 'Nora Haddad',   // ← add this
     email: 'nora@acme.com',
     phone: '+971-555-1234',
     country: 'UAE',
@@ -14,6 +15,7 @@ const clientsData = {
   },
   'Riada Co': {
     name: 'Riada Co',
+    contactName: 'Walter White',   // ← add this
     email: 'ops@riada.co',
     phone: '+962-6-555-2345',
     country: 'JO',
@@ -26,6 +28,7 @@ const clientsData = {
   },
   'Nasma Group': {
     name: 'Nasma Group',
+    contactName: 'Jennifer Flynn',   // ← add this
     email: 'it@nasma.com',
     phone: '+966-5-555-3456',
     country: 'SA',
