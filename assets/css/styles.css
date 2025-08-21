@@ -129,6 +129,16 @@ textarea,
   display: none;
 }
 
+/* Login logo sizing */
+.login-logo {
+  width: 160px;          /* adjust to taste */
+  height: auto;
+  display: block;
+  margin: 0 auto 8px;    /* center above the form */
+  opacity: 0.95;         /* optional */
+}
+
+
 /* ===============================
    Main content
 ================================= */
