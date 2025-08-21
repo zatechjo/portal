@@ -1,5 +1,5 @@
 import { auth } from "./firebase.js";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
 const loginForm = document.getElementById("login-form");
 
@@ -10,15 +10,7 @@ loginForm.addEventListener("submit", async (e) => {
   const password = document.getElementById("password").value;
 
   try {
-    const userCred = await signInWithEmailAndPassword(auth, email, password);
-
-    // Optional: Restrict to zatechjo.com emails only
-    if (!userCred.user.email.endsWith("@zatechjo.com")) {
-      alert("Only @zatechjo.com emails are allowed.");
-      return;
-    }
-
-    // Redirect to dashboard
+    await signInWithEmailAndPassword(auth, email, password);
     window.location.href = "/dashboard.html";
   } catch (err) {
     alert("Login failed: " + err.message);
