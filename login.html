@@ -1,113 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Sign in · ZAtech Portal</title>
-  <link rel="stylesheet" href="./assets/css/styles.css">
-  <!-- Firebase SDKs -->
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
-  <style>
-    /* Minimal login card styling that matches your theme */
-    .login-wrap {
-      min-height: 100vh; display:flex; align-items:center; justify-content:center;
-      padding: 24px;
-    }
-    .login-card {
-      width: min(420px, 92vw); background: var(--panel);
-      border: 1px solid rgba(255,255,255,.12); border-radius: 16px; box-shadow: var(--shadow);
-      padding: 18px;
-    }
-    .login-card h1 { margin: 0 0 6px; font-size: 22px; }
-    .login-card p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
-    .field { margin-bottom: 10px; }
-    .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-    .field input {
-      width:100%; height:42px; border-radius:10px; background:#0f1b31;
-      border:1px solid rgba(255,255,255,.12); color:var(--text); padding:0 10px; outline:none;
-    }
-    .login-actions { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
-    .err { color:#fecaca; font-size:12px; min-height:16px; margin-top:6px; }
-    .brand-mini { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-    .brand-mini img { width:140px; height:auto; }
-    .muted-link { font-size:12px; color:var(--muted); text-decoration:underline; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="login-card">
-      <div class="brand-mini">
-        <img src="./assets/img/zatech-logo.png" alt="ZAtech">
-      </div>
-      <h1>Sign in</h1>
-      <p>Enter your email and password to access the portal.</p>
+  <form id="login-form">
+    <label>
+      Email
+      <input id="email" type="email" required />
+    </label>
+    <br />
+    <label>
+      Password
+      <input id="password" type="password" required />
+    </label>
+    <br />
+    <button type="submit">Login</button>
+  </form>
 
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" type="email" autocomplete="username" placeholder="you@zatechjo.com">
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••">
-      </div>
-
-      <div class="login-actions">
-        <button id="loginBtn" class="btn2">Sign in</button>
-        <a class="muted-link" href="#" id="forgotLink">Forgot password?</a>
-      </div>
-      <div class="err" id="loginErr"></div>
-
-      <p class="muted" style="margin-top:14px">Need access? Ask an admin to add your account.</p>
-    </div>
-  </div>
-
-  <script>
-    // 1) Init Firebase
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      appId: "YOUR_APP_ID",
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    // 2) Redirect signed-in users away from login
-    auth.onAuthStateChanged((user) => {
-      if (user) window.location.replace("./index.html");
-    });
-
-    // 3) Sign-in button
-    const emailEl = document.getElementById('email');
-    const passEl  = document.getElementById('password');
-    const errEl   = document.getElementById('loginErr');
-
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-      errEl.textContent = '';
-      try {
-        await auth.signInWithEmailAndPassword(emailEl.value.trim(), passEl.value);
-        // redirect will happen via onAuthStateChanged
-      } catch (e) {
-        errEl.textContent = e.message.replace('Firebase:', '').trim();
-      }
-    });
-
-    // 4) Forgot password (sends email if user exists)
-    document.getElementById('forgotLink').addEventListener('click', async (e) => {
-      e.preventDefault();
-      errEl.textContent = '';
-      const email = emailEl.value.trim();
-      if (!email) { errEl.textContent = "Enter your email first."; return; }
-      try {
-        await auth.sendPasswordResetEmail(email);
-        errEl.style.color = '#bbf7d0';
-        errEl.textContent = 'Password reset email sent.';
-        setTimeout(()=>{ errEl.style.color='#fecaca'; }, 4000);
-      } catch (e2) {
-        errEl.textContent = e2.message.replace('Firebase:', '').trim();
-      }
-    });
-  </script>
+  <script type="module" src="./assets/js/login.js"></script>
 </body>
 </html>
