@@ -129,14 +129,7 @@ textarea,
   display: none;
 }
 
-/* Login logo sizing */
-.login-logo {
-  width: 160px;          /* adjust to taste */
-  height: auto;
-  display: block;
-  margin: 0 auto 8px;    /* center above the form */
-  opacity: 0.95;         /* optional */
-}
+
 
 
 /* ===============================
@@ -693,71 +686,205 @@ section {
   object-fit: contain;
 }
 
-.login-page {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:100vh;
+/* ===========================
+   LOGIN LAYOUT (split hero + form)
+   =========================== */
+.login-landing {
+  min-height: 100vh;
+  background: #0b1220; /* fallback */
+  color: var(--text);
 }
-.login-card {
-  background: var(--panel);
-  padding:40px;
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  width:320px;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
+
+/* 58/42 split (left wider, like your mock) */
+.login-wrap {
+  display: grid;
+  grid-template-columns: 58% 42%;
+  min-height: 100vh;
 }
-.login-card img {
-  width:180px;
-  align-self:center;
+
+/* LEFT PANEL (background + 70% overlay + blur 4px) */
+.login-left {
+  position: relative;
+  background: url("../img/login-background.jpg") center/cover no-repeat;
 }
-.login-card input {
-  width:100%;
-  padding:10px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.2);
-  background:#0a1220;
-  color:var(--text);
+
+.login-left::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right, 
+    rgba(3, 15, 35, 0.92) 0%,    /* left side: very dark navy, image barely visible */
+    rgba(10, 30, 60, 0.75) 50%,  /* middle: still dark, image faint */
+    rgba(20, 50, 90, 0.55) 100%  /* right side: lighter, more image visible */
+  );
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
-.login-card .btn {
-  width:100%;
+
+
+.left-content {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  padding: 32px 72px 40px 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* hero at top, footer at bottom */
+  height: 100%;
 }
-.login-card .links {
-  text-align:right;
-  font-size:14px;
+
+.left-hero {
+  margin-top: auto;    /* pushes hero down slightly */
+  margin-bottom: auto; /* keeps it centered-ish */
 }
+
+.left-title {
+  font-size: clamp(36px, 6vw, 72px);
+  line-height: 1.05;
+  font-weight: 800;
+  margin: 0 0 20px 0;
+  opacity: 0.85;
+}
+
+.left-sub {
+  max-width: 60ch;
+  opacity: 0.75;
+  font-size: clamp(12px, 1.4vw, 18px);
+  margin: 0 0 16px 0; /* top right bottom left */
+  line-height: 2;   /* 👈 this is the line spacing */ 
+}
+
+.left-foot {
+  opacity: 0.75;
+  font-size: 19px;
+}
+.left-foot span { color: #2dde8d; }
+
+/* RIGHT PANEL (form) */
+.login-right {
+  background: linear-gradient(
+    135deg,
+    #f2f3f5 0%,   /* light gray top-left */
+    #e0e2e7 40%,  /* mid gray */
+    #cfd3da 100%  /* darker gray bottom-right */
+  );
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+
+
+
+.form-wrap {
+  width: min(560px, 90%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.left-logo {
+  width: 80px;        /* tweak size as you like */
+  margin-bottom: 24px; /* space between logo and "Hello" text */
+}
+
+
+.brand-mark {
+  width: 180px;
+  display: block;
+  margin: 40px 0 80px 0;
+}
+
+.form-title {
+  font-size: 32px;
+  margin: 4px 0 6px 0;
+  color: #111827;
+  font-weight: 800;
+}
+
+.form-sub {
+  margin: 0 0 28px 0;
+  color: #6b7280;
+  font-size: 15px;
+  margin-top: 6px;
+}
+
+/* Form elements */
+.login-form {
+  display: grid;
+  gap: 5px;
+}
+
+.login-form label {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font-size: 15px;
+}
+
+.login-form input::placeholder {
+  color: #9ca3af;
+}
+
+/* Primary button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .05s ease, box-shadow .2s ease, opacity .2s ease;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: #0d6efd; /* primary blue */
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(13,110,253,0.25);
+  margin-top: 20px;
+  font-size: 16px;
+
+}
+
+.btn-primary:hover { box-shadow: 0 10px 18px rgba(13,110,253,0.30); }
+.btn-primary:active { transform: translateY(1px); }
+
+/* Error */
 #loginErr {
-  color:var(--bad);
-  font-size:14px;
-  text-align:center;
+  margin-top: 6px;
+  color: #e11d48;
+  font-size: 14px;
+  text-align: left;
 }
+
+/* Idle banner */
 .idle-banner {
-  display:none;
-  background:var(--warn);
-  color:#000;
-  padding:8px;
-  text-align:center;
-}
-.idle-modal {
-  display:none;
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,.6);
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
-.idle-modal.show { display:flex; }
-.idle-modal .modal-box {
-  background:var(--panel);
-  padding:24px;
-  border-radius:var(--radius);
-  text-align:center;
+  display: none;
+  background: var(--warn, #fbbf24);
+  color: #111;
+  padding: 8px;
+  text-align: center;
 }
 
-
+/* Responsive: stack */
+@media (max-width: 980px) {
+  .login-wrap { grid-template-columns: 1fr; }
+  .login-left { min-height: 42vh; }
+  .left-content { padding: 48px 28px 24px; }
+  .form-wrap { width: min(640px, 92%); margin-top: -24px; }
+}

@@ -3,22 +3,58 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
+  <title>Login to ZAtech Portal</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+
+  <!-- Styles -->
   <link rel="stylesheet" href="./assets/css/styles.css" />
+
+  <!-- Scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/login.js"></script>
 </head>
-<body class="login-page">
+
+<body class="login-landing">
   <div id="idleBanner" class="idle-banner">You were signed out due to inactivity.</div>
-  <div class="login-card">
-    <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="login-logo" />
-    <form id="login-form">
-      <input id="email" type="email" placeholder="Email" required />
-      <input id="password" type="password" placeholder="Password" required />
-      <button type="submit" class="btn">Sign in</button>
-      <div class="links"><a href="#" id="forgotLink">Forgot password?</a></div>
-      <div id="loginErr"></div>
-    </form>
+
+  <div class="login-wrap">
+    <!-- LEFT: hero -->
+    <section class="login-left" aria-hidden="false">
+      <div class="left-content">
+        <div class="left-hero">
+          <img src="./assets/img/logo-white-bulb.png" alt="ZAtech Logo" class="left-logo" />
+          <h1 class="left-title">Let's get to work!!</h1>
+          <p class="left-sub"> <strong>Here we go again.</strong> Another day to track, plan, and knock things off the list — with just a little less stress than yesterday.</p>
+        </div>
+        <small class="left-foot">© 2025 ZAtech. All Rights Reserved. Powered by <span>ZAtech</span></small>
+      </div>
+    </section>
+
+    <!-- RIGHT: form -->
+    <section class="login-right">
+      <div class="form-wrap">
+        <img src="./assets/img/logo-color.png" alt="ZAtech" class="brand-mark" />
+
+        <h2 class="form-title">Welcome Back!</h2>
+        <p class="form-sub">Enter your credentials to access the dashboard</p>
+
+        <form id="login-form" class="login-form">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="email@zatechjo.com" required />
+
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Enter your password" required />
+
+          <button type="submit" class="btn btn-primary">
+            <span>Login Now</span><span aria-hidden="true">➜</span>
+          </button>
+
+          <div id="loginErr" role="alert"></div>
+        </form>
+      </div>
+    </section>
   </div>
 </body>
 </html>
