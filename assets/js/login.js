@@ -18,10 +18,7 @@ const forgot = document.getElementById('forgotLink');
     `;
     document.body.appendChild(banner);
 
-    // slide in
     requestAnimationFrame(() => banner.classList.add('show'));
-
-    // auto-hide after 5s or on dismiss
     const close = () => banner.classList.remove('show');
     document.getElementById('idleTopDismiss')?.addEventListener('click', close);
     setTimeout(close, 5000);
@@ -43,7 +40,7 @@ form?.addEventListener('submit', async (e) => {
   }
 });
 
-/* --- Forgot password --- */
+/* --- Forgot password (if you decide to keep it) --- */
 forgot?.addEventListener('click', async (e) => {
   e.preventDefault();
   err.textContent = '';
