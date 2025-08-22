@@ -937,6 +937,39 @@ section {
   border-color: #0d6efd;
 }
 
+/* --- Top popup for "already signed out" on login page --- */
+.idle-top-toast {
+  position: fixed;
+  top: -64px;                  /* start hidden above viewport */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f59e0b;         /* warm warning */
+  color: #111;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+  z-index: 10000;
+  transition: top .28s ease, opacity .28s ease;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+.idle-top-toast.show {
+  top: 12px;                   /* slides down into view */
+  opacity: 1;
+}
+.idle-top-toast button {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.25);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+
 
 /* Responsive: stack */
 @media (max-width: 980px) {
