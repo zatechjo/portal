@@ -179,5 +179,19 @@
     </section>
   </main>
 </div>
+
+
+<!-- Idle timeout toast -->
+<div id="idleToast" class="idle-toast" role="status" aria-live="polite">
+  <div class="idle-toast__content">
+    <strong>Session timing out</strong>
+    <span id="idleCountdown">60</span>s left
+  </div>
+  <div class="idle-toast__actions">
+    <button id="idleStayBtn" class="mini primary">Stay signed in</button>
+    <button id="idleLogoutBtn" class="mini">Log out</button>
+  </div>
+</div>
+
 </body>
 </html>
