@@ -63,6 +63,12 @@
   </aside>
   <!-- MAIN -->
   <main class="main">
+    <div id="contentLoader" aria-hidden="true">
+        <div class="loader-wrap">
+          <div class="loader-ring"></div>
+          <div class="loader-text">Loading data…</div>
+        </div>
+      </div>
     <div class="topbar">
   <!-- LEFT: greeting -->
   <div class="greeting">
@@ -100,31 +106,100 @@
     </div>
   </div>
 </div>
-
     <section id="revenue">
-      <div class="grid cols-2">
-        <div class="card">
-          <h4>Revenue by Year</h4>
-          <table>
-            <thead><tr><th>Client</th><th>2023</th><th>2024</th><th>2025</th><th>YTD</th></tr></thead>
-            <tbody>
-              <tr><td>Acme LLC</td><td>$6,800</td><td>$8,100</td><td>$7,400</td><td>$5,200</td></tr>
-              <tr><td>Riada Co</td><td>$9,900</td><td>$11,000</td><td>$10,700</td><td>$6,450</td></tr>
-              <tr><td>Nasma Group</td><td>$3,200</td><td>$4,050</td><td>$3,900</td><td>$2,110</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="card">
-          <h4>Highlights</h4>
-          <ul class="muted">
-            <li>Top growth: <b>Riada Co</b> (+11.2% YoY)</li>
-            <li>Most invoices: <b>Acme LLC</b> (14)</li>
-            <li>Churn risk: <b>Nasma Group</b> (two late payments)</li>
-          </ul>
-        </div>
+    <div class="grid cols-2">
+      <!-- Card 1: Revenue by Year -->
+      <div class="card">
+        <h4>Revenue by Year</h4>
+        <table>
+          <thead>
+            <tr><th>Client</th><th>2023</th><th>2024</th><th>2025</th><th>YTD</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Acme LLC</td><td>$6,800</td><td>$8,100</td><td>$7,400</td><td>$5,200</td></tr>
+            <tr><td>Riada Co</td><td>$9,900</td><td>$11,000</td><td>$10,700</td><td>$6,450</td></tr>
+            <tr><td>Nasma Group</td><td>$3,200</td><td>$4,050</td><td>$3,900</td><td>$2,110</td></tr>
+          </tbody>
+        </table>
       </div>
-    </section>
+
+      <!-- Card 2: Profit vs Loss -->
+      <div class="card">
+        <h4>Profit vs Loss <select id="plYear">
+          <option>2023</option>
+          <option selected>2024</option>
+          <option>2025</option>
+        </select></h4>
+        <div class="chart-wrap"><canvas id="plChart"></canvas></div>
+      </div>
+
+      <!-- Card 3: Expenses by Year -->
+      <div class="card">
+        <h4>Expenses by Year</h4>
+        <table>
+          <thead>
+            <tr><th>Year</th><th>Expenses</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2023</td><td>$4,200</td></tr>
+            <tr><td>2024</td><td>$5,100</td></tr>
+            <tr><td>2025</td><td>$4,800</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Card 4: Top Client Contribution -->
+      <div class="card">
+        <h4>Top Client Contribution</h4>
+        <div class="chart-wrap"><canvas id="clientMix"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+
   </main>
 </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Profit/Loss data
+  const plData = {
+    2023: { profit: 8200, loss: 2200 },
+    2024: { profit: 9500, loss: 2800 },
+    2025: { profit: 8700, loss: 2400 }
+  };
+
+  const ctxPL = document.getElementById("plChart");
+  let plChart = new Chart(ctxPL, {
+    type: 'bar',
+    data: {
+      labels: ['Profit','Loss'],
+      datasets: [{ data: [plData[2024].profit, plData[2024].loss], backgroundColor: ['#22c55e','#ef4444'] }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+  });
+
+  document.getElementById("plYear").addEventListener("change", e => {
+    const y = e.target.value;
+    plChart.data.datasets[0].data = [plData[y].profit, plData[y].loss];
+    plChart.update();
+  });
+
+  // Client contribution (YTD revenue)
+  const clientMixCtx = document.getElementById("clientMix");
+  new Chart(clientMixCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Acme LLC','Riada Co','Nasma Group'],
+      datasets: [{
+        data: [5200,6450,2110],
+        backgroundColor: ['#3b82f6','#22c55e','#f59e0b']
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
+  });
+});
+</script>
+
 </body>
 </html>

@@ -174,6 +174,7 @@ textarea,
   -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 2px 10px rgba(0,0,0,.3);
   padding: 20px 24px;      /* top/bottom 22, left/right 24 */
+  /*border-bottom: 1px solid #ffffff54;*/
 }
 
 .greeting .greet-title {
@@ -435,6 +436,65 @@ textarea,
 .ok   { color:#bbf7d0; background:rgba(52,211,153,.15); }
 .warn { color:#fde68a; background:rgba(245,158,11,.15); }
 .bad  { color:#fecaca; background:rgba(239,68,68,.15); }
+
+/* Card header layout (title + filters) */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.filter-select {
+  background: #0f1b31;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 6px 10px;
+  outline: none;
+}
+
+/* Sortable headers */
+th.sortable {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  padding-right: 18px; /* room for arrow */
+}
+
+th.sortable::after {
+  content: '↕';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.35;
+  font-size: 12px;
+}
+
+th.sortable.sort-asc::after {
+  content: '↑';
+  opacity: 0.9;
+}
+
+th.sortable.sort-desc::after {
+  content: '↓';
+  opacity: 0.9;
+}
+
 
 /* ===============================
    Tables
@@ -1052,3 +1112,82 @@ section {
   .left-content { padding: 48px 28px 24px; }
   .form-wrap { width: min(640px, 92%); margin-top: -24px; }
 }
+
+
+
+#contentLoader {
+  position: absolute;           /* stays within .main; use fixed for full-page */
+  inset: 0;
+  display: grid;
+  place-items: center;
+
+  /* transparent tint so the blur has something to mix with */
+  background:
+    linear-gradient(180deg, rgba(8, 20, 40, 0.35), rgba(8, 20, 40, 0.35));
+
+  /* glass effect */
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+
+  z-index: 2000;
+  transition: opacity .35s ease;
+}
+
+#contentLoader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#contentLoader .loader-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+#contentLoader .loader-ring {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.15);
+  border-top-color: #3b82f6;
+  animation: spin 1s linear infinite;
+}
+#contentLoader .loader-text {
+  font-size: 13px;
+  opacity: .8;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Ensure main can position children absolutely */
+.main {
+  position: relative;
+}
+
+/* Keep content visible so backdrop-filter can blur it */
+.main:not(.content-ready) .topbar,
+.main:not(.content-ready) .card {
+  opacity: 1;              /* was 0 */
+  transform: none;         /* was translateY(8px) */
+}
+
+/* Optional: subtly dim content under the overlay for contrast */
+.main:not(.content-ready) {
+  filter: none;            /* keep crisp; blur is handled by the overlay */
+}
+
+.main.content-ready .topbar,
+.main.content-ready .card {
+  opacity: 1;
+  transform: none;
+  transition: opacity .35s ease, transform .35s ease;
+}
+
+
+#revenue .chart-wrap {
+  height: 260px;
+  position: relative;
+}
+#revenue .chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+

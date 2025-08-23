@@ -22,6 +22,7 @@
 <script defer src="./assets/js/topbar.js"></script>
 </head>
 <body>
+
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="side">
@@ -71,6 +72,14 @@
 
   <!-- MAIN -->
   <main class="main">
+    <!-- Content Loader -->
+      <div id="contentLoader" aria-hidden="true">
+        <div class="loader-wrap">
+          <div class="loader-ring"></div>
+          <div class="loader-text">Loading data…</div>
+        </div>
+      </div>
+
     <div class="topbar">
       <!-- LEFT: greeting -->
       <div class="greeting">
@@ -79,6 +88,7 @@
         </h1>
         <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
       </div>
+
 
       <!-- RIGHT: HUD -->
       <div class="hud">
@@ -108,21 +118,39 @@
       </div>
     </div>
 
+
     <!-- INVOICES -->
     <section id="invoices">
       <div class="card">
-        <h4>Invoices</h4>
-        <table>
+        <div class="card-head">
+          <h4>Invoices</h4>
+
+          <!-- Date Filter -->
+          <div class="filters">
+            <label for="dateFilter" class="filter-label">Date Range</label>
+            <select id="dateFilter" class="filter-select">
+              <option value="all" selected>All time</option>
+              <option value="last30">Last 30 days</option>
+              <option value="last90">Last 90 days</option>
+              <option value="thisYear">This year</option>
+              <option value="y2024">Year 2024</option>
+              <option value="y2023">Year 2023</option>
+              <option value="y2022">Year 2022</option>
+            </select>
+          </div>
+        </div>
+
+        <table id="invoiceTable">
           <thead>
             <tr>
-              <th>Client ID</th>
-              <th>Client Name</th>
-              <th>Invoice #</th>
-              <th>Date of Invoice</th>
-              <th>Total Invoiced Amount</th>
-              <th>Status</th>
-              <th>Coverage Period</th>
-              <th></th>
+              <th class="sortable" data-type="text">Client ID</th>
+              <th class="sortable" data-type="text">Client Name</th>
+              <th class="sortable" data-type="text">Invoice #</th>
+              <th class="sortable" data-type="date">Date of Invoice</th>
+              <th class="sortable" data-type="currency">Total Invoiced Amount</th>
+              <th class="sortable" data-type="status">Status</th>
+              <th class="sortable" data-type="text">Coverage Period</th>
+              <th></th> <!-- actions -->
             </tr>
           </thead>
           <tbody>
@@ -156,8 +184,27 @@
               <td>6 months</td>
               <td class="row-actions"><button class="mini">View</button></td>
             </tr>
+            <tr>
+              <td>CL-004</td>
+              <td>Zenith SA</td>
+              <td>INV-2025-0039</td>
+              <td>2025-08-02</td>
+              <td>$780</td>
+              <td><span class="tag due">Overdue</span></td>
+              <td>Due on Receipt</td>
+              <td class="row-actions"><button class="mini">View</button></td>
+            </tr>
+            <tr>
+              <td>CL-005</td>
+              <td>Futura Ltd</td>
+              <td>INV-2025-0038</td>
+              <td>2025-07-30</td>
+              <td>$3,150</td>
+              <td><span class="tag null">—</span></td>
+              <td>Net 30</td>
+              <td class="row-actions"><button class="mini">View</button></td>
+            </tr>
           </tbody>
-
         </table>
       </div>
     </section>
