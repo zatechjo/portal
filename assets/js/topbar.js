@@ -1,7 +1,16 @@
 // TOPBAR SCRIPT
 document.addEventListener("DOMContentLoaded", () => {
- /* ===== TODAY DATE ===== */
+  /* ===== TODAY DATE + GREETING WORD ===== */
   const todayBadge = document.getElementById("todayBadge");
+  const greetingWordEl = document.getElementById("greetingWord");
+
+  function updateGreetingWord() {
+    if (!greetingWordEl) return;
+    const h = new Date().getHours();
+    greetingWordEl.textContent =
+      h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  }
+
   if (todayBadge) {
     function updateDateTime() {
       const now = new Date();
@@ -16,11 +25,25 @@ document.addEventListener("DOMContentLoaded", () => {
         minute: "2-digit"
       });
       todayBadge.textContent = `${weekday}, ${rest} — ${time}`;
+
+      // 👇 keep greeting fresh while user is idle on the page
+      updateGreetingWord();
     }
 
-    updateDateTime();                 // show immediately
-    setInterval(updateDateTime, 60000); // refresh every minute
+  updateDateTime();                // show immediately
+  setInterval(updateDateTime, 60000); // refresh every minute
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") updateDateTime();
+  });
+  } else {
+    // If no date badge on this page, still keep greeting accurate
+    updateGreetingWord();
+    setInterval(updateGreetingWord, 60000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") updateGreetingWord();
+    });
   }
+
 
   /* ===== GREETING WORD BASED ON TIME ===== */
   const greetingWord = document.getElementById("greetingWord");
@@ -43,72 +66,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-/* ===== SEARCH BAR ===== */
-const searchToggle = document.getElementById("searchToggle");
-const searchWrap = document.getElementById("searchWrap");
-const searchInput = document.getElementById("searchInput");
-const searchGroup = document.querySelector(".search-group");
+  /* ===== SEARCH BAR ===== */
+  const searchToggle = document.getElementById("searchToggle");
+  const searchWrap = document.getElementById("searchWrap");
+  const searchInput = document.getElementById("searchInput");
+  const searchGroup = document.querySelector(".search-group");
 
-if (searchToggle && searchWrap && searchGroup) {
-  // ensure initial state has no inner gap
-  searchGroup.classList.add("sg-closed");
-  searchGroup.classList.remove("sg-open");
+  if (searchToggle && searchWrap && searchGroup) {
+    // ensure initial state has no inner gap
+    searchGroup.classList.add("sg-closed");
+    searchGroup.classList.remove("sg-open");
 
-  function openSearch() {
-    // parent gap on
-    searchGroup.classList.remove("sg-closed");
-    searchGroup.classList.add("sg-open");
+    function openSearch() {
+      // parent gap on
+      searchGroup.classList.remove("sg-closed");
+      searchGroup.classList.add("sg-open");
 
-    // insert input into layout and animate
-    searchWrap.style.display = "flex";
-    requestAnimationFrame(() => {
-      searchWrap.classList.add("open");
-      searchWrap.setAttribute("aria-hidden", "false");
-      setTimeout(() => searchInput && searchInput.focus(), 120);
+      // insert input into layout and animate
+      searchWrap.style.display = "flex";
+      requestAnimationFrame(() => {
+        searchWrap.classList.add("open");
+        searchWrap.setAttribute("aria-hidden", "false");
+        setTimeout(() => searchInput && searchInput.focus(), 120);
+      });
+    }
+
+    function closeSearch() {
+      searchWrap.classList.remove("open");
+      searchWrap.setAttribute("aria-hidden", "true");
+      searchInput && searchInput.blur();
+
+      // after animation ends: remove from layout + kill parent gap
+      searchWrap.addEventListener(
+        "transitionend",
+        () => {
+          if (!searchWrap.classList.contains("open")) {
+            searchWrap.style.display = "none";
+            searchGroup.classList.add("sg-closed");
+            searchGroup.classList.remove("sg-open");
+          }
+        },
+        { once: true }
+      );
+    }
+
+    searchToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = searchWrap.classList.contains("open");
+      isOpen ? closeSearch() : openSearch();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (
+        searchWrap.classList.contains("open") &&
+        !searchWrap.contains(e.target) &&
+        e.target !== searchToggle
+      ) {
+        closeSearch();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && searchWrap.classList.contains("open")) {
+        closeSearch();
+      }
     });
   }
-
-  function closeSearch() {
-    searchWrap.classList.remove("open");
-    searchWrap.setAttribute("aria-hidden", "true");
-    searchInput && searchInput.blur();
-
-    // after animation ends: remove from layout + kill parent gap
-    searchWrap.addEventListener(
-      "transitionend",
-      () => {
-        if (!searchWrap.classList.contains("open")) {
-          searchWrap.style.display = "none";
-          searchGroup.classList.add("sg-closed");
-          searchGroup.classList.remove("sg-open");
-        }
-      },
-      { once: true }
-    );
-  }
-
-  searchToggle.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isOpen = searchWrap.classList.contains("open");
-    isOpen ? closeSearch() : openSearch();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (
-      searchWrap.classList.contains("open") &&
-      !searchWrap.contains(e.target) &&
-      e.target !== searchToggle
-    ) {
-      closeSearch();
-    }
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && searchWrap.classList.contains("open")) {
-      closeSearch();
-    }
-  });
-}
 
 
 

@@ -1,6 +1,6 @@
 // assets/js/clients.js  (FULL REPLACEMENT)
 document.addEventListener('DOMContentLoaded', () => {
-  const LS_KEY = 'zatech_clients_v1';
+  const LS_KEY = 'zatech_clients_v2';
 
   // ---------- Data load/save ----------
   function loadClients() {
@@ -93,7 +93,148 @@ document.addEventListener('DOMContentLoaded', () => {
         sector: "Retail",
         notes: "", 
         invoices: []
+      },
+      {
+        name: "Atlas Pharma",
+        contactName: "Hiba Mansour",
+        email: "hiba@atlaspharma.com",
+        phone: "+962-7-5555-1122",
+        country: "Jordan",
+        joined: "2025-02-14",
+        status: "Active",
+        address: "Zarqa",
+        sector: "Healthcare",
+        notes: "Key distributor in medical supplies.",
+        invoices: [
+          { id: "INV-2025-0031", date: "2025-02-20", total: "$3,400", status: "Paid" }
+        ]
+      },
+      {
+        name: "Brightline Media",
+        contactName: "Karim Hatem",
+        email: "karim@brightline.io",
+        phone: "+971-55-333-4444",
+        country: "UAE",
+        joined: "2025-01-09",
+        status: "Active",
+        address: "Abu Dhabi",
+        sector: "Marketing",
+        notes: "Seasonal ad campaigns.",
+        invoices: []
+      },
+      {
+        name: "Cedar Foods",
+        contactName: "Maya Khalil",
+        email: "maya@cedarfoods.com",
+        phone: "+961-3-789-456",
+        country: "Lebanon",
+        joined: "2024-12-22",
+        status: "Paused",
+        address: "Beirut",
+        sector: "FMCG",
+        notes: "Shipment delays reported.",
+        invoices: [
+          { id: "INV-2025-0045", date: "2025-01-10", total: "$1,100", status: "Due" }
+        ]
+      },
+      {
+        name: "Delta Energy",
+        contactName: "Hassan Nouri",
+        email: "hassan@deltaenergy.net",
+        phone: "+966-55-222-3333",
+        country: "Saudi Arabia",
+        joined: "2024-11-15",
+        status: "Active",
+        address: "Dammam",
+        sector: "Energy",
+        notes: "Annual maintenance contract.",
+        invoices: []
+      },
+      {
+        name: "Everest Logistics",
+        contactName: "Rania Odeh",
+        email: "rania@everestlog.com",
+        phone: "+962-7-4567-8910",
+        country: "Jordan",
+        joined: "2024-10-30",
+        status: "Active",
+        address: "Amman, Khalda",
+        sector: "Logistics",
+        notes: "Expanding fleet operations.",
+        invoices: [
+          { id: "INV-2025-0055", date: "2025-01-20", total: "$2,700", status: "Sent" }
+        ]
+      },
+      {
+        name: "Falcon Security",
+        contactName: "Othman Farouk",
+        email: "othman@falconsec.com",
+        phone: "+971-50-999-7777",
+        country: "UAE",
+        joined: "2024-09-12",
+        status: "Active",
+        address: "Sharjah",
+        sector: "Security",
+        notes: "",
+        invoices: []
+      },
+      {
+        name: "Global FinServe",
+        contactName: "Yasmeen Taleb",
+        email: "yasmeen@finserve.com",
+        phone: "+973-39-555-666",
+        country: "Bahrain",
+        joined: "2024-08-03",
+        status: "Active",
+        address: "Manama",
+        sector: "Finance",
+        notes: "High-value contracts.",
+        invoices: [
+          { id: "INV-2025-0067", date: "2025-01-28", total: "$12,000", status: "Paid" }
+        ]
+      },
+      {
+        name: "Horizon Travel",
+        contactName: "Walid Darwish",
+        email: "walid@horizontravel.com",
+        phone: "+962-7-111-2223",
+        country: "Jordan",
+        joined: "2024-07-25",
+        status: "Active",
+        address: "Amman, Sweifieh",
+        sector: "Hospitality",
+        notes: "New package launches each quarter.",
+        invoices: []
+      },
+      {
+        name: "IronBuild Contractors",
+        contactName: "Samir Awad",
+        email: "samir@ironbuild.co",
+        phone: "+966-58-123-9876",
+        country: "Saudi Arabia",
+        joined: "2024-06-11",
+        status: "Paused",
+        address: "Khobar",
+        sector: "Construction",
+        notes: "Project on hold until permits are cleared.",
+        invoices: [
+          { id: "INV-2025-0073", date: "2025-02-01", total: "$18,500", status: "Due" }
+        ]
+      },
+      {
+        name: "Jasmine Boutique",
+        contactName: "Dana Nassar",
+        email: "dana@jasminebtq.com",
+        phone: "+962-7-987-2221",
+        country: "Jordan",
+        joined: "2024-05-20",
+        status: "Active",
+        address: "Amman, Abdoun",
+        sector: "Retail",
+        notes: "Frequent orders of seasonal stock.",
+        invoices: []
       }
+
     ];
     store = {};
     dummyArr.forEach(c => (store[c.name] = c));

@@ -38,6 +38,8 @@ body {
     linear-gradient(135deg, #0a0f1f 0%, #0e1730 100%);
   color: var(--text);
   line-height: 1.4;
+  background-attachment: fixed;
+
 }
 
 
@@ -138,6 +140,8 @@ textarea,
 .main {
   padding: 28px;
 }
+
+
 
 /* ===== New Header (Topbar) ===== */
 .topbar {
