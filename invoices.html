@@ -4,11 +4,16 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ZAtech CRM Portal - Invoices</title>
+
 <!-- FAVICON -->
 <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="./assets/css/styles.css">
+
+<!-- Scripts -->
 <script type="module" src="./assets/js/firebase.js"></script>
 <script type="module" src="./assets/js/auth-guard.js"></script>
 <script type="module" src="./assets/js/idle.js"></script>
@@ -23,95 +28,136 @@
     <div class="brand">
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
+
     <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
+      <a href="./index.html">
+        <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+        <span class="txt">Dashboard</span>
+      </a>
+      <a href="./clients.html">
+        <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+        <span class="txt">Clients</span>
+      </a>
+      <a href="./invoices.html" class="active">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
+      <a href="./schedule.html">
+        <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
+        <span class="txt">Invoice Schedule</span>
+      </a>
+      <a href="./revenue.html">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
+      </a>
+      <a href="./dues.html">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
+      </a>
+      <a href="./expenses.html">
+        <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+        <span class="txt">Expenses</span>
+      </a>
+      <a href="./opps.html">
+        <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+        <span class="txt">Opportunities</span>
+      </a>
+      <a href="./settings.html">
+        <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+        <span class="txt">Settings</span>
+      </a>
+    </nav>
   </aside>
+
   <!-- MAIN -->
   <main class="main">
     <div class="topbar">
-  <!-- LEFT: greeting -->
-  <div class="greeting">
-    <h1 class="greet-title">
-      <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-    </h1>
-    <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-  </div>
+      <!-- LEFT: greeting -->
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
+      </div>
 
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+      <!-- RIGHT: HUD -->
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
 
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+        <!-- Search toggle + animated input -->
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+
+        <!-- Account -->
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" /> Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
+    <!-- INVOICES -->
     <section id="invoices">
       <div class="card">
         <h4>Invoices</h4>
         <table>
-          <thead><tr><th>#</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Client ID</th>
+              <th>Client Name</th>
+              <th>Invoice #</th>
+              <th>Date of Invoice</th>
+              <th>Total Invoiced Amount</th>
+              <th>Status</th>
+              <th>Coverage Period</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td>INV-2025-0042</td><td>Acme LLC</td><td>2025-08-12</td><td>$1,200</td><td><span class="tag">Sent</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
-            <tr><td>INV-2025-0041</td><td>Riada Co</td><td>2025-08-08</td><td>$2,400</td><td><span class="tag ok">Paid</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
-            <tr><td>INV-2025-0040</td><td>Nasma Group</td><td>2025-08-05</td><td>$1,050</td><td><span class="tag warn">Due Soon</span></td><td class="row-actions"><button class="mini">View</button></td></tr>
+            <tr>
+              <td>CL-001</td>
+              <td>Acme LLC</td>
+              <td>INV-2025-0042</td>
+              <td>2025-08-12</td>
+              <td>$1,200</td>
+              <td><span class="tag sent">Sent</span></td>
+              <td>12 months</td>
+              <td class="row-actions"><button class="mini">View</button></td>
+            </tr>
+            <tr>
+              <td>CL-002</td>
+              <td>Riada Co</td>
+              <td>INV-2025-0041</td>
+              <td>2025-08-08</td>
+              <td>$2,400</td>
+              <td><span class="tag ok">Paid</span></td>
+              <td>3 months</td>
+              <td class="row-actions"><button class="mini">View</button></td>
+            </tr>
+            <tr>
+              <td>CL-003</td>
+              <td>Nasma Group</td>
+              <td>INV-2025-0040</td>
+              <td>2025-08-05</td>
+              <td>$1,050</td>
+              <td><span class="tag warn">Due Soon</span></td>
+              <td>6 months</td>
+              <td class="row-actions"><button class="mini">View</button></td>
+            </tr>
           </tbody>
+
         </table>
       </div>
     </section>

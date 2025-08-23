@@ -1,14 +1,26 @@
 // assets/js/clients.js  (FULL REPLACEMENT)
 document.addEventListener('DOMContentLoaded', () => {
-  const LS_KEY = 'zatech_clients_v2';
 
-  // ---------- Data load/save ----------
+  const LS_KEY = 'zatech_clients_v3';
+  const forceReseed = new URLSearchParams(location.search).has('seed');
+
+  // ---------- LocalStorage helpers ----------
   function loadClients() {
-    const fromLS = localStorage.getItem(LS_KEY);
-    if (fromLS) return JSON.parse(fromLS);
-    return {};
+    if (forceReseed) return {};
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return {};
+    try {
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === 'object' ? obj : {};
+    } catch (_) {
+      // Corrupted store → reset
+      localStorage.removeItem(LS_KEY);
+      return {};
+    }
   }
-  function saveClients(obj) { localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
+  function saveClients(obj) {
+    localStorage.setItem(LS_KEY, JSON.stringify(obj));
+  }
 
   let store = loadClients();
   if (Object.keys(store).length === 0) {
@@ -243,10 +255,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------- Table render ----------
   const tbody = document.getElementById('clients-tbody');
+  let currentFilter = "All"; // default
+
   function renderTable() {
     if (!tbody) return;
     tbody.innerHTML = '';
-    Object.values(store).forEach(c => {
+
+    const clientsArr = Object.values(store);
+
+    const filtered = currentFilter === "All"
+      ? clientsArr
+      : clientsArr.filter(c => c.status === currentFilter);
+
+    filtered.forEach(c => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${c.name || '—'}</td>
@@ -262,7 +283,19 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
   }
+
   renderTable();
+
+  const pills = document.querySelectorAll('.pill');
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentFilter = pill.textContent.trim(); // "All" | "Active" | "Paused"
+      renderTable();
+    });
+  });
+
 
   // ---------- Modal refs ----------
   const modal = document.getElementById('client-modal');

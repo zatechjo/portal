@@ -62,6 +62,21 @@ document.addEventListener("DOMContentLoaded", () => {
     greetingWord.textContent = word;
   }
 
+  // ===== Topbar scroll effect =====
+  const tb = document.querySelector('.topbar');
+  if (tb) {
+    const onScroll = () => {
+      if (window.scrollY > 10) {
+        tb.classList.add('scrolled');
+      } else {
+        tb.classList.remove('scrolled');
+      }
+    };
+    onScroll(); // run on load
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+
   
 
 
