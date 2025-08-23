@@ -6,8 +6,9 @@ import { signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth
 const IS_LOGIN = /\/login\.html(?:$|\?|#)/.test(location.pathname);
 
 // Timings
-const IDLE_LIMIT_MS = 5000; // 30 minutes (set to 5000 for testing)
-const WARN_MS       = 10 * 1000;      // 10s warning banner
+const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes in production
+// const IDLE_LIMIT_MS = 5000;        // (use for testing)
+const WARN_MS = 10 * 1000;             // 10s warning banner
 
 if (!IS_LOGIN) {
   let idleTimer, warnTimer, countdownInterval;
@@ -22,7 +23,7 @@ if (!IS_LOGIN) {
   toast.innerHTML = `
     <div class="idle-toast__content">
       <strong>Session timing out</strong>
-      <span><span id="idleCountdown">${Math.floor(WARN_MS/1000)}</span>s left</span>
+      <span><span id="idleCountdown">${Math.floor(WARN_MS / 1000)}</span>s left</span>
     </div>
     <div class="idle-toast__actions">
       <button id="idleStayBtn" class="mini primary">Stay signed in</button>
@@ -32,8 +33,8 @@ if (!IS_LOGIN) {
   document.body.appendChild(toast);
 
   const countdownEl = toast.querySelector('#idleCountdown');
-  const stayBtn     = toast.querySelector('#idleStayBtn');
-  const logoutBtn   = toast.querySelector('#idleLogoutBtn');
+  const stayBtn = toast.querySelector('#idleStayBtn');
+  const logoutBtn = toast.querySelector('#idleLogoutBtn');
 
   // ---- Cross-tab heartbeat ----
   const HEARTBEAT_KEY = 'zportal:lastActivity';
@@ -63,12 +64,14 @@ if (!IS_LOGIN) {
   }
 
   function showWarning() {
-    warningActive = true;                 // keep toast visible despite incidental activity
+    warningActive = true; // keep toast visible despite incidental activity
     showToast(Math.floor(WARN_MS / 1000));
   }
 
   async function doLogout() {
-    try { await signOut(auth); } catch (_) {}
+    try {
+      await signOut(auth);
+    } catch (_) {}
     localStorage.setItem('idleLogout', '1'); // login page will show the top popup
     window.location.href = './login.html';
   }
@@ -90,7 +93,7 @@ if (!IS_LOGIN) {
   // ---- Wire controls ----
   stayBtn.addEventListener('click', () => {
     markActive();
-    resetTimers();                       // explicit choice resets timers
+    resetTimers(); // explicit choice resets timers
   });
 
   logoutBtn.addEventListener('click', () => {
@@ -98,11 +101,15 @@ if (!IS_LOGIN) {
   });
 
   // Any activity marks active; only resets timers if warning isn't showing
-  ['mousemove','keydown','scroll','touchstart','click'].forEach(evt => {
-    document.addEventListener(evt, () => {
-      markActive();
-      if (!warningActive) resetTimers();
-    }, { passive: true });
+  ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach((evt) => {
+    document.addEventListener(
+      evt,
+      () => {
+        markActive();
+        if (!warningActive) resetTimers();
+      },
+      { passive: true }
+    );
   });
 
   // Activity from other tabs
