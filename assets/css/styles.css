@@ -1182,12 +1182,216 @@ section {
 }
 
 
-#revenue .chart-wrap {
-  height: 260px;
+/* ===== Revenue Page ===== */
+#revenue .filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 14px;
+}
+#revenue .filters select {
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.03);
+  color: inherit;
+}
+
+#revenue .filter-select { color-scheme: dark; }            /* dark native menu */
+#revenue .filter-select option { background:#0f1b31; color:var(--text); }
+
+
+#revenue .top-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+#revenue .stat {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: linear-gradient(0deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+}
+#revenue .stat h5 {
+  margin: 0;
+  font-size: .9rem;
+  opacity: .8;
+  font-weight: 600;
+}
+#revenue .stat .value {
+  font-weight: 800;
+  font-size: 1.25rem;
+  white-space: nowrap;
+}
+#revenue .stat .sub {
+  grid-column: 1 / -1;
+  font-size: .85rem;
+  opacity: .75;
+}
+
+/* Revenue tables */
+#revenue table { width: 100%; border-collapse: collapse; }
+#revenue table { border-collapse: separate; border-spacing: 0 8px; } /* mirrors global */
+#revenue thead th {
+  text-align: left;
+  font-size: .85rem;
+  opacity: .8;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  padding: 8px 6px;
+}
+#revenue tbody td {
+  padding: 12px 12px;
+  border-bottom: 0px dashed rgba(255,255,255,.08);
+}
+
+@media (max-width: 1024px) {
+  #revenue .top-row { grid-template-columns: 1fr; }
+}
+
+
+/* ===== START DUES TOTALS + LAYOUT FIX ===== */
+/* vertical gap between the two grid rows */
+#dues .grid.cols-2 + .grid.cols-2 { margin-top: 20px; }
+
+/* card head stays title | controls */
+#dues .card-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding-top: 8px;
+}
+
+/* total callout below header, single line (label + colored box) */
+#dues .month-total {
+  display: flex;                 /* keep label + box on the same line */
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+#dues .month-total .label {
+  margin: 0;
+  font-size: 1.05rem;
+  opacity: .85;
+  white-space: nowrap;           /* prevent wrap */
+}
+#dues .amount-box {
+  display: inline-block;
+  padding: 12px 10px 10px 10px;            /* bigger box */
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1.3rem;             /* bigger number */
+  line-height: 1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+/* color the box (not the text) */
+#dues .amount-box.exp {
+  background: rgba(255, 77, 79, 0.18);
+  border-color: rgba(255, 77, 79, 0.35);
+}
+#dues .amount-box.inc {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+/* month nav buttons (custom class) */
+#dues .month-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.07);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+#dues .month-btn:hover { background: rgba(255,255,255,.15); }
+#dues .month-btn.prev { margin-right: 6px; }
+#dues .month-btn.next { margin-left: 6px; }
+/* ===== END DUES TOTALS + LAYOUT FIX ===== */
+
+/* Totals row styling for summary tables (cards 3 & 4) */
+#dues table tr.totals-row {
+  font-weight: 700;
+  background: rgba(255,255,255,.05);
+}
+#dues table tr.totals-row td {
+  border: 1px solid rgba(255,255,255,.2);
+  padding-top: 10px;
+}
+
+/* Expenses totals row (red text) */
+#dues table tr.totals-row.exp td {
+  color: #ff4d4f;
+}
+
+/* Income totals row (green text) */
+#dues table tr.totals-row.inc td {
+  color: #4ade80;
+}
+
+
+
+/* ===== START EXPENSES PAGE EXTRAS ===== */
+
+/* Keep table usable if it overflows horizontally */
+#expenses .table-scroll { overflow-x: auto; }
+
+/* Status badges */
+#expenses .badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+#expenses .badge.ok   { background: rgba(74, 222, 128, 0.18); border-color: rgba(74, 222, 128, 0.35); color: #4ade80; }
+#expenses .badge.bad  { background: rgba(255, 77, 79, 0.18);  border-color: rgba(255, 77, 79, 0.35);  color: #ff4d4f; }
+#expenses .badge.warn { background: rgba(255, 176, 31, 0.18); border-color: rgba(255, 176, 31, 0.35); color: #ffb01f; }
+
+/* Sortable headers: subtle affordance on hover */
+#expenses table thead th[data-sort]:hover {
+  text-decoration: underline;
+}
+
+/* Filters row spacing */
+#expenses .card .filters { display:flex; gap:10px; align-items:center; }
+
+/* Sorting indicators */
+#expenses table thead th[data-sort] {
   position: relative;
+  padding-right: 18px; /* leave room for arrow */
 }
-#revenue .chart-wrap canvas {
-  width: 100% !important;
-  height: 100% !important;
+#expenses table thead th.sort-asc::after,
+#expenses table thead th.sort-desc::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  transform: translateY(-50%);
 }
+#expenses table thead th.sort-asc::after {
+  border-bottom: 6px solid #fff; /* up arrow */
+}
+#expenses table thead th.sort-desc::after {
+  border-top: 6px solid #fff;    /* down arrow */
+}
+
+
+/* ===== END EXPENSES PAGE EXTRAS ===== */
 

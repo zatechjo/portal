@@ -3,16 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ZAtech CRM Portal - Clients</title>
+  <title>ZAtech CRM Portal - Dues</title>
+
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/css/styles.css">
+
+  <!-- core app scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
   <script defer src="./assets/js/topbar.js"></script>
+
+  <!-- page script -->
+  <script defer src="./assets/js/dues.js"></script>
 </head>
 
 <body>
@@ -23,117 +29,191 @@
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
     <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
+      <a href="./index.html">
+        <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+        <span class="txt">Dashboard</span>
+      </a>
+      <a href="./clients.html">
+        <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+        <span class="txt">Clients</span>
+      </a>
+      <a href="./invoices.html">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
+      <a href="./schedule.html">
+        <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
+        <span class="txt">Invoice Schedule</span>
+      </a>
+      <a href="./revenue.html">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
+      </a>
+      <a href="./dues.html" class="active">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
+      </a>
+      <a href="./expenses.html">
+        <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+        <span class="txt">Expenses</span>
+      </a>
+      <a href="./opps.html">
+        <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+        <span class="txt">Opportunities</span>
+      </a>
+      <a href="./settings.html">
+        <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+        <span class="txt">Settings</span>
+      </a>
+    </nav>
   </aside>
+
   <!-- MAIN -->
   <main class="main">
+    <!-- loader -->
     <div id="contentLoader" aria-hidden="true">
-        <div class="loader-wrap">
-          <div class="loader-ring"></div>
-          <div class="loader-text">Loading data…</div>
-        </div>
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
       </div>
+    </div>
 
+    <!-- topbar -->
     <div class="topbar">
-    <!-- LEFT: greeting -->
-    <div class="greeting">
-      <h1 class="greet-title">
-        <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-      </h1>
-      <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-    </div>
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">Dues and income by month — quick overview & drilldown.</p>
+      </div>
 
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+          </div>
+        </div>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+            Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
+    <!-- DUES -->
     <section id="dues">
+
+      <!-- Row 1: two main cards, side-by-side -->
       <div class="grid cols-2">
+        <!-- Card A: Dues (Expenses) – Month view  ✅ NOW FIRST -->
         <div class="card">
-          <h4>Dues — Upcoming</h4>
+          <div class="card-head">
+            <h4>Dues — Expenses (Month)</h4>
+            <div class="filters">
+              <button id="expPrev" class="month-btn prev" aria-label="Previous month">‹ Prev</button>
+              <select id="expMonth" class="filter-select" aria-label="Select month"></select>
+              <button id="expNext" class="month-btn next" aria-label="Next month">Next ›</button>
+            </div>
+          </div>
+
+          <!-- NEW: total block BELOW header/controls, ABOVE table -->
+          <div class="month-total">
+            <div class="label">Total expenses this month</div>
+            <div class="amount-box exp"><span id="expMonthTotal">$0</span> USD </div>
+          </div>
+
           <table>
-            <thead><tr><th>Client / Service</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              <tr><td>Acme — SEO</td><td>2025-08-20</td><td>$600</td><td><span class="tag">Scheduled</span></td><td class="row-actions"><button class="mini">Invoice</button></td></tr>
-              <tr><td>Riada — Hosting</td><td>2025-08-22</td><td>$120</td><td><span class="tag">Scheduled</span></td><td class="row-actions"><button class="mini">Invoice</button></td></tr>
-            </tbody>
+            <thead>
+              <tr>
+                <th>Platform / Vendor</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount (USD)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="expMonthBody"></tbody>
           </table>
         </div>
+
+
+        <!-- Card B: Income (Invoices) – Month view -->
         <div class="card">
-          <h4>Invoice Schedule (Quick View)</h4>
-          <div class="muted">Mirror of your “Invoice #2” sheet for cadence control.</div>
-          <div style="margin-top:8px" class="pilltabs">
-            <span class="pill active">Monthly</span><span class="pill">Quarterly</span><span class="pill">Yearly</span>
+          <div class="card-head">
+            <h4>Income — Invoices (Month)</h4>
+            <div class="filters">
+              <button id="incomePrev" class="month-btn prev" aria-label="Previous month">‹ Prev</button>
+              <select id="incomeMonth" class="filter-select" aria-label="Select month"></select>
+              <button id="incomeNext" class="month-btn next" aria-label="Next month">Next ›</button>
+            </div>
           </div>
+
+          <!-- NEW: total block BELOW header/controls, ABOVE table -->
+          <div class="month-total">
+            <div class="label">Total income this month</div>
+            <div class="amount-box inc"><span id="incomeMonthTotal">$0</span> USD </div>
+          </div>
+
           <table>
-            <thead><tr><th>Client</th><th>Next</th><th>Amount</th><th>Active</th><th></th></tr></thead>
-            <tbody>
-              <tr><td>Acme LLC</td><td>2025-08-20</td><td>$600</td><td><span class="tag ok">Yes</span></td><td class="row-actions"><button class="mini">Pause</button></td></tr>
-              <tr><td>Riada Co</td><td>2025-09-22</td><td>$1,800</td><td><span class="tag ok">Yes</span></td><td class="row-actions"><button class="mini">Pause</button></td></tr>
-              <tr><td>Nasma Group</td><td>2025-08-25</td><td>$330</td><td><span class="tag">No</span></td><td class="row-actions"><button class="mini">Activate</button></td></tr>
-            </tbody>
+            <thead>
+              <tr>
+                <th>Invoice</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Amount (USD)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="incomeMonthBody"></tbody>
           </table>
+        </div>
+      </div>
+
+
+      <!-- Row 2: two compact summary tables (columns are months) -->
+      <div class="grid cols-2 gap">
+        <!-- Card 3: Expenses — 5 months by Platform (ROWS = platforms, COLS = months) -->
+        <div class="card">
+          <div class="card-head">
+            <h4>Expenses — 5 Months by Platform</h4>
+            <!-- NEW: independent month for this card -->
+            <div class="filters">
+              <select id="exp5Month" class="filter-select" aria-label="Select month (expenses 5-month window)"></select>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead id="exp5Head"></thead>
+              <tbody id="exp5Body"></tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <!-- Card 4: Income — 5 months by Client (ROWS = clients, COLS = months) -->
+        <div class="card">
+          <div class="card-head">
+            <h4>Income — 5 Months by Client</h4>
+            <!-- NEW: independent month for this card -->
+            <div class="filters">
+              <select id="inc5Month" class="filter-select" aria-label="Select month (income 5-month window)"></select>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead id="inc5Head"></thead>
+              <tbody id="inc5Body"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

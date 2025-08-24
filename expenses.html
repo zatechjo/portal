@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ZAtech CRM Portal - Expenses</title>
-<link rel="icon" type="image/png" href="assets/img/favicon.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./assets/css/styles.css">
-<script type="module" src="./assets/js/firebase.js"></script>
-<script type="module" src="./assets/js/auth-guard.js"></script>
-<script type="module" src="./assets/js/idle.js"></script>
-<script defer src="./assets/js/app.js"></script>
-<script defer src="./assets/js/topbar.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZAtech CRM Portal - Expenses</title>
+
+  <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+
+  <!-- core app scripts -->
+  <script type="module" src="./assets/js/firebase.js"></script>
+  <script type="module" src="./assets/js/auth-guard.js"></script>
+  <script type="module" src="./assets/js/idle.js"></script>
+  <script defer src="./assets/js/app.js"></script>
+  <script defer src="./assets/js/topbar.js"></script>
+
+  <!-- page script -->
+  <script defer src="./assets/js/expenses.js"></script>
 </head>
 <body>
 <div class="app">
@@ -22,112 +28,123 @@
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
     <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
+      <a href="./index.html">
+        <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+        <span class="txt">Dashboard</span>
+      </a>
+      <a href="./clients.html">
+        <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+        <span class="txt">Clients</span>
+      </a>
+      <a href="./invoices.html">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
+      <a href="./schedule.html">
+        <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
+        <span class="txt">Invoice Schedule</span>
+      </a>
+      <a href="./revenue.html">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
+      </a>
+      <a href="./dues.html">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
+      </a>
+      <a href="./expenses.html" class="active">
+        <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+        <span class="txt">Expenses</span>
+      </a>
+      <a href="./opps.html">
+        <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+        <span class="txt">Opportunities</span>
+      </a>
+      <a href="./settings.html">
+        <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+        <span class="txt">Settings</span>
+      </a>
+    </nav>
   </aside>
+
   <!-- MAIN -->
   <main class="main">
+    <!-- loader -->
     <div id="contentLoader" aria-hidden="true">
-        <div class="loader-wrap">
-          <div class="loader-ring"></div>
-          <div class="loader-text">Loading data…</div>
-        </div>
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
       </div>
+    </div>
 
+    <!-- topbar -->
     <div class="topbar">
-  <!-- LEFT: greeting -->
-  <div class="greeting">
-    <h1 class="greet-title">
-      <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-    </h1>
-    <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-  </div>
-
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">All expenses — sortable and filterable.</p>
       </div>
-    </div>
 
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-    <section id="expenses">
-      <div class="grid cols-2">
-        <div class="card">
-          <h4>Expense Calendar (Compact)</h4>
-          <table>
-            <thead><tr><th>Service</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Paid By</th></tr></thead>
-            <tbody>
-              <tr><td>Wix</td><td>$29</td><td><span class="tag ok">Paid</span></td><td>$29</td><td>$29</td><td>VISA AHMAD</td></tr>
-              <tr><td>Google</td><td>$120</td><td>$90</td><td><span class="tag warn">Upcoming</span></td><td>$110</td><td>AMEX</td></tr>
-              <tr><td>Adobe</td><td>$55</td><td>$55</td><td>$55</td><td><span class="tag bad">Overdue</span></td><td>Client</td></tr>
-            </tbody>
-          </table>
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search…" />
+          </div>
         </div>
-        <div class="card">
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+            Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <section id="expenses">
+      <div class="card">
+        <div class="card-head">
           <h4>All Expenses</h4>
-          <table>
-            <thead><tr><th>Client / Service</th><th>Date</th><th>Cost</th><th>Period</th><th></th></tr></thead>
-            <tbody>
-              <tr><td>Riada — Hosting</td><td>2025-08-01</td><td>$120</td><td>Monthly</td><td class="row-actions"><button class="mini">View</button></td></tr>
-              <tr><td>Acme — SEO Tools</td><td>2025-08-10</td><td>$60</td><td>Monthly</td><td class="row-actions"><button class="mini">View</button></td></tr>
-              <tr><td>ZAtech — Adobe</td><td>2025-08-12</td><td>$55</td><td>Monthly</td><td class="row-actions"><button class="mini">View</button></td></tr>
+          <div class="filters">
+            <!-- Date filter -->
+            <select id="expDateFilter" class="filter-select" aria-label="Filter by date">
+              <option value="this_year">This year</option>
+              <option value="next_90">Next 90 days</option>
+              <option value="last_90">Last 90 days</option>
+              <option value="y2024">2024</option>
+              <option value="y2023">2023</option>
+              <option value="y2022">2022</option>
+            </select>
+            <!-- Service/Vendor filter -->
+            <select id="expVendorFilter" class="filter-select" aria-label="Filter by vendor/service">
+              <option value="all">All services</option>
+              <!-- populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table id="expensesTable">
+            <thead>
+              <tr>
+                <th data-sort="vendor">Service / Company</th>
+                <th data-sort="date">Date</th>
+                <th data-sort="category">Category</th>
+                <th data-sort="amount">Amount (USD)</th>
+                <th data-sort="status">Status</th>
+                <th data-sort="paidBy">Paid By</th>
+              </tr>
+            </thead>
+            <tbody id="expensesBody">
+              <!-- filled by expenses.js -->
             </tbody>
           </table>
         </div>
