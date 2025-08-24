@@ -83,7 +83,7 @@
         <h1 class="greet-title">
           <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
         </h1>
-        <p class="greet-sub">All expenses — sortable and filterable.</p>
+        <p class="greet-sub">All expenses — sortable, filterable, and editable.</p>
       </div>
 
       <div class="hud">
@@ -115,19 +115,33 @@
           <h4>All Expenses</h4>
           <div class="filters">
             <!-- Date filter -->
-            <select id="expDateFilter" class="filter-select" aria-label="Filter by date">
-              <option value="this_year">This year</option>
-              <option value="next_90">Next 90 days</option>
-              <option value="last_90">Last 90 days</option>
-              <option value="y2024">2024</option>
-              <option value="y2023">2023</option>
-              <option value="y2022">2022</option>
-            </select>
-            <!-- Service/Vendor filter -->
-            <select id="expVendorFilter" class="filter-select" aria-label="Filter by vendor/service">
-              <option value="all">All services</option>
-              <!-- populated by JS -->
-            </select>
+            <div class="select-wrap">
+              <select id="expDateFilter" class="filter-select" aria-label="Filter by date">
+                <option value="this_year">This year</option>
+                <option value="next_90">Next 90 days</option>
+                <option value="last_90">Last 90 days</option>
+                <option value="y2024">2024</option>
+                <option value="y2023">2023</option>
+                <option value="y2022">2022</option>
+              </select>
+            </div>
+
+            <!-- Vendor filter -->
+            <div class="select-wrap">
+              <select id="expVendorFilter" class="filter-select" aria-label="Filter by vendor">
+                <option value="all">All vendors</option>
+              </select>
+            </div>
+
+            <!-- Service Type filter -->
+            <div class="select-wrap">
+              <select id="expServiceFilter" class="filter-select" aria-label="Filter by service type">
+                <option value="all">All services</option>
+              </select>
+            </div>
+
+            <!-- New Expense -->
+            <button class="btn2" id="newExpenseBtn">+ New Expense</button>
           </div>
         </div>
 
@@ -135,22 +149,101 @@
           <table id="expensesTable">
             <thead>
               <tr>
-                <th data-sort="vendor">Service / Company</th>
+                <th data-sort="expense">Expense</th>
                 <th data-sort="date">Date</th>
-                <th data-sort="category">Category</th>
+                <th data-sort="serviceType">Service</th>
                 <th data-sort="amount">Amount (USD)</th>
+                <th data-sort="frequency">Frequency</th>
                 <th data-sort="status">Status</th>
-                <th data-sort="paidBy">Paid By</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody id="expensesBody">
-              <!-- filled by expenses.js -->
-            </tbody>
+            <tbody id="expensesBody"></tbody>
           </table>
         </div>
       </div>
     </section>
   </main>
+</div>
+
+<!-- ===== Expense Modal (same UX pattern as Clients) ===== -->
+<div id="expense-modal" class="modal">
+  <div class="modal-content">
+    <button class="close" id="expenseCloseBtn">&times;</button>
+
+      <h3 id="expense-title" style="display:flex;align-items:center;gap:10px;">
+        <span id="expense-title-text">Expense</span>
+        <button class="btn2" id="editExpenseBtn" style="margin-left:auto;">Edit</button>
+      </h3>
+
+    <div class="client-details">
+      <div class="info-box">
+        <span class="label">Vendor</span>
+        <span id="exp-vendor" class="value-clip"></span>
+        <input id="exp-vendor-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box">
+        <span class="label">Description</span>
+        <span id="exp-desc" class="value-clip"></span>
+        <input id="exp-desc-input" class="edit-field" type="text" placeholder="e.g., 6 Emails for ArLAR" />
+      </div>
+      <div class="info-box">
+        <span class="label">Client</span>
+        <span id="exp-client" class="value-clip"></span>
+        <input id="exp-client-input" class="edit-field" type="text" />
+      </div>
+      <div class="info-box">
+        <span class="label">Service</span>
+        <span id="exp-service" class="value-clip"></span>
+        <select id="exp-service-input" class="edit-field">
+          <option value="email">Email</option>
+          <option value="hosting">Hosting</option>
+          <option value="domain">Domain</option>
+          <option value="cloud">Cloud</option>
+          <option value="design">Design</option>
+          <option value="automation">Automation</option>
+          <option value="cdn">CDN</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="info-box">
+        <span class="label">Date</span>
+        <span id="exp-date"></span>
+        <input id="exp-date-input" class="edit-field" type="date" />
+      </div>
+      <div class="info-box">
+        <span class="label">Amount (USD)</span>
+        <span id="exp-amount"></span>
+        <input id="exp-amount-input" class="edit-field" type="number" step="0.01" />
+      </div>
+      <div class="info-box">
+        <span class="label">Frequency</span>
+        <span id="exp-frequency"></span>
+        <select id="exp-frequency-input" class="edit-field">
+          <option>Monthly</option>
+          <option>Yearly</option>
+          <option>One time</option>
+        </select>
+      </div>
+      <div class="info-box">
+        <span class="label">Status</span>
+        <span id="exp-status"></span>
+        <select id="exp-status-input" class="edit-field">
+          <option>Unpaid</option>
+          <option>Paid</option>
+          <option>Upcoming</option>
+          <option>Null</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Actions (edit/create mode) -->
+    <div id="expense-edit-actions" class="section-divider" style="display:none;justify-content:flex-end;gap:10px;">
+      <span id="expenseEditError" style="color:#ff8b8b;margin-right:auto;"></span>
+      <button class="btn2" id="saveExpenseBtn">Save</button>
+      <button class="btn2" id="cancelExpenseBtn" style="background:#394b6d;">Cancel</button>
+    </div>
+  </div>
 </div>
 </body>
 </html>

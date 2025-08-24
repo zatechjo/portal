@@ -675,7 +675,7 @@ tr td:last-child {
 
 .modal-content {
   background:var(--panel);
-  padding:20px;
+  padding: 20px 20px 20px 20px;
   border-radius:var(--radius);
   position:relative;
   box-shadow:var(--shadow);
@@ -733,7 +733,7 @@ tr td:last-child {
 .modal-content .close {
   position: absolute;
   top: 8px;
-  right: 12px;
+  right: 20px;
   background: none;
   border: 0;
   color: var(--text);
@@ -1347,51 +1347,95 @@ section {
 /* Keep table usable if it overflows horizontally */
 #expenses .table-scroll { overflow-x: auto; }
 
-/* Status badges */
-#expenses .badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
+/* Filters row spacing */
+#expenses .card .filters { display: flex; gap: 10px; align-items: center; }
+
+/* Unified select wrapper + arrow (for the filter dropdowns) */
+#expenses .select-wrap { position: relative; display: inline-block; width: auto; }
+#expenses .filter-select {
+  background: #0f1b31;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 12px 28px 12px 10px; /* right padding for arrow */
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: auto;
+  min-width: 0;
+}
+/* Unicode arrow on the wrapper so spacing is controllable */
+#expenses .select-wrap::after {
+  content: "▼";
+  position: absolute;
+  right: 10px;               /* tweak to move arrow inward/outward */
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #fff;
+  font-size: 0.7rem;
+}
+
+/* Sortable headers: subtle affordance; arrows are inline (JS writes ▲/▼) */
+#expenses table thead th[data-sort] {
+  white-space: nowrap;       /* keep label + ▲/▼ tight */
+  cursor: pointer;
+}
+#expenses table thead th[data-sort]:hover { text-decoration: underline; }
+
+/* ===== EXPENSES: Status dropdown — colored pill when idle, standard when open ===== */
+#expenses .status-select {
+  /* Standard dropdown base (used while focused/open) */
+  background: #0f1b31;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;       /* rounded corners */
+  padding: 6px 12px;         /* 6px top/bottom as requested */
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   font-size: 0.85rem;
   font-weight: 700;
-  border: 1px solid transparent;
-}
-#expenses .badge.ok   { background: rgba(74, 222, 128, 0.18); border-color: rgba(74, 222, 128, 0.35); color: #4ade80; }
-#expenses .badge.bad  { background: rgba(255, 77, 79, 0.18);  border-color: rgba(255, 77, 79, 0.35);  color: #ff4d4f; }
-#expenses .badge.warn { background: rgba(255, 176, 31, 0.18); border-color: rgba(255, 176, 31, 0.35); color: #ffb01f; }
-
-/* Sortable headers: subtle affordance on hover */
-#expenses table thead th[data-sort]:hover {
-  text-decoration: underline;
+  cursor: pointer;
+  color-scheme: dark;        /* improves native menu on some browsers */
 }
 
-/* Filters row spacing */
-#expenses .card .filters { display:flex; gap:10px; align-items:center; }
+/* Show colored “badge” ONLY when NOT focused (closed state) */
+#expenses .status-select.badge-ok:not(:focus) {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: rgba(74, 222, 128, 0.35);
+  color: #4ade80;
+}
+#expenses .status-select.badge-bad:not(:focus) {
+  background: rgba(255, 77, 79, 0.18);
+  border-color: rgba(255, 77, 79, 0.35);
+  color: #ff4d4f;
+}
+#expenses .status-select.badge-warn:not(:focus) {
+  background: rgba(255, 176, 31, 0.18);
+  border-color: rgba(255, 176, 31, 0.35);
+  color: #ffb01f;
+}
+#expenses .status-select.badge-null:not(:focus) {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.20);
+  color: var(--text);
+}
 
-/* Sorting indicators */
-#expenses table thead th[data-sort] {
-  position: relative;
-  padding-right: 18px; /* leave room for arrow */
+/* Ensure standard look while focused/open (consistent with other dropdowns) */
+#expenses .status-select:focus,
+#expenses .status-select:focus-visible {
+  background: #0f1b31;
+  color: var(--text);
+  border-color: rgba(255,255,255,.12);
 }
-#expenses table thead th.sort-asc::after,
-#expenses table thead th.sort-desc::after {
-  content: "";
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  transform: translateY(-50%);
-}
-#expenses table thead th.sort-asc::after {
-  border-bottom: 6px solid #fff; /* up arrow */
-}
-#expenses table thead th.sort-desc::after {
-  border-top: 6px solid #fff;    /* down arrow */
+
+/* Push the Edit button down so it clears the close X */
+#editExpenseBtn {
+  margin-top: 12px;   /* adjust as needed */
 }
 
 
 /* ===== END EXPENSES PAGE EXTRAS ===== */
-
