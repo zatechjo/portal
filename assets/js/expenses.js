@@ -137,7 +137,7 @@
           <td>${fmt$(r.amount)}</td>
           <td>${r.frequency||"—"}</td>
           <td>${statusSelect(r.status, r.id)}</td>
-          <td class="row-actions"><button class="mini view-expense" data-id="${r.id}">View →</button></td>
+          <td class="row-actions"><button class="mini view-expense" data-id="${r.id}">View</button></td>
         </tr>
       `;
     }).join("") || `<tr><td colspan="7">No expenses for this filter.</td></tr>`;

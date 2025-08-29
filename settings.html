@@ -1,135 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ZAtech CRM Portal - Clients</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="icon" type="image/png" href="assets/img/favicon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css">
-  <script type="module" src="./assets/js/firebase.js"></script>
-  <script type="module" src="./assets/js/auth-guard.js"></script>
-  <script type="module" src="./assets/js/idle.js"></script>
-  <script defer src="./assets/js/app.js"></script>
-  <script defer src="./assets/js/topbar.js"></script>
-</head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZAtech CRM Portal – Settings</title>
 
+<link rel="icon" type="image/png" href="assets/img/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Global styles -->
+<link rel="stylesheet" href="./assets/css/styles.css">
+<!-- Page-specific styles -->
+<link rel="stylesheet" href="./assets/css/settings.css">
+
+<!-- Core scripts -->
+<script type="module" src="./assets/js/firebase.js"></script>
+<script type="module" src="./assets/js/auth-guard.js"></script>
+<script type="module" src="./assets/js/idle.js"></script>
+
+<!-- App scaffolding -->
+<script defer src="./assets/js/app.js"></script>
+<script defer src="./assets/js/topbar.js"></script>
+
+<!-- Page-specific logic -->
+<script defer src="./assets/js/settings.js"></script>
+</head>
 <body>
+
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="side">
     <div class="brand">
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
+
     <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
+      <a href="./index.html"><img src="./assets/img/dashboard.png" class="nav-icon" alt=""><span class="txt">Dashboard</span></a>
+      <a href="./clients.html"><img src="./assets/img/multiple-users-silhouette.png" class="nav-icon" alt=""><span class="txt">Clients</span></a>
+      <a href="./invoices.html"><img src="./assets/img/file.png" class="nav-icon" alt=""><span class="txt">Invoices</span></a>
+      <a href="./schedule.html"><img src="./assets/img/schedule.png" class="nav-icon" alt=""><span class="txt">Invoice Schedule</span></a>
+      <a href="./revenue.html"><img src="./assets/img/increase.png" class="nav-icon" alt=""><span class="txt">Revenue</span></a>
+      <a href="./dues.html"><img src="./assets/img/deadline.png" class="nav-icon" alt=""><span class="txt">Dues</span></a>
+      <a href="./expenses.html"><img src="./assets/img/credit-card.png" class="nav-icon" alt=""><span class="txt">Expenses</span></a>
+      <a href="./opps.html"><img src="./assets/img/rocket.png" class="nav-icon" alt=""><span class="txt">Opportunities</span></a>
+      <a href="./settings.html" class="active"><img src="./assets/img/gear.png" class="nav-icon" alt=""><span class="txt">Settings</span></a>
+    </nav>
   </aside>
+
   <!-- MAIN -->
   <main class="main">
+    <!-- Glass loader overlay (shared) -->
     <div id="contentLoader" aria-hidden="true">
-        <div class="loader-wrap">
-          <div class="loader-ring"></div>
-          <div class="loader-text">Loading data…</div>
-        </div>
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
       </div>
+    </div>
+
+    <!-- Topbar -->
     <div class="topbar">
-  <!-- LEFT: greeting -->
-  <div class="greeting">
-    <h1 class="greet-title">
-      <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-    </h1>
-    <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-  </div>
-
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <div class="greeting">
+        <h1 class="greet-title"><span id="greetingWord">Good afternoon</span>, <span class="greet-name">Ahmad</span></h1>
+        <p class="greet-sub">Manage your company details and template space.</p>
       </div>
-    </div>
 
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-    <section id="settings">
-      <div class="grid cols-2">
-        <div class="card">
-          <h4>Company Details</h4>
-          <div class="muted">Used on invoices & emails.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr; gap:10px; margin-top:10px">
-            <input placeholder="Company Name" value="ZAtech" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Bank / IBAN" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Address" style="grid-column:span 2;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Invoice Prefix (INV-)" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Default Currency (JOD/USD)" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
+      <div class="hud">
+        <div class="date-badge" id="todayBadge">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" aria-hidden="true"><input id="searchInput" type="search" placeholder="Search settings…"/></div>
+        </div>
+        <button class="icon-btn" id="notifyBtn" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false"><img class="avatar" src="./assets/img/user-icon.png" alt=""> Ahmad <span class="caret">▾</span></button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
           </div>
         </div>
-        <div class="card">
-          <h4>Invoice Template</h4>
-          <div class="muted">Link your Word/DOCX template for server-side generation.</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:20px;margin-top:20px">
-            <input placeholder="Template URL (.docx)" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <div style="display:flex;gap:10px">
-              <button class="btn2" onclick="alert('Saved')">Save</button>
-              <button class="mini">Upload Template</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <section id="settings">
+      <div class="grid cols-2">
+        <!-- Company Details -->
+        <div class="card" id="companyCard">
+          <div class="card-head">
+            <h4>Company Details</h4>
+          </div>
+
+          <div class="grid cols-2">
+            <div class="field">
+              <label class="filter-label" for="coName">Company Name</label>
+              <input id="coName" class="edit-field show" type="text" placeholder="ZAtech LLC" />
             </div>
+            <div class="field">
+              <label class="filter-label" for="coEmail">Email</label>
+              <input id="coEmail" class="edit-field show" type="email" placeholder="hello@zatechjo.com" />
+            </div>
+
+            <div class="field">
+              <label class="filter-label" for="coPhone">Phone</label>
+              <input id="coPhone" class="edit-field show" type="text" placeholder="+962 7x xxx xxxx" />
+            </div>
+            <div class="field">
+              <label class="filter-label" for="coWebsite">Website</label>
+              <input id="coWebsite" class="edit-field show" type="url" placeholder="https://zatechjo.com" />
+            </div>
+
+            <div class="field">
+              <label for="companyAddress" class="filter-label">Address</label>
+              <input id="companyAddress" type="text" class="edit-field show" placeholder="Street name, city, country" />
+            </div>
+
+          </div>
+
+          <div class="settings-actions">
+            <button id="coSaveBtn" class="btn2">Save Details</button>
+            <span id="coSaveMsg" class="muted"></span>
+          </div>
+        </div>
+
+        <!-- Invoice Template Placeholder -->
+        <div class="card" id="templateCard">
+          <div class="card-head">
+            <h4>Invoice Template</h4>
+          </div>
+
+          <p class="muted">Space reserved for your invoice template. No upload yet — coming later.</p>
+
+          <div id="tplPlaceholder" class="tpl-placeholder">
+            <div>
+              <div class="tpl-title">Template Preview</div>
+              <div class="muted">This card will host your template preview/controls when enabled.</div>
+            </div>
+          </div>
+
+          <!-- (Optional) disabled controls for future use -->
+          <div class="settings-actions">
+            <button class="btn2" disabled>Upload Template (soon)</button>
           </div>
         </div>
       </div>

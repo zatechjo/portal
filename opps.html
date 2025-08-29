@@ -3,16 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ZAtech CRM Portal - Clients</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>ZAtech CRM Portal - Opportunities</title>
+
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/css/styles.css">
+
+  <!-- core app scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
   <script defer src="./assets/js/topbar.js"></script>
+
+  <!-- page script -->
+  <script defer src="./assets/js/opps.js"></script>
 </head>
 
 <body>
@@ -23,122 +29,185 @@
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
     <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
+      <a href="./index.html">
+        <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+        <span class="txt">Dashboard</span>
+      </a>
+      <a href="./clients.html">
+        <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+        <span class="txt">Clients</span>
+      </a>
+      <a href="./invoices.html">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
+      <a href="./schedule.html">
+        <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
+        <span class="txt">Invoice Schedule</span>
+      </a>
+      <a href="./revenue.html">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
+      </a>
+      <a href="./dues.html">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
+      </a>
+      <a href="./expenses.html">
+        <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+        <span class="txt">Expenses</span>
+      </a>
+      <a href="./opps.html" class="active">
+        <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+        <span class="txt">Opportunities</span>
+      </a>
+      <a href="./settings.html">
+        <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+        <span class="txt">Settings</span>
+      </a>
+    </nav>
   </aside>
+
   <!-- MAIN -->
   <main class="main">
+    <!-- loader -->
     <div id="contentLoader" aria-hidden="true">
-        <div class="loader-wrap">
-          <div class="loader-ring"></div>
-          <div class="loader-text">Loading data…</div>
-        </div>
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
       </div>
+    </div>
 
+    <!-- topbar -->
     <div class="topbar">
-  <!-- LEFT: greeting -->
-  <div class="greeting">
-    <h1 class="greet-title">
-      <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-    </h1>
-    <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-  </div>
-
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">Simple pipeline — add, view, edit; update statuses inline.</p>
       </div>
-    </div>
 
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-    <section id="opps">
-      <div class="grid cols-2">
-        <div class="card">
-          <h4>Pipeline</h4>
-          <table>
-            <thead><tr><th>ID</th><th>Opportunity</th><th>Client</th><th>Status</th><th>Est. Value</th><th>Last Contact</th></tr></thead>
-            <tbody>
-              <tr><td>OPP-1021</td><td>Corporate Site Revamp</td><td>Acme LLC</td><td><span class="tag warn">In Review</span></td><td>$8,000</td><td>2025-08-15</td></tr>
-              <tr><td>OPP-1016</td><td>SEO & Ads Bundle</td><td>Nasma Group</td><td><span class="tag">Proposed</span></td><td>$3,500</td><td>2025-08-14</td></tr>
-              <tr><td>OPP-1012</td><td>Shop Setup</td><td>Riada Co</td><td><span class="tag ok">Won</span></td><td>$5,400</td><td>2025-08-10</td></tr>
-            </tbody>
-          </table>
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search…" />
+          </div>
         </div>
-        <div class="card">
-          <h4 style="margin-bottom:20px">Quick Add Opportunity</h4>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <input placeholder="Name" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Client" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <input placeholder="Estimated Value" type="number" style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-            <select style="padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#0f1b31;color:var(--text)">
-              <option>Proposed</option><option>In Review</option><option>Won</option><option>Lost</option>
-            </select>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+            Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
           </div>
-          <div style="display:flex;gap:10px;margin-top:20px">
-            <button class="btn2" onclick="alert('Add Opportunity')">Add</button>
-            <button class="mini">Attach File</button>
-          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPPORTUNITIES -->
+    <section id="opps">
+      <div class="card">
+        <div class="card-head" style="display:flex;align-items:center;gap:10px;">
+          <h4 style="margin-right:auto;">Opportunities</h4>
+          <button class="btn2" id="newOppBtn">+ New Opportunity</button>
+        </div>
+
+        <div class="table-scroll">
+          <table id="oppsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Opportunity</th>
+                <th>Status</th>
+                <th>Est. Value</th>
+                <th>Last Contact</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="oppsBody"><tr><td colspan="7">Loading…</td></tr></tbody>
+          </table>
         </div>
       </div>
     </section>
   </main>
 </div>
+
+<!-- ===== Opportunity Modal (view + create/edit) ===== -->
+<div id="opp-modal" class="modal">
+  <div class="modal-content">
+    <button class="close" id="oppCloseBtn">&times;</button>
+
+    <h3 id="oppModalTitle" style="display:flex;align-items:center;gap:16px;padding-right:64px;">
+      <span id="oppTitle">Opportunity</span>
+      <button class="btn2" id="editOppBtn" style="margin-left:auto;">Edit</button>
+    </h3>
+
+    <!-- View fields -->
+    <div id="oppViewFields" class="client-details">
+      <div class="info-box"><span class="label">ID</span><span id="opp-id"></span></div>
+      <div class="info-box"><span class="label">Opportunity</span><span id="opp-name" class="value-clip"></span></div>
+      <div class="info-box"><span class="label">Client</span><span id="opp-client"></span></div>
+      <div class="info-box"><span class="label">Status</span><span id="opp-status"></span></div>
+      <div class="info-box"><span class="label">Est. Value</span><span id="opp-value"></span></div>
+      <div class="info-box"><span class="label">Last Contact</span><span id="opp-last"></span></div>
+    </div>
+
+    <!-- Edit/Create fields -->
+    <div id="oppEditFields" class="client-details" style="display:none;">
+      <div class="info-box">
+        <span class="label">Opportunity</span>
+        <input id="e-name" class="edit-field" type="text" placeholder="e.g., Website Redesign" />
+      </div>
+      <div class="info-box">
+        <span class="label">Client</span>
+        <input id="e-client" class="edit-field" type="text" placeholder="Client name" />
+      </div>
+      <div class="info-box">
+        <span class="label">Status</span>
+        <select id="e-status" class="edit-field">
+          <option>Proposed</option>
+          <option>In Review</option>
+          <option>Won</option>
+          <option>Lost</option>
+        </select>
+      </div>
+      <div class="info-box">
+        <span class="label">Est. Value (USD)</span>
+        <input id="e-value" class="edit-field" type="number" step="0.01" />
+      </div>
+      <div class="info-box">
+        <span class="label">Last Contact</span>
+        <input id="e-last" class="edit-field" type="date" />
+      </div>
+    </div>
+
+    <div class="section-divider" style="margin-top:10px;"></div>
+
+    <div class="client-details">
+      <div class="info-box" style="grid-column: 1 / -1;">
+        <span class="label">Notes</span>
+        <textarea id="opp-notes" class="edit-field" rows="5" placeholder="Add notes for this opportunity..."></textarea>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div id="oppEditActions" class="section-divider" style="display:none;justify-content:flex-end;gap:10px;">
+      <span id="oppModalError" style="color:#ff8b8b;margin-right:auto;"></span>
+      <button class="btn2" id="saveOppBtn">Save</button>
+      <button class="btn2" id="cancelOppBtn" style="background:#394b6d;">Cancel</button>
+    </div>
+
+    <div id="oppViewActions" class="section-divider" style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn2" id="closeOppBtn" style="background:#394b6d;">Close</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
+  
