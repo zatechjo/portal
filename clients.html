@@ -8,14 +8,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/css/styles.css">
+
+  <!-- existing app scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
   <script defer src="./assets/js/topbar.js"></script>
-  <script defer src="./assets/js/clients.js"></script>
-</head>
 
+  <!-- supabase + page logic -->
+  <script type="module" src="./assets/js/supabase.js"></script>
+  <script type="module" src="./assets/js/clients.js"></script>
+</head>
 
 <body>
 <div class="app">
@@ -25,90 +29,53 @@
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
     <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
+      <a href="./index.html"><img src="./assets/img/dashboard.png" class="nav-icon" alt=""><span class="txt">Dashboard</span></a>
+      <a href="./clients.html"><img src="./assets/img/multiple-users-silhouette.png" class="nav-icon" alt=""><span class="txt">Clients</span></a>
+      <a href="./invoices.html"><img src="./assets/img/file.png" class="nav-icon" alt=""><span class="txt">Invoices</span></a>
+      <a href="./schedule.html"><img src="./assets/img/schedule.png" class="nav-icon" alt=""><span class="txt">Invoice Schedule</span></a>
+      <a href="./revenue.html"><img src="./assets/img/increase.png" class="nav-icon" alt=""><span class="txt">Revenue</span></a>
+      <a href="./dues.html"><img src="./assets/img/deadline.png" class="nav-icon" alt=""><span class="txt">Dues</span></a>
+      <a href="./expenses.html"><img src="./assets/img/credit-card.png" class="nav-icon" alt=""><span class="txt">Expenses</span></a>
+      <a href="./opps.html"><img src="./assets/img/rocket.png" class="nav-icon" alt=""><span class="txt">Opportunities</span></a>
+      <a href="./settings.html"><img src="./assets/img/gear.png" class="nav-icon" alt=""><span class="txt">Settings</span></a>
+    </nav>
   </aside>
+
   <!-- MAIN -->
   <main class="main">
     <div id="contentLoader" aria-hidden="true">
-        <div class="loader-wrap">
-          <div class="loader-ring"></div>
-          <div class="loader-text">Loading data…</div>
-        </div>
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
       </div>
+    </div>
 
     <div class="topbar">
-    <!-- LEFT: greeting -->
-    <div class="greeting">
-      <h1 class="greet-title">
-        <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-      </h1>
-      <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-    </div>
-
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <div class="greeting">
+        <h1 class="greet-title"><span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span></h1>
+        <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
+      </div>
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+          </div>
+        </div>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+            Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
-      </div>
-    </div>
-  </div>
-</div>
 
     <section id="clients">
       <div class="card">
@@ -116,34 +83,50 @@
           <h4>Clients</h4>
           <button class="btn2" id="newClientBtn">+ New Client</button>
         </div>
+
         <div class="pilltabs">
           <button class="pill active">All</button>
           <button class="pill">Active</button>
           <button class="pill">Paused</button>
         </div>
+
         <table>
-          <thead><tr><th>Client</th><th>Contact</th><th>Contact Name</th><th>Phone</th><th>Joined</th><th>Country</th><th>Invoices</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Client</th>
+              <th>Contact Name</th>
+              <th>Phone</th>
+              <th>Joined</th>
+              <th>Address</th>
+              <th>Invoices</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody id="clients-tbody"></tbody>
         </table>
       </div>
     </section>
   </main>
 </div>
+
+<!-- MODAL -->
 <div id="client-modal" class="modal">
   <div class="modal-content">
     <button class="close">&times;</button>
+
     <h3 id="client-name" style="display:flex;align-items:center;gap:10px;">
       <span id="client-name-text"></span>
-
-      <!-- Shown only in edit/create -->
-      <input id="client-name-input" class="edit-field" type="text"
-            placeholder="Client Name" style="max-width:320px;">
-
+      <input id="client-name-input" class="edit-field" type="text" placeholder="Client Name" style="max-width:320px;">
       <button class="btn2" id="editClientBtn" style="margin-left:auto;">Edit</button>
     </h3>
 
-
     <div class="client-details">
+      <div class="info-box">
+        <span class="label">Client ID</span>
+        <span id="client-no" class="value-clip"></span>
+        <input id="client-no-input" class="edit-field" type="text" />
+      </div>
       <div class="info-box">
         <span class="label">Contact Name</span>
         <span id="client-contact" class="value-clip"></span>
@@ -158,11 +141,6 @@
         <span class="label">Email</span>
         <span id="client-email" class="value-clip"></span>
         <input id="client-email-input" class="edit-field" type="email" />
-      </div>
-      <div class="info-box">
-        <span class="label">Country</span>
-        <span id="client-country" class="value-clip"></span>
-        <input id="client-country-input" class="edit-field" type="text" />
       </div>
       <div class="info-box">
         <span class="label">Joined</span>
@@ -195,7 +173,6 @@
       </div>
     </div>
 
-    <!-- Edit-mode actions (hidden until editing) -->
     <div id="client-edit-actions" style="display:none; gap:8px;">
       <button class="btn2" id="saveClientBtn">Save</button>
       <button class="btn2" id="cancelEditBtn" style="background:#0f2c4a;">Cancel</button>
