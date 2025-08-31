@@ -1743,6 +1743,9 @@ section {
   text-overflow: ellipsis;
 }
   
+.tag.status-pill { cursor: pointer; user-select: none; }
+.select-wrap.inline .status-select { cursor: pointer; }
+
 
 
 /* Settings page — uses the same tokens and components from styles.css */
