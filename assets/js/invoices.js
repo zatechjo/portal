@@ -1,7 +1,8 @@
-// assets/js/invoices.js — Invoices (monthly terms + service lines + Supabase)
+// assets/js/invoices.js — Invoices (DOCX + proper PDF column & working PDF modal)
 import { sb } from './supabase.js';
 
 const $ = (s, el=document) => el.querySelector(s);
+const DBG = (...args) => { if (window.DEBUG_INVOICES !== false) console.log('[invoices]', ...args); };
 
 // ====== Table ======
 const tbody = $('#invoices-tbody') || $('#invoiceTable tbody');
@@ -17,8 +18,17 @@ const generateBtn  = $('#generateInvoiceBtn');
 const successModal = $('#invSuccessModal');
 const successClose = $('#successCloseBtn');
 const successDone  = $('#successDoneBtn');
-const pdfLinkA     = $('#pdfLink');
-const docxLinkA    = $('#docxLink'); // still mocked
+const docxLinkA    = $('#docxLink'); // success modal link
+
+// ====== PDF Upload Modal (match invoices.html IDs) ======
+const pdfModal  = $('#pdfModal');
+const pdfForm   = $('#pdfForm');
+const pdfFile   = $('#pdfFile');
+const pdfSubmit = $('#pdfSubmit');
+const pdfCancel = $('#pdfCancel');
+const pdfBusy   = $('#pdfBusy');
+const pdfMsg    = $('#pdfMsg');
+let activePdfInvoiceId = null;
 
 // ====== Form controls ======
 const clientSel    = $('#invoiceClient');
@@ -31,21 +41,13 @@ const addServiceBtn= $('#addServiceBtn');
 const serviceList  = $('#serviceList');
 const subtotalLbl  = $('#subtotalLabel');
 
-// Optional file input if/when you add it
-const pdfInput     = $('#invoicePdf'); // may be null
-
 // ====== Utils ======
 function escapeHTML(s){ return (s ?? '').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function fmtMoney(n, locale='en-US', cur='JOD'){
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: cur,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(Number(n||0));
+  return new Intl.NumberFormat(locale, { style:'currency', currency:cur, minimumFractionDigits:2, maximumFractionDigits:2 })
+    .format(Number(n||0));
 }
-function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
-function addDays(dateStr, days){ const d=new Date(dateStr||todayISO()); d.setDate(d.getDate()+Number(days||0)); return d.toISOString().slice(0,10); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
 function addMonths(dateStr, months){
   const d = new Date(dateStr || todayISO());
   const day = d.getDate();
@@ -53,21 +55,23 @@ function addMonths(dateStr, months){
   if (d.getDate() < day) d.setDate(0); // end-of-month rollover
   return d.toISOString().slice(0,10);
 }
-function show(el){ el?.classList.add('show'); el?.setAttribute('aria-hidden','false'); }
-function hide(el){ el?.classList.remove('show'); el?.setAttribute('aria-hidden','true'); }
+function show(el){
+  if (!el) return;
+  el.style.display = '';            // <-- clear any inline 'none'
+  el.classList.add('show');
+  el.setAttribute('aria-hidden','false');
+}
 
+function hide(el){ el?.classList.remove('show'); el?.setAttribute('aria-hidden','true'); }
 function statusClassFor(s){
-  switch ((s || '').toLowerCase()){
-    case 'paid':        return 'ok';
-    case 'not paid':    return 'due';
-    case 'unpaid':      return 'due';
-    case 'overdue':     return 'due';
-    case 'due soon':    return 'warn';
-    case 'sent':        return 'sent';
-    case 'cancelled':   return 'null';
-    case 'canceled':    return 'null';
-    default:            return 'null';
-  }
+  const v = (s || '').toLowerCase();
+  return (  
+    v === 'paid' ? 'ok' :
+    ['not paid','unpaid','overdue'].includes(v) ? 'due' :
+    v === 'due soon' ? 'warn' :
+    v === 'sent' ? 'sent' :
+    ['cancelled','canceled'].includes(v) ? 'null' : 'null'
+  );
 }
 function openSelectDropdown(sel){
   if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
@@ -75,7 +79,6 @@ function openSelectDropdown(sel){
   sel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
   sel.click();
 }
-// Try safe variants until one satisfies the DB CHECK constraint
 async function persistStatusToDb(id, desired){
   const candidates = [desired];
   if (desired === 'Not Paid') candidates.push('Not paid','Unpaid','Pending','Due');
@@ -98,6 +101,17 @@ async function loadClientsForSelect(){
   ).join('');
 }
 
+function fmtDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', {
+    month: 'long',
+    day: '2-digit',
+    year: 'numeric'
+  });
+}
+
+
 // ====== Invoices list ======
 let invoices = [];
 async function loadInvoices(){
@@ -105,15 +119,17 @@ async function loadInvoices(){
     .from('invoices')
     .select(`
       id, invoice_no, client_id, issue_date, due_date, currency,
-      subtotal, tax, total, status, coverage_period, pdf_path,
+      subtotal, tax, total, status, coverage_period, docx_url, pdf_url,
       clients!invoices_client_id_fkey ( name, client_no )
     `)
-    .order('issue_date', { ascending: false });
+    .order('invoice_no', { ascending: false });
   if (error){ console.error(error); return; }
   invoices = data || [];
   renderTable();
 }
 
+
+// Table render: two final cells are Doc + PDF (separate)
 function renderTable(){
   if (!tbody) return;
   tbody.innerHTML = invoices.map(inv => {
@@ -121,12 +137,22 @@ function renderTable(){
     const cur = inv.currency || 'JOD';
     const total = fmtMoney(inv.total ?? (Number(inv.subtotal||0) + Number(inv.tax||0)), undefined, cur);
     const statusClass = statusClassFor(inv.status);
+
+    // DOC cell: link if we have a URL, otherwise a no-op button (or a "Generate" later)
+    const docCellHtml = inv.docx_url
+      ? `<a class="mini" href="${inv.docx_url}" target="_blank" rel="noopener">View</a>`
+      : `<button type="button" class="mini view-invoice" data-id="${inv.id}">View</button>`;
+
+    const pdfCellHtml = inv.pdf_url
+      ? `<a class="mini" href="${inv.pdf_url}" target="_blank" rel="noopener" style="background:#d32f2f;color:#fff;border:0;">View PDF</a>`
+      : `<button type="button" class="mini pdf-upload" data-id="${inv.id}" style="background:#e58d00;color:#fff;border:0;">Upload PDF +</button>`;
+
     return `
-      <tr>
+      <tr data-id="${inv.id}">
         <td>${escapeHTML(c.client_no || '—')}</td>
         <td>${escapeHTML(c.name || '—')}</td>
         <td>${escapeHTML(inv.invoice_no || '—')}</td>
-        <td>${inv.issue_date || '—'}</td>
+        <td>${fmtDate(inv.issue_date)}</td>
         <td>${total}</td>
         <td>
           <span class="tag ${statusClass} status-pill" data-id="${inv.id}">
@@ -134,9 +160,8 @@ function renderTable(){
           </span>
         </td>
         <td>${escapeHTML(inv.coverage_period || '—')}</td>
-        <td class="row-actions">
-          <button class="mini view-invoice" data-id="${inv.id}">View</button>
-        </td>
+        <td class="doc-actions">${docCellHtml}</td>
+        <td class="pdf-actions">${pdfCellHtml}</td>
       </tr>
     `;
   }).join('');
@@ -157,7 +182,6 @@ function addServiceRow(desc='', price=''){
   row.querySelector('.remove-btn')?.addEventListener('click', ()=>{ row.remove(); updateTotals(); });
   updateTotals();
 }
-
 function readServiceLines(){
   if (!serviceList) return [];
   return Array.from(serviceList.querySelectorAll('.service-row')).map(r=>{
@@ -166,7 +190,6 @@ function readServiceLines(){
     return { desc, price: Number.isFinite(price) ? price : 0 };
   }).filter(x => x.desc || x.price > 0);
 }
-
 function updateTotals(){
   const lines = readServiceLines();
   const subtotal = lines.reduce((s,l)=>s+(l.price||0),0);
@@ -177,7 +200,7 @@ function updateTotals(){
 // ====== Modal open/close ======
 function openModal(){
   currencySel && (currencySel.value = 'JOD');
-  termsSel && (termsSel.value = 'monthly');  // default term
+  termsSel && (termsSel.value = 'monthly');
   startInput && (startInput.value = todayISO());
   endInput && (endInput.value   = todayISO());
   if (serviceList && !serviceList.querySelector('.service-row')) addServiceRow();
@@ -185,26 +208,36 @@ function openModal(){
 }
 function closeModal(){ hide(modal); }
 
-// ====== Storage: upload PDF if provided (optional) ======
-async function uploadInvoicePdf(invoiceId, invoiceNo, file){
-  if (!file) return { path: null, error: null };
-  const safeNo = (invoiceNo || invoiceId).replace(/[^A-Za-z0-9_-]/g, '_');
-  const path = `invoices/${safeNo}.pdf`;
-  const { error } = await sb.storage.from('invoices').upload(path, file, {
-    upsert: true, cacheControl: '3600', contentType: 'application/pdf'
+// ====== Load templating libs (PizZip + Docxtemplater only) ======
+function loadScriptOnceExact(src) {
+  return new Promise((resolve, reject) => {
+    const already = [...document.scripts].some(s => s.src === src);
+    if (already) return resolve();
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
   });
-  return { path, error };
+}
+async function ensureInvoiceLibs() {
+  if (!window.docxtemplater && !window.Docxtemplater) {
+    await loadScriptOnceExact('https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.43.0/docxtemplater.min.js');
+  }
+  if (!window.PizZip) {
+    await loadScriptOnceExact('https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js');
+  }
+  if (!window.PizZip) throw new Error('PizZip not loaded');
+  if (!window.docxtemplater && !window.Docxtemplater) throw new Error('docxtemplater not loaded');
 }
 
-// ====== Save invoice ======
+// ====== Save invoice (DOCX only) ======
 async function saveInvoice(){
   try{
     const client_id = clientSel?.value;
     if (!client_id){ alert('Please choose a client.'); return; }
 
     const issue_date = todayISO();
-
-    // Map dropdown to label + months
     const termKey = termsSel?.value || 'monthly';
     const termMap = {
       monthly:  { label: 'Monthly',  months: 1 },
@@ -215,46 +248,91 @@ async function saveInvoice(){
     };
     const term = termMap[termKey] || termMap.monthly;
 
-    // Due date: add months (one_time = same day)
     const due_date = term.months > 0 ? addMonths(issue_date, term.months) : issue_date;
-
-    // Required: service lines (for PDF text), though not stored
     const lines = readServiceLines();
     if (lines.length === 0) { alert('Add at least one service line.'); return; }
 
-    // Coverage period shown in table/PDF = the payment term label
     const coverage_period = term.label;
-
-    // Totals
     const currency = currencySel?.value || 'JOD';
     const subtotal = lines.reduce((s,l)=>s+(l.price||0),0);
     const tax      = 0;
     const total    = subtotal + tax;
 
-    // 1) Insert invoice header (DB may compute total; we don't send it)
-    const ins = await sb.from('invoices').insert([{
-      client_id, issue_date, due_date, currency,
-      subtotal, tax, status: 'Sent', coverage_period
-    }]).select('id, invoice_no').single();
-
-    if (ins.error){ console.error(ins.error); alert(ins.error.message); return; }
+    // 1) Insert invoice header
+    const ins = await sb.from('invoices')
+      .insert([{ client_id, issue_date, due_date, currency, subtotal, tax, status: 'Sent', coverage_period }])
+      .select('id, invoice_no')
+      .single();
+    if (ins.error) { console.error(ins.error); alert(ins.error.message); return; }
     const { id, invoice_no } = ins.data;
 
-    // 2) Optional PDF upload
-    if (pdfInput?.files?.[0]) {
-      const { path, error } = await uploadInvoicePdf(id, invoice_no, pdfInput.files[0]);
-      if (error){ console.error(error); alert(error.message); return; }
-      const upd = await sb.from('invoices').update({ pdf_path: path }).eq('id', id);
-      if (upd.error){ console.error(upd.error); alert(upd.error.message); return; }
-    }
+    // 2) Fetch client info for template
+    const clientRowResp = await sb.from('clients')
+      .select('name, client_no, address, email')
+      .eq('id', client_id).single();
+    const clientRow = clientRowResp.data || {};
 
-    // 3) Refresh list
+    // 3) Build payload for template
+    const payload = {
+      client_name: clientRow.name || '',
+      address: clientRow.address || '',
+      email: clientRow.email || '',
+      customer_id_label: `Customer ID ${clientRow.client_no || client_id}`,
+      start_date: startInput?.value || issue_date,
+      end_date:   endInput?.value   || due_date,
+      payment_terms: term.label,
+      currency,
+      subtotal: subtotal.toFixed(2),
+      total_due: subtotal.toFixed(2),
+      invoice_no,
+      today: issue_date,
+      lines: lines.map(l => ({
+        service_desc:  l.desc,
+        service_price: Number(l.price || 0).toFixed(2)
+      })),
+    };
+
+    // 4) Fetch and fill DOCX template
+    await ensureInvoiceLibs();
+    const templateUrl = "https://eymqvzjwbolgmywpwhgi.supabase.co/storage/v1/object/public/Invoices/Templates/ZAtech%20Invoice.docx";
+    const ab = await fetch(templateUrl).then(r => r.arrayBuffer());
+
+    const zip = new window.PizZip(ab);
+    const docXml = zip.file('word/document.xml').asText();
+    const fixedXml = docXml.replace(/{{/g, '[[').replace(/}}/g, ']]');
+    zip.file('word/document.xml', fixedXml);
+
+    const Docx = window.docxtemplater || window.Docxtemplater;
+    const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '[[', end: ']]' } });
+    doc.setData(payload);
+    doc.render();
+
+    const docxBlob = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    const safeClient = (payload.client_name || 'Client').replace(/[^a-z0-9\- ]/gi, '').trim();
+    const baseFileName = `Invoice No.${invoice_no} - ${safeClient}`;
+
+    // 5) Upload DOCX to Supabase
+    const docxPath = `generated/Doc Version/${baseFileName}.docx`;
+    const upDocx = await sb.storage.from('Invoices').upload(docxPath, docxBlob, {
+      upsert: true,
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+    if (upDocx.error) throw upDocx.error;
+
+    const docxUrl = sb.storage.from('Invoices').getPublicUrl(docxPath).data.publicUrl;
+
+    // 6) Save DOCX URL in DB
+    await sb.from('invoices').update({ docx_url: docxUrl }).eq('id', id);
+
+    // 7) Update modal link + list
+    if (docxLinkA) { docxLinkA.href = docxUrl; docxLinkA.removeAttribute('download'); }
     await loadInvoices();
-
-    // 4) Show success modal
     hide(modal);
     show(successModal);
-    // pdfLinkA.href = URL.createObjectURL(pdfBlob); pdfLinkA.download = `${invoice_no}.pdf`;
   }catch(e){
     console.error(e);
     alert(e.message || 'Failed to create invoice.');
@@ -277,106 +355,258 @@ function buildStatusSelect(current){
   return { wrap, sel };
 }
 
-async function applyStatusUpdate(pill, id, desired){
-  const row  = invoices.find(x => x.id === id);
-  const prev = row?.status || 'Sent';
-
+async function applyStatusUpdate(el, id, desired){
   const res = await persistStatusToDb(id, desired);
-  if (res.ok){
-    const saved = res.value;
-    if (row) row.status = saved;
-    pill.textContent = saved;
-    pill.className = `tag ${statusClassFor(saved)} status-pill`;
-  } else {
-    alert(res.error.message);
-    pill.textContent = prev;
-    pill.className = `tag ${statusClassFor(prev)} status-pill`;
-  }
+  if (!res.ok){ alert(res.error?.message || 'Could not update status.'); return; }
+
+  // rebuild the pill span with correct id + new style
+  const span = document.createElement('span');
+  span.className = `tag ${statusClassFor(res.value)} status-pill`;
+  span.dataset.id = id;
+  span.textContent = res.value;
+
+  el.replaceWith(span);
 }
 
 document.addEventListener('click', (e) => {
   const pill = e.target.closest('.status-pill');
   if (!pill) return;
 
-  const id = pill.dataset.id;
-  const current = pill.textContent.trim();
-  const { wrap, sel } = buildStatusSelect(current);
+  const id       = pill.dataset.id;                 // keep the real id
+  const initial  = pill.textContent.trim();
+  const { wrap, sel } = buildStatusSelect(initial);
+  pill.replaceWith(wrap);
 
-  // swap in the select
-  pill.style.display = 'none';
-  pill.parentElement.insertBefore(wrap, pill.nextSibling);
-
-  // one-click "button" feel
-  sel.focus();
-  openSelectDropdown(sel);
-
-  const initial = sel.value;
-  let closed = false;
-  const cleanup = () => {
-    if (closed) return;
-    closed = true;
-    wrap.remove();
-    pill.style.display = '';
+  const restore = (value) => {
+    const span = document.createElement('span');
+    span.className = `tag ${statusClassFor(value)} status-pill`;
+    span.dataset.id = id;
+    span.textContent = value;
+    wrap.replaceWith(span);
+    cleanup();
   };
 
-  sel.addEventListener('change', async () => {
-    const newStatus = sel.value;
-    cleanup();
-    await applyStatusUpdate(pill, id, newStatus);
-  });
+  const onChange = async () => {
+    const next = sel.value;
+    if (next === initial) {            // no change -> just restore pill
+      restore(initial);
+      return;
+    }
+    const res = await persistStatusToDb(id, next);
+    if (!res.ok) {
+      alert(res.error?.message || 'Could not update status.');
+      restore(initial);
+      return;
+    }
+    restore(res.value);                // success -> show updated pill
+  };
 
-  // If user picks the SAME option, close anyway
-  sel.addEventListener('click', () => {
-    setTimeout(() => {
-      if (document.activeElement === sel && sel.value === initial) cleanup();
-    }, 150);
-  });
+  const onKey = (ev) => {
+    if (ev.key === 'Escape') restore(initial);
+  };
 
-  // Esc/Enter behavior + blur
-  sel.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape') cleanup();
-    if (ev.key === 'Enter') { const v = sel.value; cleanup(); applyStatusUpdate(pill, id, v); }
-  });
-  sel.addEventListener('blur', () => setTimeout(cleanup, 150));
+  const onDocDown = (ev) => {
+    if (!wrap.contains(ev.target)) restore(initial);
+  };
+
+  const cleanup = () => {
+    sel.removeEventListener('change', onChange);
+    sel.removeEventListener('keydown', onKey);
+    document.removeEventListener('pointerdown', onDocDown, true);
+  };
+
+  sel.addEventListener('change', onChange);
+  sel.addEventListener('keydown', onKey);
+  document.addEventListener('pointerdown', onDocDown, true); // capture outside clicks
+
+  // open the native dropdown for quick editing
+  openSelectDropdown(sel);
 });
 
-// ====== View button (signed URL if pdf_path present) ======
-document.addEventListener('click', async (e) => {
+
+// ---- View DOCX from table
+document.addEventListener('click', (e) => {
   const btn = e.target.closest('button.view-invoice');
   if (!btn) return;
-  const id = btn.dataset.id;
+  const id  = Number(btn.dataset.id);
   const inv = invoices.find(x => x.id === id);
-  if (!inv) return;
-
-  if (!inv.pdf_path){ alert('No PDF linked to this invoice yet.'); return; }
-  const { data, error } = await sb.storage.from('invoices').createSignedUrl(inv.pdf_path, 60*10);
-  if (error){ console.error(error); alert(error.message); return; }
-  window.open(data.signedUrl, '_blank');
+  if (!inv?.docx_url) { alert('No DOCX found for this invoice yet.'); return; }
+  window.open(inv.docx_url, '_blank');
 });
 
-// ====== Wire up ======
+// ---- PDF buttons (Upload/View) ----
+// open upload modal (dark pink button)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button.pdf-upload');
+  if (!btn) return;
+  activePdfInvoiceId = btn.dataset.id;       // keep as string (works for UUID or number)
+  if (!pdfModal) return alert('Upload modal missing.');
+  if (pdfMsg) { pdfMsg.textContent = ''; }
+  if (pdfFile) pdfFile.value = '';
+  if (pdfBusy) pdfBusy.style.display = 'none';
+  if (pdfSubmit) pdfSubmit.disabled = false;
+  show(pdfModal);
+});
+
+// view PDF (red button)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button.pdf-view');
+  if (!btn) return;
+  const id  = btn.dataset.id;
+  const inv = invoices.find(x => String(x.id) === String(id));
+  if (!inv?.pdf_url) { alert('No PDF linked to this invoice yet.'); return; }
+  window.open(inv.pdf_url, '_blank');
+});
+
+successClose?.addEventListener("click", () => hide(successModal));
+successDone?.addEventListener("click", () => hide(successModal));
+
+// cancel/close upload modal
+pdfCancel?.addEventListener('click', () => {
+  hide(pdfModal);           // <-- let hide() handle classes/aria
+  activePdfInvoiceId = null;
+});
+
+
+// submit upload
+pdfForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!activePdfInvoiceId) {
+    alert("No invoice selected for PDF upload.");
+    return;
+  }
+  if (!pdfFile?.files?.length) {
+    alert("Please choose a PDF file first.");
+    return;
+  }
+
+  const file = pdfFile.files[0];
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (ext !== "pdf") {
+    alert("Only PDF files are allowed.");
+    return;
+  }
+
+  try {
+    if (pdfBusy) pdfBusy.style.display = "block";
+    if (pdfSubmit) pdfSubmit.disabled = true;
+
+    // 1) Look up invoice number + client name
+    const inv = invoices.find(x => String(x.id) === String(activePdfInvoiceId));
+    if (!inv) throw new Error("Invoice not found.");
+
+    const clientName = inv.clients?.name || "Client";
+    const safeClient = clientName.replace(/[^a-z0-9\- ]/gi, "").trim();
+    const baseFileName = `Invoice No.${inv.invoice_no} - ${safeClient}`;
+
+    // 2) Build storage path
+    const pdfPath = `generated/${baseFileName}.pdf`;
+
+    // 3) Upload to Supabase
+    const { error } = await sb.storage
+      .from("Invoices")
+      .upload(pdfPath, file, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+    if (error) throw error;
+
+    // 4) Get public URL
+    const { data } = sb.storage.from("Invoices").getPublicUrl(pdfPath);
+    const publicUrl = data.publicUrl;
+
+    // 5) Update DB
+    await sb.from("invoices")
+      .update({ pdf_url: publicUrl })
+      .eq("id", activePdfInvoiceId);
+
+    // 6) Refresh table + close modal
+    await loadInvoices();
+    hide(pdfModal);
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Failed to upload PDF.");
+  } finally {
+    if (pdfBusy) pdfBusy.style.display = "none";
+    if (pdfSubmit) pdfSubmit.disabled = false;
+  }
+});
+
+
+// in assets/js/invoices.js (near the bottom)
+const loader = document.getElementById('contentLoader');
+const mainEl = document.querySelector('.main');
+const showLoader = () => loader?.classList.remove('hidden');
+const hideLoader = () => loader?.classList.add('hidden');
+
+async function initInvoicesPage() {
+  showLoader();
+  await Promise.all([loadClientsForSelect(), loadInvoices()]);
+  hideLoader();
+  mainEl?.classList.add('content-ready');
+}
+initInvoicesPage();
+
+
+
+// ====== Wiring ======
 newBtn?.addEventListener('click', openModal);
 closeBtn?.addEventListener('click', closeModal);
 cancelBtn?.addEventListener('click', closeModal);
-clearBtn?.addEventListener('click', () => {
-  serviceList.innerHTML = '';
-  subtotalLbl.textContent = '0.00';
-  addServiceRow();
-});
-generateBtn?.addEventListener('click', (ev) => { ev.preventDefault(); saveInvoice(); });
+clearBtn?.addEventListener('click', () => { serviceList.innerHTML=''; addServiceRow(); updateTotals(); });
+generateBtn?.addEventListener('click', saveInvoice);
 
-successClose?.addEventListener('click', () => hide(successModal));
-successDone?.addEventListener('click', () => hide(successModal));
+// Init
+loadClientsForSelect();
+loadInvoices();
 
-// Maintain totals live
-addServiceBtn?.addEventListener('click', (e) => { e.preventDefault(); addServiceRow(); });
-serviceList?.addEventListener('input', (e) => {
-  if (e.target.matches('.svc-price')) updateTotals();
-});
 
-// ====== Init ======
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadClientsForSelect();
-  await loadInvoices();
-  if (serviceList && !serviceList.querySelector('.service-row')) addServiceRow(); // start with one
+
+const dateFilter = document.getElementById('dateFilter');
+dateFilter?.addEventListener('change', async () => {
+  let from = null, to = null;
+  const today = new Date();
+
+  switch (dateFilter.value) {
+    case 'last30':
+      from = new Date(today); from.setDate(from.getDate() - 30);
+      break;
+    case 'last90':
+      from = new Date(today); from.setDate(from.getDate() - 90);
+      break;
+    case 'thisYear':
+      from = new Date(today.getFullYear(), 0, 1);
+      break;
+    case 'y2024':
+      from = new Date(2024, 0, 1);
+      to   = new Date(2025, 0, 1);
+      break;
+    case 'y2023':
+      from = new Date(2023, 0, 1);
+      to   = new Date(2024, 0, 1);
+      break;
+    case 'y2022':
+      from = new Date(2022, 0, 1);
+      to   = new Date(2023, 0, 1);
+      break;
+    default:
+      // "all" → no filtering
+      break;
+  }
+
+  // Build Supabase query
+  let query = sb.from('invoices').select(`
+      id, invoice_no, client_id, issue_date, due_date, currency,
+      subtotal, tax, total, status, coverage_period, docx_url, pdf_url,
+      clients!invoices_client_id_fkey ( name, client_no )
+    `).order('invoice_no', { ascending: false });
+
+  if (from) query = query.gte('issue_date', from.toISOString().slice(0,10));
+  if (to)   query = query.lt('issue_date', to.toISOString().slice(0,10));
+
+  const { data, error } = await query;
+  if (error) { console.error(error); return; }
+  invoices = data || [];
+  renderTable();
 });

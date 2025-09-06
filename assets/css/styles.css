@@ -1747,6 +1747,16 @@ section {
 .select-wrap.inline .status-select { cursor: pointer; }
 
 
+  #docxPreview {
+    position: fixed;
+    left: -10000px;  /* off-screen, but fully renderable */
+    top: 0;
+    width: 1240px;   /* ~A4 at ~150 DPI; bump to 1654 for ~200 DPI if you want */
+    background: #fff;
+  }
+
+
+
 
 /* Settings page — uses the same tokens and components from styles.css */
 
@@ -1797,3 +1807,112 @@ section {
   resize: none;
 }
 
+
+/* Buttons */
+.btn-red   { background:#d32f2f; color:#fff; border:0; }
+.btn-amber { background:#b08900; color:#fff; border:0; } /* dark yellow */
+
+/* Minimal spinner */
+.spinner {
+  width: 22px; height: 22px; border: 3px solid #ddd; border-top-color: #888;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* Separate styles for Doc and PDF cells */
+.doc-actions,
+.pdf-actions {
+  text-align: center;         /* center buttons if you want */
+  vertical-align: middle;
+}
+
+.doc-actions .mini,
+.pdf-actions .mini {
+  display: inline-flex;       /* keep buttons inline */
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #2c8ecd;
+  border: none;
+  color: #f3f7ff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform .18s ease, background .15s;
+}
+
+.doc-actions .mini:hover,
+.pdf-actions .mini:hover {
+  transform: scale(1.05);
+  background: #277fb9;
+}
+
+
+th[data-sort="doc"],
+th[data-sort="pdf"],
+.doc-actions,
+.pdf-actions {
+  text-align: center;
+}
+
+th {
+  padding: 10px; /* same as td */
+}
+
+
+/* PDF Upload Modal overrides */
+#pdfModal .modal-content {
+  width: min(420px, 90%);      /* 👈 smaller, responsive */
+  padding: 24px 28px;
+  border-radius: 14px;
+  background: #121f3a;         /* slightly lighter than backdrop */
+  text-align: center;
+}
+
+#pdfModal h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f3f7ff;
+}
+
+/* File input styling */
+#pdfModal input[type="file"] {
+  display: block;
+  margin: 0 auto 18px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0f1b31;
+  color: #f3f7ff;
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+#pdfModal input[type="file"]::-webkit-file-upload-button {
+  background: #2c8ecd;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-right: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+#pdfModal input[type="file"]::-webkit-file-upload-button:hover {
+  background: #277fb9;
+}
+
+/* Buttons row */
+#pdfModal .row-actions {
+  justify-content: center;
+  margin-top: 12px;
+}
+
+#pdfModal .row-actions .mini {
+  min-width: 90px;
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  border-radius: 10px;
+}

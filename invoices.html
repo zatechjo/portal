@@ -17,9 +17,14 @@
   <script defer src="./assets/js/app.js"></script>
   <script defer src="./assets/js/topbar.js"></script>
 
-  <!-- Supabase + page logic (only once) -->
+  <!-- keep these -->
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.5/dist/pizzip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.44.0/build/docxtemplater.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+  <!-- Supabase + page logic -->
   <script type="module" src="./assets/js/supabase.js"></script>
-  <script type="module" src="./assets/js/invoices.js"></script>
+  <script type="module" src="./assets/js/invoices.js?v=3"></script>
 </head>
 <body>
 
@@ -105,11 +110,12 @@
               <th data-sort="amount">Total Invoiced Amount</th>
               <th data-sort="status">Status</th>
               <th data-sort="coverage">Coverage Period</th>
-              <th></th>
+              <th data-sort="doc">Doc</th>
+              <th data-sort="pdf">PDF</th>
             </tr>
           </thead>
           <tbody id="invoices-tbody"></tbody>
-        </table>
+        </table>  
       </div>
     </section>
   </main>
@@ -207,21 +213,40 @@
     </div>
 
     <div class="success-actions centered">
-      <a id="pdfLink" class="btn2 btn-download" href="#" download>
-        <img src="assets/img/pdf.png" alt="" class="btn-icon"> Download PDF
-      </a>
       <a id="docxLink" class="btn2 btn-download" href="#" download>
         <img src="assets/img/word.png" alt="" class="btn-icon"> Download Word
       </a>
     </div>
 
-    <p class="muted center">Note: PDF/DOC generation is mocked on the frontend for now. Supabase upload + server render are TODO in <code>invoices.js</code>.</p>
+    <p class="muted center">Your files were generated and uploaded. You can download the PDF or Word version below.</p>
 
     <div class="modal-actions centered">
       <button id="successDoneBtn" class="btn2 btn-success">Done</button>
     </div>
   </div>
 </div>
+
+<!-- ===== Upload PDF Modal ===== -->
+<div id="pdfModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <h3 style="margin-bottom:10px;">Upload a PDF</h3>
+
+    <form id="pdfForm">
+      <input id="pdfFile" type="file" accept="application/pdf" required style="margin: 10px 0;">
+      <div class="row-actions" style="gap:8px;">
+        <button type="button" id="pdfCancel" class="mini">Cancel</button>
+        <button type="submit" id="pdfSubmit" class="mini btn-amber">Upload</button>
+      </div>
+
+      <div id="pdfBusy" class="spinner" style="display:none;margin-top:10px;"></div>
+      <p id="pdfMsg" class="small muted" style="margin-top:8px;"></p>
+    </form>
+  </div>
+</div>
+
+
+
+<div id="docxPreview" style="display:none;"></div>
 
 </body>
 </html>

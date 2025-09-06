@@ -1,79 +1,203 @@
+/* assets/js/revenue.js
+   Wires real totals into your existing styled UI.
+   Uses global window.sb (Supabase client) if available.
+*/
 (() => {
-  // ---------- Config / Data (swap to Supabase later) ----------
-  const USD_TO_JOD = 0.709; // move to ENV/config later if you want
-
-  // Amounts in USD by client by year
-  const DATA = [
-    {
-      name: "Acme LLC",
-      income: { "2022": 5400, "2023": 6800, "2024": 8100, "2025": 7400 },
-      cost:   { "2022": 1800, "2023": 2100, "2024": 2450, "2025": 2300 }
-    },
-    {
-      name: "Riada Co",
-      income: { "2022": 9100, "2023": 9900, "2024": 11000, "2025": 10700 },
-      cost:   { "2022": 2900, "2023": 3000, "2024": 3350, "2025": 3100 }
-    },
-    {
-      name: "Nasma Group",
-      income: { "2022": 3000, "2023": 3200, "2024": 4050, "2025": 3900 },
-      cost:   { "2022": 1000, "2023": 1100, "2024": 1300, "2025": 1400 }
-    }
-  ];
-
-  // ---------- Helpers ----------
+  // ---------- UI handles (your existing IDs) ----------
   const $ = (sel) => document.querySelector(sel);
-  const fmt$ = (n) => "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
-  const toJOD = (n) => Number(n || 0) * USD_TO_JOD;
-  const sumObj = (o) => Object.values(o || {}).reduce((a, b) => a + (b || 0), 0);
+  const els = {
+    year: $("#revYear"),
+    incomeUSD: $("#incomeUSD"),
+    incomeSub: $("#incomeSub"),
+    costUSD: $("#costUSD"),
+    costSub: $("#costSub"),
+    plUSD: $("#plUSD"),
+    plSub: $("#plSub"),
+    incomeTable: $("#incomeTable"),
+    costTable: $("#costTable"),
+    loader: $("#contentLoader"),
+  };
 
-  function compute(scopeYear) {
-    const rows = DATA.map((c) => {
-      const income = scopeYear === "all" ? sumObj(c.income) : (c.income[scopeYear] || 0);
-      const cost   = scopeYear === "all" ? sumObj(c.cost)   : (c.cost[scopeYear] || 0);
-      return { name: c.name, income, cost };
-    });
-    const totalIncome = rows.reduce((a, r) => a + r.income, 0);
-    const totalCost   = rows.reduce((a, r) => a + r.cost, 0);
-    const totalPL     = totalIncome - totalCost;
-    return { rows, totalIncome, totalCost, totalPL };
+  // ---------- FX helpers ----------
+  // Keep the same USD→JOD feel you had before
+  const USD_TO_JOD = 0.709;
+  const FX_TO_USD = {
+    USD: 1,
+    JOD: 1 / USD_TO_JOD, // ≈ 1.41
+    EUR: 1.09,
+    CAD: 0.74,
+    GBP: 1.27,
+    SAR: 0.2667,
+    AED: 0.2723,
+  };
+  const toUSD = (amount, ccy) => Number(amount || 0) * (FX_TO_USD[ccy] ?? 1);
+  const toJOD = (usd) => Number(usd || 0) * USD_TO_JOD;
+  const fmt$ = (n) =>
+    "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+  // ---------- Date helpers ----------
+  const yearRange = (yr) => {
+    if (yr === "all") return null;
+    const y = Number(yr);
+    const start = new Date(y, 0, 1);
+    const end = new Date(y + 1, 0, 1); // exclusive
+    return { start: start.toISOString(), end: end.toISOString() };
+  };
+
+  // ---------- Supabase fetchers (defensive) ----------
+  async function getInvoices(scopeYear) {
+    if (!window.sb) return { rows: [], error: new Error("Supabase not loaded") };
+
+    let q = window.sb
+      .from("invoices")
+      .select(
+        `
+        id, client_id, issue_date, subtotal, currency, status,
+        clients!invoices_client_id_fkey ( name )
+      `
+      )
+      .eq("status", "Paid");
+
+    const range = yearRange(scopeYear);
+    if (range) q = q.gte("issue_date", range.start).lt("issue_date", range.end);
+
+    q = q.order("issue_date", { ascending: true });
+
+    const { data, error } = await q;
+    if (error) return { rows: [], error };
+    const rows = (data || []).map((r) => ({
+      clientName: r.clients?.[0]?.name || r.clients?.name || "—",
+      date: r.issue_date,
+      amountUSD: Number(r.subtotal || 0), // table prices are USD in `subtotal`
+    }));
+    return { rows, error: null };
   }
 
-  function render(scopeYear) {
-    const { rows, totalIncome, totalCost, totalPL } = compute(scopeYear);
+  async function getExpenses(scopeYear) {
+    // Try an expenses table; if it’s not there (or schema differs), just return empty.
+    if (!window.sb) return { rows: [], error: new Error("Supabase not loaded") };
 
-    // Top stats
-    $("#incomeUSD").textContent = fmt$(totalIncome);
-    $("#incomeSub").textContent =
-      (scopeYear === "all" ? "Since opening" : `Year ${scopeYear}`) +
-      ` • ${fmt$(toJOD(totalIncome))} JOD`;
+    let q = window.sb
+      .from("expenses")
+      .select(
+        `
+        id, client_id, amount, currency, date,
+        clients!expenses_client_id_fkey ( name )
+      `
+      );
 
-    $("#costUSD").textContent = fmt$(totalCost);
-    $("#costSub").textContent =
-      (scopeYear === "all" ? "Since opening" : `Year ${scopeYear}`) +
-      ` • ${fmt$(toJOD(totalCost))} JOD`;
+    const range = yearRange(scopeYear);
+    if (range) q = q.gte("date", range.start).lt("date", range.end);
 
-    $("#plUSD").textContent = fmt$(totalPL);
-    $("#plSub").textContent =
-      (scopeYear === "all" ? "Since opening" : `Year ${scopeYear}`) +
-      ` • ${fmt$(toJOD(totalPL))} JOD`;
+    q = q.order("date", { ascending: true });
 
-    // Tables
-    const incomeT = $("#incomeTable");
-    const costT   = $("#costTable");
+    const { data, error } = await q;
+    if (error) {
+      console.warn("[revenue] expenses not available / schema mismatch:", error);
+      return { rows: [], error };
+    }
+    const rows = (data || []).map((r) => ({
+      clientName: r.clients?.[0]?.name || r.clients?.name || "—",
+      amountUSD: toUSD(r.amount, r.currency || "USD"),
+    }));
+    return { rows, error: null };
+  }
 
-    incomeT.innerHTML = rows
-      .map((r) => `<tr><td>${r.name}</td><td>${fmt$(r.income)}</td><td>${fmt$(toJOD(r.income))}</td></tr>`)
-      .join("");
+  // ---------- Aggregation ----------
+  function aggByClient(rows) {
+    const map = new Map();
+    for (const r of rows) {
+      const k = r.clientName || "—";
+      map.set(k, (map.get(k) || 0) + (r.amountUSD || 0));
+    }
+    return [...map.entries()]
+      .map(([client, usd]) => ({ client, usd, jod: toJOD(usd) }))
+      .sort((a, b) => b.usd - a.usd);
+  }
 
-    costT.innerHTML = rows
-      .map((r) => `<tr><td>${r.name}</td><td>${fmt$(r.cost)}</td><td>${fmt$(toJOD(r.cost))}</td></tr>`)
-      .join("");
+  // ---------- Render ----------
+  function setLoader(on) {
+    if (!els.loader) return;
+    els.loader.setAttribute("aria-hidden", on ? "false" : "true");
+    els.loader.style.display = on ? "block" : "none";
+  }
+
+  function renderTotals(scopeYear, incomeUSD, costUSD) {
+    const label = scopeYear === "all" ? "Since opening" : `Year ${scopeYear}`;
+    const plUSD = incomeUSD - costUSD;
+
+    if (els.incomeUSD) els.incomeUSD.textContent = fmt$(incomeUSD);
+    if (els.incomeSub)
+      els.incomeSub.textContent = `${label} • ${fmt$(toJOD(incomeUSD))} JOD`;
+
+    if (els.costUSD) els.costUSD.textContent = fmt$(costUSD);
+    if (els.costSub)
+      els.costSub.textContent = `${label} • ${fmt$(toJOD(costUSD))} JOD`;
+
+    if (els.plUSD) els.plUSD.textContent = fmt$(plUSD);
+    if (els.plSub)
+      els.plSub.textContent = `${label} • ${fmt$(toJOD(plUSD))} JOD`;
+  }
+
+  function renderTables(incomeRows, costRows) {
+    if (els.incomeTable) {
+      els.incomeTable.innerHTML = incomeRows
+        .map(
+          (r) =>
+            `<tr><td>${escapeHtml(r.client)}</td><td>${fmt$(r.usd)}</td><td>${fmt$(
+              r.jod
+            ).replace("$", "")} JOD</td></tr>`
+        )
+        .join("");
+    }
+    if (els.costTable) {
+      els.costTable.innerHTML = costRows
+        .map(
+          (r) =>
+            `<tr><td>${escapeHtml(r.client)}</td><td>${fmt$(r.usd)}</td><td>${fmt$(
+              r.jod
+            ).replace("$", "")} JOD</td></tr>`
+        )
+        .join("");
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(
+      /[&<>"']/g,
+      (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m])
+    );
+  }
+
+  // ---------- Flow ----------
+  async function refresh(scopeYear) {
+    setLoader(true);
+    try {
+      const [{ rows: invRows }, { rows: expRows }] = await Promise.all([
+        getInvoices(scopeYear),
+        getExpenses(scopeYear),
+      ]);
+
+      const income = aggByClient(invRows);
+      const costs = aggByClient(expRows);
+
+      const totalIncomeUSD = income.reduce((a, r) => a + r.usd, 0);
+      const totalCostUSD = costs.reduce((a, r) => a + r.usd, 0);
+
+      renderTotals(scopeYear, totalIncomeUSD, totalCostUSD);
+      renderTables(income, costs);
+    } catch (e) {
+      console.error("[revenue] refresh failed", e);
+      renderTotals(scopeYear, 0, 0);
+      renderTables([], []);
+    } finally {
+      setLoader(false);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    const sel = $("#revYear");
-    render(sel.value);
-    sel.addEventListener("change", () => render(sel.value));
+    const initial = els.year?.value || "all";
+    refresh(initial);
+    els.year?.addEventListener("change", () => refresh(els.year.value));
   });
 })();
