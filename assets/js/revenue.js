@@ -196,7 +196,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    const initial = els.year?.value || "all";
+    const initial = els.year?.value || "2025";
     refresh(initial);
     els.year?.addEventListener("change", () => refresh(els.year.value));
   });

@@ -41,7 +41,7 @@
   // ===== Utilities =====
   const startOfMonth = (d) => { const x = new Date(d); x.setDate(1); x.setHours(0,0,0,0); return x; };
   const endOfMonth   = (d) => { const x = startOfMonth(d); x.setMonth(x.getMonth()+1); x.setMilliseconds(-1); return x; };
-  const addMonths    = (d, n) => { const x = new Date(d); x.setMonth(x.getMonth()+n); return x; };
+  const addMonths    = (d, n) => { const x = startOfMonth(d); return new Date(x.getFullYear(), x.getMonth() + n, 1); };
   const clampEOMAddMonths = (d, n) => {
     const src = new Date(d);
     const day = src.getDate();
@@ -75,6 +75,48 @@
   const nextYearEnd   = new Date(today.getFullYear() + 1, 11, 31, 23, 59, 59, 999);
 
   const thisYearEnd   = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+  // --- helpers for inline status editing (Expenses, Card 1) ---
+  function openSelectDropdown(sel){
+    if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
+    sel.focus();
+    sel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+    sel.click();
+  }
+  function capFirst(s){ s = String(s||''); return s ? s[0].toUpperCase() + s.slice(1) : s; }
+  function expStatusToTagClass(v){
+    const s = String(v || '').toLowerCase();
+    // match your existing styles
+    if (s === 'paid')     return 'tag ok';
+    if (s === 'upcoming') return 'tag sent';
+    if (s === 'overdue')  return 'tag due';
+    if (s === 'partial')  return 'tag warn';
+    return 'tag null'; // unpaid or anything else
+  }
+  async function persistExpenseStatusToDb(id, desired){
+    // Write capitalized to DB (keeps it consistent with your Expenses page),
+    // dues.js will lowercase when reading.
+    const writeVal = capFirst(desired); // 'Paid' | 'Unpaid' | 'Upcoming'
+    const { error } = await sb.from('expenses').update({ status: writeVal }).eq('id', id);
+    if (error) return { ok:false, error };
+    return { ok:true, value: writeVal };
+  }
+  function buildExpStatusSelect(current){
+    const wrap = document.createElement('div');
+    wrap.className = 'select-wrap inline';
+    const sel = document.createElement('select');
+    sel.className = 'filter-select status-select';
+    sel.innerHTML = `
+      <option value="paid">Paid</option>
+      <option value="unpaid">Unpaid</option>
+      <option value="upcoming">Upcoming</option>
+    `;
+    const cur = String(current || '').toLowerCase();
+    sel.value = ['paid','unpaid','upcoming'].includes(cur) ? cur : 'unpaid';
+    wrap.appendChild(sel);
+    return { wrap, sel };
+  }
+
 
   // ===== Coverage normalization =====
   function normalizeTerms(v){
@@ -288,6 +330,37 @@
     nextBtn?.addEventListener("click", () => setAnchor(addMonths(getAnchor(), +1)));
   }
 
+  // ===== EXPENSES Supabase fetches (mirror invoices) =====
+  let expPaidSeeds = [];   // last-year paid (annual/6m) → used to project one step ahead
+  let expActualA6  = [];   // actual expenses (annual/6m + allow paid one_time in past) in [lastYearStart..nextYearEnd]
+
+  // ===== EXPENSES (real rows only; monthly + 6m + yearly + one_time) =====
+  let expensesAll = []; // unified expenses, real entries only
+
+  async function fetchExpensesWindow(winStart, winEnd) {
+    if (!window.sb) { console.error("[dues] Supabase client not found"); return []; }
+
+    const { data, error } = await window.sb
+      .from("expenses")
+      .select("id, vendor, service, expense_date, amount, frequency, status")
+      .gte("expense_date", winStart.toISOString())
+      .lte("expense_date", winEnd.toISOString())
+      .order("expense_date", { ascending: true });
+
+    if (error) { console.error("[dues] fetchExpensesWindow:", error); return []; }
+
+    return (data || []).map(r => ({
+      id: r.id,
+      vendor: r.vendor || "—",
+      service: r.service || "",
+      expense_date: r.expense_date,                // YYYY-MM-DD
+      amount: Number(r.amount || 0),
+      frequency: String(r.frequency || "").toLowerCase(), // monthly/yearly/6m/one_time...
+      status: String(r.status || "").toLowerCase()        // unpaid/paid/upcoming/null...
+    }));
+  }
+
+
   // ===== Render: Card 2 (Month) — Past=Paid only; Now/Future=Upcoming (+real overrides) =====
   function renderInvoicesMonth(anchor){
     const body = els.incomeMonthBody;
@@ -442,6 +515,145 @@
       : `<tr><td colspan="7" style="text-align:center;opacity:.75;">No client invoices in this 5-month window.</td></tr>`;
   }
 
+  // ===== Render: Card 1 — Expenses (Month)
+  // ===== Render: Card 1 — Expenses (Month, real rows only) =====
+  function renderExpensesMonth(anchor) {
+    const body = els.expMonthBody;
+    if (!body) return;
+
+    const mStart = startOfMonth(anchor);
+    const mEnd   = endOfMonth(anchor);
+
+    // filter this month only (include monthly + 6m + yearly + one_time)
+    const rows = expensesAll.filter(r => {
+      const d = new Date(r.expense_date);
+      return d >= mStart && d <= mEnd;
+    });
+
+    // total
+    const total = rows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+    if (els.expMonthTotal) els.expMonthTotal.textContent = fmt$(total);
+
+    // render
+    body.innerHTML = rows.length
+      ? rows.map(r => {
+          const st  = r.status || "unpaid";
+          const tag = st === "paid" ? "tag ok" :
+                      st === "upcoming" ? "tag sent" :
+                      st === "overdue" ? "tag due" :
+                      st === "partial" ? "tag warn" : "tag null";
+          return `
+            <tr>
+              <td>${esc(r.vendor)}</td>
+              <td>${esc(toISODate(r.expense_date))}</td>
+              <td>${esc(r.service || "—")}</td>
+              <td>${fmt$(r.amount)}</td>
+              <td>
+                <span
+                  class="${tag} exp-status-pill"
+                  data-id="${esc(r.id)}"
+                  data-status="${esc(st)}"
+                  title="Click to change"
+                >${esc(st)}</span>
+              </td>
+            </tr>
+          `;
+        }).join("")
+      : `<tr><td colspan="5" style="text-align:center;opacity:.75;">No expenses in ${esc(monthLabel(mStart))}</td></tr>`;
+  }
+
+
+  // ===== Render: Card 3 — Expenses (Rolling 5-month)
+  function renderExpensesRolling(anchor){
+    const head = els.exp5Head, body = els.exp5Body;
+    if (!head || !body) return;
+
+    const windowMonths = [
+      addMonths(anchor, -2),
+      addMonths(anchor, -1),
+      addMonths(anchor,  0),
+      addMonths(anchor, +1),
+      addMonths(anchor, +2),
+    ];
+    const keys = windowMonths.map(monthKey);
+
+    // Header is built by buildExpenses5Header(); just aggregate & paint rows.
+
+    // Aggregate REAL in window:
+    //  - Past: Paid only (annual/6m + allow paid one_time)
+    //  - Present/Future: annual/6m only (no one_time)
+    const agg = new Map(); // vendor -> { months:{} }
+    for (const e of expActualA6){
+      if (!e.expense_date) continue;
+      const eMonth = startOfMonth(new Date(e.expense_date));
+      const mk = monthKey(eMonth);
+      if (!keys.includes(mk)) continue;
+
+      if (eMonth < todayMonth) {
+        if (e.status !== "paid") continue;           // past needs paid
+      } else {
+        if (e.frequency === "one_time") continue;    // drop one_time now/future
+      }
+
+      const k = e.vendor || "—";
+      if (!agg.has(k)) agg.set(k, { months: {} });
+      const entry = agg.get(k);
+      entry.months[mk] = (entry.months[mk] || 0) + (Number(e.amount) || 0);
+    }
+
+    // Upcoming projections for window (suppress if REAL recurring exists)
+    const winStart = startOfMonth(windowMonths[0]);
+    const winEnd   = endOfMonth(windowMonths[4]);
+    const seeds = buildExpenseSeedsOneStep(expPaidSeeds);
+    const realKeys = new Set(
+      expActualA6
+        .filter(r => isRecurring(r.frequency)) // only recurring suppress projections
+        .map(r => `${r.vendor}|${(r.expense_date || "").slice(0,7)}`)
+    );
+    const projections = projectExpensesForWindow(seeds, winStart, winEnd, realKeys);
+
+    for (const p of projections){
+      const mk = (p.expense_date || "").slice(0,7);
+      const pMonth = startOfMonth(new Date(p.expense_date));
+      if (!keys.includes(mk)) continue;
+      if (pMonth < todayMonth) continue; // future only
+      const k = p.vendor || "—";
+      if (!agg.has(k)) agg.set(k, { months: {} });
+      const entry = agg.get(k);
+      entry.months[mk] = (entry.months[mk] || 0) + (Number(p.amount) || 0);
+    }
+
+    // Rows (hide 0-only vendors)
+    const rows = [];
+    for (const [vendor, entry] of agg){
+      const vals = keys.map(mk => Number(entry.months[mk] || 0));
+      const sum  = vals.reduce((a,b)=>a+b,0);
+      if (sum <= 0) continue;
+      rows.push({ vendor, vals, sum });
+    }
+    rows.sort((a,b)=> b.sum - a.sum || a.vendor.localeCompare(b.vendor));
+
+    body.innerHTML = rows.length
+      ? rows.map(r => `
+          <tr>
+            <td>${esc(r.vendor)}</td>
+            ${r.vals.map(v => `<td>${fmt$(v)}</td>`).join("")}
+            <td><strong>${fmt$(r.sum)}</strong></td>
+          </tr>
+        `).join("") + `
+          <tr class="totals-row exp">
+            <td>Total</td>
+            ${keys.map((mk,i) => {
+              const col = rows.reduce((a,row)=> a + (row.vals[i]||0), 0);
+              return `<td>${fmt$(col)}</td>`;
+            }).join("")}
+            <td><strong>${fmt$(rows.reduce((a,row)=>a+row.sum,0))}</strong></td>
+          </tr>
+        `
+      : `<tr><td colspan="7" style="text-align:center;opacity:.75;">No expenses in this 5-month window.</td></tr>`;
+  }
+
+
   // ===== Expenses header (Card 3) builder =====
   function buildExpenses5Header(){
     if (!els.exp5Head) return;
@@ -456,17 +668,89 @@
     `;
   }
 
+  // ===== Render: Card 3 — Expenses (Rolling 5-month, real rows only) =====
+  function renderExpensesRolling(anchor){
+    const head = els.exp5Head, body = els.exp5Body;
+    if (!head || !body) return;
+
+    const months = [
+      addMonths(anchor, -2),
+      addMonths(anchor, -1),
+      addMonths(anchor,  0),
+      addMonths(anchor, +1),
+      addMonths(anchor, +2),
+    ];
+    const keys = months.map(monthKey);
+
+    // aggregate real rows by vendor × month
+    const agg = new Map(); // vendor -> { months: { mk: sum } }
+    for (const e of expensesAll) {
+      const d  = new Date(e.expense_date);
+      const mk = monthKey(d);
+      if (!keys.includes(mk)) continue;
+
+      const v  = e.vendor || "—";
+      if (!agg.has(v)) agg.set(v, { months: {} });
+      const entry = agg.get(v);
+      entry.months[mk] = (entry.months[mk] || 0) + (Number(e.amount) || 0);
+    }
+
+    // build rows (hide vendors with all-zero across window)
+    const rows = [];
+    for (const [vendor, entry] of agg) {
+      const vals = keys.map(mk => Number(entry.months[mk] || 0));
+      const sum  = vals.reduce((a,b)=>a+b,0);
+      if (sum <= 0) continue;
+      rows.push({ vendor, vals, sum });
+    }
+    rows.sort((a,b)=> b.sum - a.sum || a.vendor.localeCompare(b.vendor));
+
+    const html = rows.length
+      ? rows.map(r => `
+          <tr>
+            <td>${esc(r.vendor)}</td>
+            ${r.vals.map(v => `<td>${fmt$(v)}</td>`).join("")}
+            <td><strong>${fmt$(r.sum)}</strong></td>
+          </tr>
+        `).join("") + `
+          <tr class="totals-row exp">
+            <td>Total</td>
+            ${keys.map((mk,i) => {
+              const col = rows.reduce((a,row)=> a + (row.vals[i]||0), 0);
+              return `<td>${fmt$(col)}</td>`;
+            }).join("")}
+            <td><strong>${fmt$(rows.reduce((a,row)=>a+row.sum,0))}</strong></td>
+          </tr>
+        `
+      : `<tr><td colspan="7" style="text-align:center;opacity:.75;">No expenses in this 5-month window.</td></tr>`;
+
+    body.innerHTML = html;
+  }
+
+
   // ===== Orchestration =====
   const refreshCard2 = () => renderInvoicesMonth(anchorMonth2);
   const refreshCard4 = () => renderInvoicesRolling(anchorMonth4);
+  const refreshCard1 = () => renderExpensesMonth(anchorExp1);
+  const refreshCard3 = () => { buildExpenses5Header(); renderExpensesRolling(anchorExp3); };
+
 
   async function init(){
     setLoader(true);
     try{
+      // Before: [paidSeeds, actualA6] = await Promise.all([...]);
       [paidSeeds, actualA6] = await Promise.all([
         fetchPaidSeedsLastYear(),
-        fetchActualAnnual6mWindow()
+        fetchActualAnnual6mWindow(),
       ]);
+
+      // wide window: last year → next year (you said you prefill)
+      const winStart = new Date(new Date().getFullYear() - 1, 0, 1);
+      const winEnd   = new Date(new Date().getFullYear() + 1, 11, 31);
+      expensesAll = await fetchExpensesWindow(winStart, winEnd);
+      console.log("[dues] expenses loaded:", expensesAll.length);
+
+
 
       // Populate all dropdowns
       ensureMonthOptionsAll();
@@ -482,6 +766,12 @@
       // Wire Card 4 (Invoices 5-month)
       initMonthSelect(els.inc5MonthSel, anchorMonth4, (dt) => { anchorMonth4 = dt; refreshCard4(); });
 
+    
+
+      // Card 3 (Expenses 5-month)
+      initMonthSelect(els.exp5MonthSel, anchorExp3, (dt) => { anchorExp3 = dt; refreshCard3(); });
+
+
       // Make Card 2 rows open their PDF when clicked
       if (els.incomeMonthBody) {
         els.incomeMonthBody.addEventListener("click", (e) => {
@@ -493,21 +783,87 @@
       }
 
 
-      // Wire Card 1 (Expenses month) — no-op render for now; keeps the dropdown alive
-      initMonthSelect(els.expMonthSel, anchorExp1, (dt) => { anchorExp1 = dt; /* hook your expenses-month render here if needed */ });
+      // Card 1 (Expenses month)
+      initMonthSelect(els.expMonthSel, anchorExp1, (dt) => { anchorExp1 = dt; refreshCard1(); });
       initPrevNext(els.expPrev, els.expNext, () => anchorExp1, (dt) => {
         anchorExp1 = dt;
         if (els.expMonthSel) els.expMonthSel.value = monthKey(dt);
-        // hook your expenses-month render here if needed
+        refreshCard1();
       });
+
+      // Inline status editor for Expenses — Card 1 ONLY
+      els.expMonthBody?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.exp-status-pill');
+        if (!pill) return;
+
+        const id = pill.dataset.id;
+        const current = (pill.dataset.status || pill.textContent || '').trim().toLowerCase();
+
+        const { wrap, sel } = buildExpStatusSelect(current);
+        pill.replaceWith(wrap);
+
+        const restore = (newVal) => {
+          // newVal can be null → restore to current pill unchanged
+          const value = (newVal ?? current).toLowerCase();
+          const span = document.createElement('span');
+          span.className = `${expStatusToTagClass(value)} exp-status-pill`;
+          span.dataset.id = id;
+          span.dataset.status = value;
+          span.title = 'Click to change';
+          span.textContent = value;
+          wrap.replaceWith(span);
+
+          // also update in-memory array so next render stays in sync
+          const idx = expensesAll.findIndex(x => String(x.id) === String(id));
+          if (idx !== -1) expensesAll[idx].status = value;
+        };
+
+        const onChange = async () => {
+          const next = sel.value; // 'paid' | 'unpaid' | 'upcoming'
+          if (next === current) { restore(null); return; }
+          try{
+            const res = await persistExpenseStatusToDb(id, next);
+            if (!res.ok) throw res.error;
+            restore(next); // success
+          } catch(err){
+            console.error('[dues] expense status update failed', err);
+            alert(err?.message || 'Could not update expense status.');
+            restore(null); // back to previous
+          }
+        };
+
+        const onKey = (ev) => { if (ev.key === 'Escape') restore(null); };
+        const onDocDown = (ev) => { if (!wrap.contains(ev.target)) restore(null); };
+        const cleanup = () => {
+          sel.removeEventListener('change', onChange);
+          sel.removeEventListener('keydown', onKey);
+          document.removeEventListener('pointerdown', onDocDown, true);
+        };
+
+        sel.addEventListener('change', onChange);
+        sel.addEventListener('keydown', onKey);
+        document.addEventListener('pointerdown', onDocDown, true);
+
+        // When we replace the wrap with the span, remove listeners
+        const mo = new MutationObserver(() => { cleanup(); mo.disconnect(); });
+        mo.observe(wrap.parentElement || document.body, { childList: true, subtree: true });
+
+        // open native dropdown
+        openSelectDropdown(sel);
+      });
+
+
 
       // Wire Card 3 (Expenses 5-month) — rebuild header when month changes
       initMonthSelect(els.exp5MonthSel, anchorExp3, (dt) => { anchorExp3 = dt; buildExpenses5Header(); /* and expenses 5m render if needed */ });
 
       // Initial paints
       buildExpenses5Header();
-      refreshCard2();
-      refreshCard4();
+      refreshCard1();
+      refreshCard2();  // invoices (existing)
+      refreshCard3();
+      refreshCard4();  // invoices (existing)
+
     } catch(e){
       console.error("[dues] init failed:", e);
       // still try to paint what we can

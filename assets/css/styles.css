@@ -1916,3 +1916,17 @@ th {
   padding: 8px 14px;
   border-radius: 10px;
 }
+
+/* Dues → Expenses Card 1: clickable status pill */
+.tag.exp-status-pill,
+.exp-status-pill {
+  cursor: pointer;      /* hand cursor */
+  user-select: none;
+}
+
+.exp-status-pill:hover { opacity: 0.9; }            /* optional hover hint */
+.exp-status-pill:focus-visible {
+  outline: 2px solid var(--accent, #3b82f6);        /* optional keyboard focus */
+  outline-offset: 2px;
+}
+

@@ -18,6 +18,7 @@
   <script defer src="./assets/js/topbar.js"></script>
 
   <!-- page script -->
+  <script type="module" src="./assets/js/supabase.js"></script>
   <script defer src="./assets/js/expenses.js"></script>
 </head>
 <body>
@@ -117,7 +118,9 @@
             <!-- Date filter -->
             <div class="select-wrap">
               <select id="expDateFilter" class="filter-select" aria-label="Filter by date">
-                <option value="this_year">This year</option>
+                <option value="all">All years</option>
+                <option value="this_month" selected>This month</option>
+                <option value="this_year">This year</option> <!-- keep selected -->
                 <option value="next_90">Next 90 days</option>
                 <option value="last_90">Last 90 days</option>
                 <option value="y2024">2024</option>
@@ -126,6 +129,14 @@
               </select>
             </div>
 
+            <!-- Client filter -->
+            <div class="select-wrap">
+              <select id="expClientFilter" class="filter-select" aria-label="Filter by client">
+                <option value="all">All clients</option>
+              </select>
+            </div>
+
+        
             <!-- Vendor filter -->
             <div class="select-wrap">
               <select id="expVendorFilter" class="filter-select" aria-label="Filter by vendor">
@@ -150,6 +161,7 @@
             <thead>
               <tr>
                 <th data-sort="expense">Expense</th>
+                <th data-sort="client">Client</th>   <!-- NEW -->
                 <th data-sort="date">Date</th>
                 <th data-sort="serviceType">Service</th>
                 <th data-sort="amount">Amount (USD)</th>
