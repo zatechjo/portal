@@ -501,6 +501,7 @@
     }
 
     // Rows (hide 0-only clients)
+    // Rows (hide 0-only clients)
     const rows = [];
     for (const [, entry] of agg){
       const vals = keys.map(mk => Number(entry.months[mk] || 0));
@@ -510,6 +511,10 @@
     }
     rows.sort((a,b)=> b.sum - a.sum || a.name.localeCompare(b.name));
 
+    // NEW: column totals + grand total
+    const colTotals = keys.map((mk, i) => rows.reduce((a, r) => a + (r.vals[i] || 0), 0));
+    const grandTotal = rows.reduce((a, r) => a + r.sum, 0);
+
     body.innerHTML = rows.length
       ? rows.map(r => `
           <tr>
@@ -517,8 +522,15 @@
             ${r.vals.map(v => `<td>${fmt$(v)}</td>`).join("")}
             <td><strong>${fmt$(r.sum)}</strong></td>
           </tr>
-        `).join("")
+        `).join("") + `
+          <tr class="totals-row inc">
+            <td>Total</td>
+            ${colTotals.map(v => `<td>${fmt$(v)}</td>`).join("")}
+            <td><strong>${fmt$(grandTotal)}</strong></td>
+          </tr>
+        `
       : `<tr><td colspan="7" style="text-align:center;opacity:.75;">No client invoices in this 5-month window.</td></tr>`;
+
   }
 
   // ===== Render: Card 1 — Expenses (Month)
@@ -567,6 +579,7 @@
 
             <tr class="exp-details" data-id="${esc(r.id)}" style="display:none;">
               <td colspan="6" class="details-cell">
+                <div class="details-anim">
                 <div class="details-wrap">
                   <div class="kv">
                     <div class="kv-label">Description</div>
@@ -582,7 +595,7 @@
                   </div>
                   <div class="kv">
                     <div class="kv-label">Frequency</div>
-                    <div class="kv-value"><span class="chip">${esc(r.frequency || "—")}</span></div>
+                    <div class="kv-value value-clip">${esc(r.frequency || "—")}</div>
                   </div>
                 </div>
               </td>
@@ -685,18 +698,37 @@
       : `<tr><td colspan="7" style="text-align:center;opacity:.75;">No expenses in this 5-month window.</td></tr>`;
   }
 
+  // Toggle the per-row details (accordion style: only one open at a time)
   els.expMonthBody?.addEventListener("click", (e) => {
-      const btn = e.target.closest(".exp-mini-btn");
-      if (!btn) return;
+    const btn = e.target.closest(".exp-toggle, .exp-mini-btn");
+    if (!btn) return;
 
-      const id = btn.getAttribute("data-id");
-      const detailsRow = els.expMonthBody.querySelector(`tr.exp-details[data-id="${id}"]`);
-      if (!detailsRow) return;
+    const id = btn.getAttribute("data-id");
+    const detailsRow = els.expMonthBody.querySelector(`tr.exp-details[data-id="${id}"]`);
+    if (!detailsRow) return;
 
-      const isOpen = detailsRow.style.display !== "none";
-      detailsRow.style.display = isOpen ? "none" : "";
-      btn.setAttribute("aria-expanded", String(!isOpen));
+    const isOpen = detailsRow.style.display !== "none";
+
+    // 1) Close all open rows first
+    els.expMonthBody.querySelectorAll("tr.exp-details").forEach(row => {
+      row.style.display = "none";
     });
+    els.expMonthBody.querySelectorAll(".exp-toggle, .exp-mini-btn").forEach(b => {
+      b.textContent = "+";
+      b.classList.remove("exp-open");
+      b.setAttribute("aria-expanded", "false");
+    });
+
+    // 2) If the clicked one was not already open, open it
+    if (!isOpen) {
+      detailsRow.style.display = "";
+      btn.textContent = "−";
+      btn.classList.add("exp-open");
+      btn.setAttribute("aria-expanded", "true");
+    }
+  });
+
+
 
   // ===== Expenses header (Card 3) builder =====
   function buildExpenses5Header(){

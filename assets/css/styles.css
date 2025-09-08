@@ -1942,7 +1942,7 @@ th {
   color: #fff;
   border: none;
   border-radius: 4px;
-  padding: 4px 6px;
+  padding: 4px 8px;
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -1953,30 +1953,92 @@ th {
 }
 
 
-/* Card 1 (Expenses) expand row layout */
+/* When expanded: darker blue */
+.exp-mini-btn.exp-open,
+.exp-toggle.exp-open {
+  background-color: #0d47a1;   /* darker shade of blue */
+  color: #fff;
+}
+
+
+/* Expanded row container */
 .details-cell {
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.07);
   border-radius: 10px;
 }
 
+/* Grid: 2 columns, 2 rows (top/bottom spacing) */
 .details-wrap {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 16px;
-  padding: 10px 12px;
+  grid-auto-rows: auto;
+  gap: 14px 16px;   /* more vertical space */
+  padding: 12px 14px;
 }
 
-.kv { display: grid; gap: 4px; }
+/* Key-value pair */
+.kv { display: grid; gap: 3px; }
 .kv-label {
-  font-size: 12px;
+  font-size: 11px;
   opacity: .7;
   letter-spacing: .03em;
   text-transform: uppercase;
 }
-.kv-value { font-weight: 600; }
+.kv-value {
+  font-size: 14px;   /* smaller than main table */
+  font-weight: 500;
+  line-height: 1.3;
+}
 
-/* Stack on small screens */
+/* Make Frequency pill blend in with others */
+.kv-value .chip {
+  font-size: 14px;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* Stack all on narrow screens */
 @media (max-width: 760px) {
-  .details-wrap { grid-template-columns: 1fr; }
+  .details-wrap { grid-template-columns: 1fr; gap: 10px; }
+}
+
+
+  .trash-btn{
+    border:0;
+    padding:6px 8px;
+    cursor:pointer;
+    background:#eaeef6;
+    border-radius:8px;
+    line-height:1;
+    transition:transform .15s ease, background .15s ease, color .15s ease;
+    margin-left:6px;
+  }
+  .trash-btn:hover{
+    transform: scale(1.12);
+    background:#ffe5e5;
+    color:#c62828; /* red */
+  }
+
+  .row-actions {
+  display: flex;
+  justify-content: flex-end; /* 👈 push buttons to far right */
+  gap: 8px;
+}
+
+.trash-btn {
+  border: 0;
+  padding: 6px 8px;
+  cursor: pointer;
+  background: #fca5a5;       /* soft rose red */
+  color: #fff;               /* white text/icon */
+  border-radius: 8px;
+  line-height: 1;
+  transition: transform .15s ease, background .15s ease, color .15s ease;
+  margin-left: 6px;
+}
+
+.trash-btn:hover {
+  transform: scale(1.08);
+  background: #f87171;       /* hover = slightly deeper coral red */
 }

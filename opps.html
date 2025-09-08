@@ -18,6 +18,7 @@
   <script defer src="./assets/js/topbar.js"></script>
 
   <!-- page script -->
+   <script type="module" src="./assets/js/supabase.js"></script>
   <script defer src="./assets/js/opps.js"></script>
 </head>
 
@@ -127,6 +128,7 @@
                 <th>Status</th>
                 <th>Est. Value</th>
                 <th>Last Contact</th>
+                
                 <th></th>
               </tr>
             </thead>
@@ -193,6 +195,17 @@
       <div class="info-box" style="grid-column: 1 / -1;">
         <span class="label">Notes</span>
         <textarea id="opp-notes" class="edit-field" rows="5" placeholder="Add notes for this opportunity..."></textarea>
+      </div>
+    </div>
+
+    <div id="opp-delete-modal" class="modal" aria-hidden="true">
+      <div class="modal-content" style="max-width:520px;">
+        <h3 style="margin-bottom:8px;">Delete opportunity?</h3>
+        <p id="opp-delete-msg" style="margin:0 0 16px;">Are you sure?</p>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button id="opp-delete-cancel" class="btn2" style="background:#394b6d;">Cancel</button>
+          <button id="opp-delete-confirm" class="btn2" style="background:#d32f2f;">Yes, delete</button>
+        </div>
       </div>
     </div>
 
