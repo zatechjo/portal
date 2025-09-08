@@ -41,6 +41,23 @@ const addServiceBtn= $('#addServiceBtn');
 const serviceList  = $('#serviceList');
 const subtotalLbl  = $('#subtotalLabel');
 
+// --- FX: convert to USD for DB only (update rates as needed) ---
+const FX_USD_PER = {
+  USD: 1,
+  CAD: 0.74,
+  EUR: 1.09,
+  GBP: 1.28,
+  JOD: 1.41,
+  AED: 0.2723,
+  SAR: 0.2667
+};
+
+function toUSD(amount, from = 'USD') {
+  const rate = FX_USD_PER[(from || 'USD').toUpperCase()] ?? 1;
+  return Number(amount || 0) * rate;
+}
+
+
 // ====== Utils ======
 function escapeHTML(s){ return (s ?? '').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function fmtMoney(n, locale='en-US', cur='JOD'){
@@ -134,7 +151,7 @@ function renderTable(){
   if (!tbody) return;
   tbody.innerHTML = invoices.map(inv => {
     const c = inv.clients || {};
-    const cur = inv.currency || 'JOD';
+    const cur = inv.currency || 'USD';
     const total = fmtMoney(inv.total ?? (Number(inv.subtotal||0) + Number(inv.tax||0)), undefined, cur);
     const statusClass = statusClassFor(inv.status);
 
@@ -182,6 +199,7 @@ function addServiceRow(desc='', price=''){
   row.querySelector('.remove-btn')?.addEventListener('click', ()=>{ row.remove(); updateTotals(); });
   updateTotals();
 }
+
 function readServiceLines(){
   if (!serviceList) return [];
   return Array.from(serviceList.querySelectorAll('.service-row')).map(r=>{
@@ -190,6 +208,7 @@ function readServiceLines(){
     return { desc, price: Number.isFinite(price) ? price : 0 };
   }).filter(x => x.desc || x.price > 0);
 }
+
 function updateTotals(){
   const lines = readServiceLines();
   const subtotal = lines.reduce((s,l)=>s+(l.price||0),0);
@@ -197,9 +216,10 @@ function updateTotals(){
   if (subtotalLbl) subtotalLbl.textContent = `${subtotal.toFixed(2)} ${cur}`;
 }
 
+
 // ====== Modal open/close ======
 function openModal(){
-  currencySel && (currencySel.value = 'JOD');
+  currencySel && (currencySel.value = 'USD');
   termsSel && (termsSel.value = 'monthly');
   startInput && (startInput.value = todayISO());
   endInput && (endInput.value   = todayISO());
@@ -253,16 +273,37 @@ async function saveInvoice(){
     if (lines.length === 0) { alert('Add at least one service line.'); return; }
 
     const coverage_period = term.label;
-    const currency = currencySel?.value || 'JOD';
+    const currencyDoc = currencySel?.value || 'JOD';       // used ONLY for the DOC/PDF
     const subtotal = lines.reduce((s,l)=>s+(l.price||0),0);
     const tax      = 0;
     const total    = subtotal + tax;
 
+    // amounts for the DOC/PDF stay in selected currency
+    const subtotalDoc = subtotal;
+    const totalDoc    = total;
+
+    // amounts for the DB are converted to USD
+    const subtotalUSD = toUSD(subtotalDoc, currencyDoc);
+    const totalUSD    = toUSD(totalDoc,    currencyDoc);
+
+
     // 1) Insert invoice header
     const ins = await sb.from('invoices')
-      .insert([{ client_id, issue_date, due_date, currency, subtotal, tax, status: 'Sent', coverage_period }])
+      .insert([{
+        client_id,
+        issue_date,
+        due_date,
+        currency: 'USD',       // <-- store in USD
+        subtotal: subtotalUSD, // <-- USD value
+        tax,                   // if you add tax later, also convert if tax is in doc currency
+        // total: totalUSD,       // <-- USD value
+        status: 'Sent',
+        coverage_period
+      }])
       .select('id, invoice_no')
       .single();
+
+
     if (ins.error) { console.error(ins.error); alert(ins.error.message); return; }
     const { id, invoice_no } = ins.data;
 
@@ -281,9 +322,9 @@ async function saveInvoice(){
       start_date: startInput?.value || issue_date,
       end_date:   endInput?.value   || due_date,
       payment_terms: term.label,
-      currency,
-      subtotal: subtotal.toFixed(2),
-      total_due: subtotal.toFixed(2),
+      currency: currencyDoc,                     // stays selected currency
+      subtotal: subtotalDoc.toFixed(2),          // selected currency
+      total_due: subtotalDoc.toFixed(2),         // selected currency
       invoice_no,
       today: issue_date,
       lines: lines.map(l => ({
@@ -291,6 +332,7 @@ async function saveInvoice(){
         service_price: Number(l.price || 0).toFixed(2)
       })),
     };
+
 
     // 4) Fetch and fill DOCX template
     await ensureInvoiceLibs();

@@ -217,6 +217,8 @@
     v.value.textContent  = fmt$(rec.value || 0);
     v.last.textContent   = rec.last_contact || "—";
     v.notes.value        = rec.notes || "";
+    v.notes.readOnly     = true;
+    v.notes.style.display = "block";
 
     viewWrap.style.display = "";
     viewActions.style.display = "flex";
@@ -239,6 +241,8 @@
     e.value.value  = rec.value ?? "";
     e.last.value   = rec.last_contact || "";
     v.notes.value  = rec.notes || "";
+    v.notes.readOnly = false;     // editable in edit mode
+    v.notes.style.display = "block";
 
     viewWrap.style.display = "none";
     viewActions.style.display = "none";
