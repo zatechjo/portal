@@ -74,34 +74,37 @@
   }
 
   async function getExpenses(scopeYear) {
-    // Try an expenses table; if it’s not there (or schema differs), just return empty.
     if (!window.sb) return { rows: [], error: new Error("Supabase not loaded") };
+
+    // Build server-side year range on expense_date
+    const range = yearRange(scopeYear); // {start,end} in ISO or null for "all"
 
     let q = window.sb
       .from("expenses")
-      .select(
-        `
-        id, client_id, amount, currency, date,
-        clients!expenses_client_id_fkey ( name )
-      `
-      );
+      .select("id, client_name, amount, expense_date")
+      .order("expense_date", { ascending: true, nullsFirst: true });
 
-    const range = yearRange(scopeYear);
-    if (range) q = q.gte("date", range.start).lt("date", range.end);
-
-    q = q.order("date", { ascending: true });
+    if (range) {
+      q = q.gte("expense_date", range.start).lt("expense_date", range.end);
+    }
 
     const { data, error } = await q;
     if (error) {
-      console.warn("[revenue] expenses not available / schema mismatch:", error);
+      console.warn("[revenue] expenses fetch error:", error);
       return { rows: [], error };
     }
-    const rows = (data || []).map((r) => ({
-      clientName: r.clients?.[0]?.name || r.clients?.name || "—",
-      amountUSD: toUSD(r.amount, r.currency || "USD"),
+
+    // Your prices are USD already
+    const rows = (data || []).map(r => ({
+      clientName: r.client_name || "—",
+      amountUSD: Number(r.amount || 0),
     }));
+
     return { rows, error: null };
   }
+
+
+
 
   // ---------- Aggregation ----------
   function aggByClient(rows) {

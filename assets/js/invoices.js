@@ -557,6 +557,12 @@ cancelBtn?.addEventListener('click', closeModal);
 clearBtn?.addEventListener('click', () => { serviceList.innerHTML=''; addServiceRow(); updateTotals(); });
 generateBtn?.addEventListener('click', saveInvoice);
 
+// Add service line button
+addServiceBtn?.addEventListener('click', (e) => {
+  e.preventDefault();      // safe even if inside a <form> later
+  addServiceRow();         // appends a blank service row
+});
+
 // Init
 loadClientsForSelect();
 loadInvoices();

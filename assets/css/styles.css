@@ -1930,3 +1930,53 @@ th {
   outline-offset: 2px;
 }
 
+
+/* Expandable details row styling (optional) */
+.details-cell { background: rgba(255,255,255,.03); }
+.details-wrap { display: grid; gap: 6px; padding: 10px 6px; }
+.details-wrap strong { font-weight: 700; }
+
+/* Compact + button for expense details */
+.exp-mini-btn {
+  background: #277fb9;   /* same blue as your .btn2 */
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.exp-mini-btn:hover {
+  background: #0056b3;
+}
+
+
+/* Card 1 (Expenses) expand row layout */
+.details-cell {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px;
+}
+
+.details-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  padding: 10px 12px;
+}
+
+.kv { display: grid; gap: 4px; }
+.kv-label {
+  font-size: 12px;
+  opacity: .7;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.kv-value { font-weight: 600; }
+
+/* Stack on small screens */
+@media (max-width: 760px) {
+  .details-wrap { grid-template-columns: 1fr; }
+}

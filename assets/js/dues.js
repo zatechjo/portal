@@ -342,7 +342,10 @@
 
     const { data, error } = await window.sb
       .from("expenses")
-      .select("id, vendor, service, expense_date, amount, frequency, status")
+      .select(`
+        id, vendor, description, client_name, service,
+        expense_date, amount, frequency, status
+      `)
       .gte("expense_date", winStart.toISOString())
       .lte("expense_date", winEnd.toISOString())
       .order("expense_date", { ascending: true });
@@ -352,13 +355,16 @@
     return (data || []).map(r => ({
       id: r.id,
       vendor: r.vendor || "—",
+      description: r.description || "",
+      client_name: r.client_name || "—",
       service: r.service || "",
       expense_date: r.expense_date,                // YYYY-MM-DD
       amount: Number(r.amount || 0),
-      frequency: String(r.frequency || "").toLowerCase(), // monthly/yearly/6m/one_time...
-      status: String(r.status || "").toLowerCase()        // unpaid/paid/upcoming/null...
+      frequency: String(r.frequency || ""),
+      status: String(r.status || "").toLowerCase()
     }));
   }
+
 
 
   // ===== Render: Card 2 (Month) — Past=Paid only; Now/Future=Upcoming (+real overrides) =====
@@ -524,17 +530,14 @@
     const mStart = startOfMonth(anchor);
     const mEnd   = endOfMonth(anchor);
 
-    // filter this month only (include monthly + 6m + yearly + one_time)
     const rows = expensesAll.filter(r => {
       const d = new Date(r.expense_date);
       return d >= mStart && d <= mEnd;
     });
 
-    // total
     const total = rows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
     if (els.expMonthTotal) els.expMonthTotal.textContent = fmt$(total);
 
-    // render
     body.innerHTML = rows.length
       ? rows.map(r => {
           const st  = r.status || "unpaid";
@@ -542,11 +545,12 @@
                       st === "upcoming" ? "tag sent" :
                       st === "overdue" ? "tag due" :
                       st === "partial" ? "tag warn" : "tag null";
+
           return `
-            <tr>
-              <td>${esc(r.vendor)}</td>
+            <tr class="exp-row" data-id="${esc(r.id)}">
+              <td>${esc(r.client_name || "—")}</td>
+              <td>${esc(r.vendor || "—")}</td>
               <td>${esc(toISODate(r.expense_date))}</td>
-              <td>${esc(r.service || "—")}</td>
               <td>${fmt$(r.amount)}</td>
               <td>
                 <span
@@ -556,11 +560,39 @@
                   title="Click to change"
                 >${esc(st)}</span>
               </td>
+              <td>
+                <button type="button" class="exp-mini-btn" data-id="${esc(r.id)}" aria-expanded="false">+</button>
+              </td>
+            </tr>
+
+            <tr class="exp-details" data-id="${esc(r.id)}" style="display:none;">
+              <td colspan="6" class="details-cell">
+                <div class="details-wrap">
+                  <div class="kv">
+                    <div class="kv-label">Description</div>
+                    <div class="kv-value value-clip">${esc(r.description || "—")}</div>
+                  </div>
+                  <div class="kv">
+                    <div class="kv-label">Client</div>
+                    <div class="kv-value value-clip">${esc(r.client_name || "—")}</div>
+                  </div>
+                  <div class="kv">
+                    <div class="kv-label">Service</div>
+                    <div class="kv-value value-clip">${esc(r.service || "—")}</div>
+                  </div>
+                  <div class="kv">
+                    <div class="kv-label">Frequency</div>
+                    <div class="kv-value"><span class="chip">${esc(r.frequency || "—")}</span></div>
+                  </div>
+                </div>
+              </td>
             </tr>
           `;
         }).join("")
-      : `<tr><td colspan="5" style="text-align:center;opacity:.75;">No expenses in ${esc(monthLabel(mStart))}</td></tr>`;
+      : `<tr><td colspan="6" style="text-align:center;opacity:.75;">No expenses in ${esc(monthLabel(mStart))}</td></tr>`;
   }
+
+
 
 
   // ===== Render: Card 3 — Expenses (Rolling 5-month)
@@ -653,6 +685,18 @@
       : `<tr><td colspan="7" style="text-align:center;opacity:.75;">No expenses in this 5-month window.</td></tr>`;
   }
 
+  els.expMonthBody?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".exp-mini-btn");
+      if (!btn) return;
+
+      const id = btn.getAttribute("data-id");
+      const detailsRow = els.expMonthBody.querySelector(`tr.exp-details[data-id="${id}"]`);
+      if (!detailsRow) return;
+
+      const isOpen = detailsRow.style.display !== "none";
+      detailsRow.style.display = isOpen ? "none" : "";
+      btn.setAttribute("aria-expanded", String(!isOpen));
+    });
 
   // ===== Expenses header (Card 3) builder =====
   function buildExpenses5Header(){
@@ -694,6 +738,8 @@
       const entry = agg.get(v);
       entry.months[mk] = (entry.months[mk] || 0) + (Number(e.amount) || 0);
     }
+
+
 
     // build rows (hide vendors with all-zero across window)
     const rows = [];
