@@ -14,7 +14,7 @@ async function fetchClients() {
   const { data, error } = await sb
     .from('clients')
     .select('id, client_no, name, email, phone, address, notes, contact_name, joined, status, sector, created_at, updated_at')
-    .order('created_at', { ascending: false });
+    .order('client_no', { ascending: true });   // 👈 ascending IDs
   if (error) { console.error(error); return; }
   rows = data || [];  
   renderTable();

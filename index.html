@@ -4,189 +4,243 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ZAtech CRM Portal</title>
+
 <link rel="icon" type="image/png" href="assets/img/favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./assets/css/styles.css">
+<link rel="stylesheet" href="./assets/css/styles.css" />
+
+<!-- Core app scripts (same order as other pages) -->
 <script type="module" src="./assets/js/firebase.js"></script>
 <script type="module" src="./assets/js/auth-guard.js"></script>
 <script type="module" src="./assets/js/idle.js"></script>
 <script defer src="./assets/js/app.js"></script>
 <script defer src="./assets/js/topbar.js"></script>
-</head>
+<script type="module" src="./assets/js/supabase.js"></script>
 
+<!-- Charts (Chart.js) -->
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<!-- Map (Leaflet) -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<script
+  defer
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<!-- Page script -->
+<script defer src="./assets/js/index.js"></script>
+</head>
 
 <body>
 <div class="app">
-  
   <!-- SIDEBAR -->
   <aside class="side">
     <div class="brand">
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
-  <nav class="nav" id="nav">
-  <a href="./index.html">
-    <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
-    <span class="txt">Dashboard</span>
-  </a>
-  <a href="./clients.html">
-    <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
-    <span class="txt">Clients</span>
-  </a>
-  <a href="./invoices.html">
-    <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-    <span class="txt">Invoices</span>
-  </a>
-  <a href="./schedule.html">
-    <img src="./assets/img/schedule.png" alt="Invoice Schedule" class="nav-icon">
-    <span class="txt">Invoice Schedule</span>
-  </a>
-  <a href="./revenue.html">
-    <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-    <span class="txt">Revenue</span>
-  </a>
-  <a href="./dues.html">
-    <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-    <span class="txt">Dues</span>
-  </a>
-  <a href="./expenses.html">
-    <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
-    <span class="txt">Expenses</span>
-  </a>
-  <a href="./opps.html">
-    <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
-    <span class="txt">Opportunities</span>
-  </a>
-  <a href="./settings.html">
-    <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
-    <span class="txt">Settings</span>
-  </a>
-</nav>
-
+    <nav class="nav" id="nav">
+      <a href="./index.html" class="active">
+        <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+        <span class="txt">Dashboard</span>
+      </a>
+      <a href="./clients.html">
+        <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+        <span class="txt">Clients</span>
+      </a>
+      <a href="./invoices.html">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
+      <a href="./schedule.html">
+        <img src="./assets/img/schedule.png" alt="Schedule" class="nav-icon">
+        <span class="txt">Schedule</span>
+      </a>
+      <a href="./revenue.html">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
+      </a>
+      <a href="./dues.html">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
+      </a>
+      <a href="./expenses.html">
+        <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+        <span class="txt">Expenses</span>
+      </a>
+      <a href="./opps.html">
+        <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+        <span class="txt">Opportunities</span>
+      </a>
+      <a href="./settings.html">
+        <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+        <span class="txt">Settings</span>
+      </a>
+    </nav>
   </aside>
 
   <!-- MAIN -->
-  <main class="main">
-
+  <main class="main" id="dashboard">
+    <!-- loader -->
     <div id="contentLoader" aria-hidden="true">
-        <div class="loader-wrap">
-          <div class="loader-ring"></div>
-          <div class="loader-text">Loading data…</div>
-        </div>
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
       </div>
+    </div>
 
+    <!-- topbar -->
     <div class="topbar">
-    <!-- LEFT: greeting -->
-    <div class="greeting">
-      <h1 class="greet-title">
-        <span id="greetingWord">Good morning</span>, <span class="greet-name">  </span>
-      </h1>
-      <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
-    </div>
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">ZAtech CRM overview — invoices, expenses, pipeline & geography at a glance.</p>
+      </div>
 
-  <!-- RIGHT: HUD -->
-  <div class="hud">
-    <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-
-    <!-- Search toggle + animated input -->
-    <div class="search-group sg-closed">
-      <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-      <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-        <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+          </div>
+        </div>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+            Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- KPI ROW (your new 4 metrics) -->
+    <section class="grid cols-4 kpi-grid">
+      <!-- Unpaid total -->
+      <div class="card kpi-card">
+        <div class="kpi">
+          <div>
+            <h4>Unpaid Total</h4>
+            <div class="muted">All open invoices</div>
+          </div>
+          <span class="chip bad" id="kpiUnpaidCount">0</span>
+        </div>
+        <h5 class="kpi-num" id="kpiUnpaidTotal">$0</h5>
+      </div>
 
+      <!-- Revenue last 90 days -->
+      <div class="card kpi-card">
+        <div class="kpi">
+          <div>
+            <h4>Revenue (Last 90d)</h4>
+            <div class="muted">Paid invoices</div>
+          </div>
+          <span class="chip ok" id="kpiRev90Delta">—</span>
+        </div>
+        <h5 class="kpi-num" id="kpiRev90">$0</h5>
+      </div>
 
-    <!-- Notifications -->
-    <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+      <!-- Next due (next 90 days) -->
+      <div class="card kpi-card">
+        <div class="kpi">
+          <div>
+            <h4>Next Due (90d)</h4>
+            <div class="muted">Upcoming invoices</div>
+          </div>
+          <span class="chip" id="kpiNextDueCount">0</span>
+        </div>
+        <h5 class="kpi-num" id="kpiNextDueTotal">$0</h5>
+      </div>
 
-    <!-- Account -->
-    <div class="account">
-      <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
-        <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-        Ahmad <span class="caret">▾</span>
-      </button>
-      <div class="account-menu" id="accountMenu" role="menu">
-        <a href="#" role="menuitem">Profile</a>
-        <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+      <!-- Expenses (next 30 days) -->
+      <div class="card kpi-card">
+        <div class="kpi">
+          <div>
+            <h4>Expenses (Next 30d)</h4>
+            <div class="muted">Vendors & platforms</div>
+          </div>
+          <span class="chip warn" id="kpiExp30Count">0</span>
+        </div>
+        <h5 class="kpi-num" id="kpiExp30">$0</h5>
+      </div>
+    </section>
+
+    <!-- WIDGET ROW 1 -->
+    <section class="grid cols-2 dash-row">
+      <!-- Opportunities Funnel -->
+      <div class="card">
+        <div class="card-head">
+          <h4>Pipeline — Opportunities</h4>
+          <div class="mini-legend">
+            <span class="tag null">Proposed</span>
+            <span class="tag warn">In Review</span>
+            <span class="tag ok">Won</span>
+            <span class="tag due">Lost</span>
+          </div>
+        </div>
+        <div class="chart-wrap" style="--h:280px;">
+          <canvas id="oppFunnel"></canvas>
+        </div>
+        <div class="split-row">
+          <div class="muted">Total value</div>
+          <div id="oppTotalValue" class="strong">$0</div>
+        </div>
+      </div>
+
+      <!-- Top Clients by Revenue (12m) -->
+      <div class="card">
+        <div class="card-head">
+          <h4>Top Clients — Last 12 Months</h4>
+          <div class="mini-legend"><span class="tag sent">Paid</span></div>
+        </div>
+        <div class="chart-wrap" style="--h:280px;">
+          <canvas id="topClientsChart" aria-label="Top clients revenue" role="img"></canvas>
+        </div>
+      </div>
+    </section>
+
+   <!-- WIDGET ROW 2 -->
+<section class="grid cols-2 dash-row">
+  <!-- Expenses Breakdown (two donuts side by side) -->
+  <div class="card">
+    <div class="card-head">
+      <h4>Expenses Breakdown</h4>
+      <div class="mini-legend">
+        <span class="tag">By vendor/service</span>
+        <span class="tag">By client</span>
       </div>
     </div>
+    <div class="chart-wrap" style="display:flex; gap:20px; --h:280px;">
+      <canvas id="expDonutChart" style="flex:1; max-width:50%;"></canvas>
+      <canvas id="expDonutByClientChart" style="flex:1; max-width:50%;"></canvas>
+    </div>
+  </div>  
 
-  </div>
-</div>
 
-    <section id="dashboard">
-      <div class="grid cols-4">
-        <div class="card kpi">
-          <div>
-            <h3>Unpaid Total</h3>
-            <div class="num">$12,480</div>
-          </div>
-          <span class="chip warn">7 open</span>
+      <!-- Clients Map -->
+      <div class="card">
+        <div class="card-head">
+          <h4>Clients — World Map</h4>
+          <div class="mini-legend"><span class="tag">Count by country</span></div>
         </div>
-        <div class="card kpi">
-          <div>
-            <h3>Overdue</h3>
-            <div class="num">$3,200</div>
-          </div>
-          <span class="chip bad">3 overdue</span>
-        </div>
-        <div class="card kpi">
-          <div>
-            <h3>Next Due (7d)</h3>
-            <div class="num">$2,150</div>
-          </div>
-          <span class="chip">4 invoices</span>
-        </div>
-        <div class="card kpi">
-          <div>
-            <h3>Monthly Revenue</h3>
-            <div class="num">$9,870</div>
-          </div>
-          <span class="chip ok">+6.2%</span>
-        </div>
-      </div>
-
-      <div class="grid cols-2" style="margin-top:14px">
-        <div class="card">
-          <h4>Recent Invoices</h4>
-          <table>
-            <thead><tr><th>Invoice</th><th>Client</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              <tr>
-                <td>INV-2025-0042</td><td>Acme LLC</td><td>2025-08-12</td><td>$1,200.00</td>
-                <td><span class="tag">Sent</span></td>
-                <td class="row-actions"><button class="mini">View</button><button class="mini">PDF</button></td>
-              </tr>
-              <tr>
-                <td>INV-2025-0041</td><td>Riada Co</td><td>2025-08-08</td><td>$2,400.00</td>
-                <td><span class="tag ok">Paid</span></td>
-                <td class="row-actions"><button class="mini">View</button><button class="mini">PDF</button></td>
-              </tr>
-              <tr>
-                <td>INV-2025-0040</td><td>Nasma Group</td><td>2025-08-05</td><td>$1,050.00</td>
-                <td><span class="tag warn">Due Soon</span></td>
-                <td class="row-actions"><button class="mini">View</button><button class="mini">PDF</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="card">
-          <h4>Upcoming Dues</h4>
-          <table>
-            <thead><tr><th>Client / Service</th><th>Exact Date</th><th>Amount</th><th></th></tr></thead>
-            <tbody>
-              <tr><td>Acme LLC — SEO Retainer</td><td>2025-08-20</td><td>$600</td><td class="row-actions"><button class="mini">Invoice</button></td></tr>
-              <tr><td>Riada — Hosting</td><td>2025-08-22</td><td>$120</td><td class="row-actions"><button class="mini">Invoice</button></td></tr>
-              <tr><td>Nasma — Maintenance</td><td>2025-08-25</td><td>$330</td><td class="row-actions"><button class="mini">Invoice</button></td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div id="clientsMap" class="map-wrap" aria-label="Clients location map"></div>
+        <div class="muted" style="margin-top:8px;" id="mapSummary">—</div>
       </div>
     </section>
   </main>
 </div>
-
 </body>
 </html>

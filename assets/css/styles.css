@@ -2042,3 +2042,85 @@ th {
   transform: scale(1.08);
   background: #f87171;       /* hover = slightly deeper coral red */
 }
+
+
+/* ===== DASHBOARD EXTRAS ===== */
+#dashboard .kpi-grid { margin-bottom: 14px; }
+
+.kpi-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  border: 1px solid rgba(255,255,255,.08);
+}
+.kpi-card .kpi-num {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+/* Nicer mini legend: compact, pill tags, wraps on small screens */
+.mini-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mini-legend .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.15px;
+}
+
+/* Optional little colored dot you can add inside a tag:
+   <span class="tag"><span class="dot" style="background:#06f"></span>By client</span> */
+.mini-legend .dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+}
+
+.chart-wrap {
+  width: 100%;
+  height: var(--h, 280px);
+  position: relative;
+}
+.chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.split-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-top: 8px;
+}
+.split-row .strong { font-weight: 800; }
+
+.map-wrap {
+  width: 100%;
+  height: 280px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dash-row { margin-top: 14px; }
+
+/* Leaflet controls in dark theme */
+.leaflet-control-zoom a {
+  background: rgba(20,30,55,.85) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+}
+.leaflet-control-zoom a:hover { background: rgba(20,30,55,1) !important; }
+
+
