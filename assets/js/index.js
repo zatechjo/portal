@@ -606,6 +606,107 @@ async function loadExpenseDonuts() {
       : "Good evening";
   }
 
+
+    let countriesChart = null;
+
+    async function loadClientCountriesWidget() {
+    const hostList   = document.getElementById('countryList');
+    const hostCount  = document.getElementById('countriesCount');
+    const hostTotal  = document.getElementById('countriesClients');
+    const chartEl    = document.getElementById('countriesChart');
+
+    if (!hostList || !chartEl) return;
+
+    // 1) Pull clients (schema-safe)
+    let rows = [];
+    {
+        const { data, error } = await sb.from('clients').select('*');
+        if (error) {
+        console.warn('[dashboard] countries widget (clients) error:', error);
+        } else {
+        rows = data || [];
+        }
+    }
+
+    // Fallback: if clients table is empty, estimate from invoices
+    if (rows.length === 0) {
+        const { data: invs, error: invErr } = await sb.from('invoices').select('*');
+        if (!invErr && Array.isArray(invs)) rows = invs;
+    }
+
+    if (rows.length === 0) {
+        hostList.innerHTML = `<div class="muted">No data</div>`;
+        return;
+    }
+
+    // 2) Normalize country (tolerant of various field names)
+    const countryOf = (r) => {
+        const cand = [
+        r.country_name, r.country, r.client_country, r.billing_country,
+        r.country_code, r.client_country_code, r.iso2, r.iso_a2
+        ].find(v => v && String(v).trim());
+        const v = String(cand || 'Unknown').trim();
+        return v.length <= 3 ? v.toUpperCase() : v; // code stays uppercase
+    };
+
+    // 3) Count by country
+    const counts = new Map();
+    rows.forEach(r => {
+        const k = countryOf(r);
+        counts.set(k, (counts.get(k) || 0) + 1);
+    });
+
+    const entries = [...counts.entries()].sort((a,b)=> b[1]-a[1]);
+    const totalClients = entries.reduce((a,[,n])=> a+n, 0);
+    const uniqueCountries = entries.length;
+
+    hostCount.textContent = uniqueCountries;
+    hostTotal.textContent = totalClients;
+
+    // 4) Chart: top 8 countries (horizontal bar)
+    const top = entries.slice(0, 8);
+    const labels = top.map(([name]) => name);
+    const dataVals = top.map(([, n]) => n);
+
+    if (countriesChart) { try { countriesChart.destroy(); } catch {} }
+    countriesChart = new Chart(chartEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+        labels,
+        datasets: [{
+            label: 'Clients',
+            data: dataVals
+        }]
+        },
+        options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Top Countries by Clients' },
+            tooltip: {
+            callbacks: { label: (c) => ` ${c.parsed.x} client${c.parsed.x===1?'':'s'}` }
+            }
+        },
+        scales: {
+            x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.08)' } },
+            y: { grid: { display: false } }
+        }
+        }
+    });
+
+    // 5) Right-side ranked list (top 15 with little bars)
+    const max = entries[0]?.[1] || 1;
+    hostList.innerHTML = entries.slice(0, 15).map(([name, n]) => `
+        <div class="country-row">
+        <div class="name" title="${name}">${name}</div>
+        <div class="bar"><i style="--w:${(n / max) * 100}%"></i></div>
+        <div class="count">${n}</div>
+        </div>
+    `).join('');
+    }
+
   // ===== Init =====
   async function init() {
     try {
@@ -619,7 +720,8 @@ async function loadExpenseDonuts() {
         loadKPIs(),
         loadOpportunitiesFunnel(),
         loadTopClients12m(),
-        loadExpenseDonuts()     // two donuts: vendor + client
+        loadExpenseDonuts(),   // two donuts: vendor + client
+        loadClientCountriesWidget(),
       ]);
     } catch (e) {
       console.error("[dashboard] init error:", e);

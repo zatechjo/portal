@@ -213,31 +213,41 @@
     </section>
 
    <!-- WIDGET ROW 2 -->
-<section class="grid cols-2 dash-row">
-  <!-- Expenses Breakdown (two donuts side by side) -->
-  <div class="card">
-    <div class="card-head">
-      <h4>Expenses Breakdown</h4>
-      <div class="mini-legend">
-        <span class="tag">By vendor/service</span>
-        <span class="tag">By client</span>
-      </div>
-    </div>
-    <div class="chart-wrap" style="display:flex; gap:20px; --h:280px;">
-      <canvas id="expDonutChart" style="flex:1; max-width:50%;"></canvas>
-      <canvas id="expDonutByClientChart" style="flex:1; max-width:50%;"></canvas>
-    </div>
-  </div>  
-
-
-      <!-- Clients Map -->
+    <section class="grid cols-2 dash-row">
+      <!-- Expenses Breakdown (two donuts side by side) -->
       <div class="card">
         <div class="card-head">
-          <h4>Clients — World Map</h4>
-          <div class="mini-legend"><span class="tag">Count by country</span></div>
+          <h4>Expenses Breakdown</h4>
+          <div class="mini-legend">
+            <span class="tag">By vendor/service</span>
+            <span class="tag">By client</span>
+          </div>
         </div>
-        <div id="clientsMap" class="map-wrap" aria-label="Clients location map"></div>
-        <div class="muted" style="margin-top:8px;" id="mapSummary">—</div>
+        <div class="chart-wrap" style="display:flex; gap:20px; --h:280px;">
+          <canvas id="expDonutChart" style="flex:1; max-width:50%;"></canvas>
+          <canvas id="expDonutByClientChart" style="flex:1; max-width:50%;"></canvas>
+        </div>
+      </div>  
+      
+      <!-- Clients — Countries -->
+      <div class="card">
+        <div class="card-head">
+          <h4>Clients — Countries</h4>
+          <div class="mini-legend">
+            <span class="tag">Countries: <span id="countriesCount">0</span></span>
+            <span class="tag">Clients: <span id="countriesClients">0</span></span>
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="gap:16px;">
+          <!-- Left: Top countries (bar) -->
+          <div class="chart-wrap" style="--h:280px;">
+            <canvas id="countriesChart" aria-label="Top countries by client count" role="img"></canvas>
+          </div>
+
+          <!-- Right: Ranked list -->
+          <div id="countryList" class="country-list" style="max-height:280px; overflow:auto;"></div>
+        </div>
       </div>
     </section>
   </main>

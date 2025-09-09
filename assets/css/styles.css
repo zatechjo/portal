@@ -2123,4 +2123,40 @@ th {
 }
 .leaflet-control-zoom a:hover { background: rgba(20,30,55,1) !important; }
 
+/* Countries widget */
+.country-list {
+  display: grid;
+  gap: 10px;
+}
+.country-row {
+  display: grid;
+  grid-template-columns: 1fr 3fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding-right: 15px;
+}
+.country-row .name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.country-row .bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.country-row .bar > i {
+  display: block;
+  height: 100%;
+  width: var(--w, 0%);
+  background: linear-gradient(90deg, #22d3ee, #4ade80);
+  border-radius: inherit;
+}
+.country-row .count {
+  font-variant-numeric: tabular-nums;
+  opacity: .9;
+}
 
