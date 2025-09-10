@@ -1,4 +1,4 @@
-// assets/js/clients.js — Supabase-powered Clients
+// assets/js/clients.js — Supabase-powered Clients (with auto client_no)
 import { sb } from './supabase.js';
 
 const $ = (s, el=document) => el.querySelector(s);
@@ -45,6 +45,31 @@ async function fetchClients() {
   await fetchInvoiceCounts();
 
   renderTable();
+}
+
+// ===== Generate next client_no like "ZAC0038" by scanning current table =====
+async function getNextClientNo(prefix = 'ZAC', pad = 4){
+  const { data, error } = await sb
+    .from('clients')
+    .select('client_no'); // pull all to be safe; optimize later if needed
+
+  if (error) {
+    console.error('[clients] getNextClientNo error:', error);
+    // fallback to first number
+    return `${prefix}${String(1).padStart(pad, '0')}`;
+  }
+
+  let maxNum = 0;
+  for (const row of (data || [])) {
+    const raw = (row.client_no || '').toString().trim();
+    if (!raw.startsWith(prefix)) continue;
+    const digits = raw.replace(/^\D+/, ''); // strip non-digits at start
+    const n = parseInt(digits, 10);
+    if (!Number.isNaN(n) && n > maxNum) maxNum = n;
+  }
+
+  const next = maxNum + 1;
+  return `${prefix}${String(next).padStart(pad, '0')}`;
 }
 
 function renderTable() {
@@ -100,7 +125,6 @@ function duesStatusPill(statusRaw) {
   return `<span class="${cls}" aria-label="Status: ${label}">${label}</span>`;
 }
 
-
 function formatMoney(n) {
   const num = Number(n ?? 0);
   return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -121,7 +145,6 @@ function statusPillHTML(statusRaw) {
   else { label = statusRaw || '—'; }
   return `<span class="${cls}" aria-label="Status: ${label}">${label}</span>`;
 }
-
 
 // ---------- Filtering pills ----------
 pills.forEach(pill => {
@@ -213,7 +236,6 @@ async function loadClientInvoices(clientId) {
       ? `<a class="mini" href="${inv.pdf_url}" target="_blank" rel="noopener">View</a>`
       : `<button class="mini" disabled style="opacity:.55;cursor:default;">No PDF</button>`;
 
-
     return `
       <tr>
         <td>${escapeHTML(inv.invoice_no || '—')}</td>
@@ -225,8 +247,6 @@ async function loadClientInvoices(clientId) {
     `;
   }).join('');
 }
-
-
 
 function openView(c) {
   modal.classList.remove('editing'); err.textContent = '';
@@ -262,6 +282,14 @@ function openEdit(c) {
   inputs.sector.value   = c.sector || '';
   inputs.notes.value    = c.notes || '';
 
+  // DISABLE client_no editing in Edit mode
+  if (inputs.client_no) {
+    inputs.client_no.disabled = true;
+    inputs.client_no.readOnly = true;
+    // Optional: hide the field's row if you prefer
+    // inputs.client_no.closest('.form-row')?.style.setProperty('display','none');
+  }
+
   editBtn.style.display = 'none';
   actionsBar.style.display = 'flex';
 }
@@ -272,6 +300,15 @@ function openCreate() {
   nameInput.value = '';
   Object.values(inputs).forEach(i => i.value = '');
   inputs.status.value = 'Active';
+
+  // DISABLE client_no in Create (will be auto-generated on Save)
+  if (inputs.client_no) {
+    inputs.client_no.disabled = true;
+    inputs.client_no.readOnly = true;
+    // Optional: hide the field's row if you prefer
+    // inputs.client_no.closest('.form-row')?.style.setProperty('display','none');
+  }
+
   editBtn.style.display = 'none';
   actionsBar.style.display = 'flex';
   disp.nameText.textContent = 'New Client';
@@ -294,34 +331,55 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 // ---------- Save (create or update) ----------
 saveBtn?.addEventListener('click', async () => {
-  const payload = {
-    client_no:  inputs.client_no.value.trim() || null,
-    name:       nameInput.value.trim(),
+  err.textContent = '';
+
+  // Base payload — no client_no here (we auto-generate on insert)
+  const basePayload = {
+    name:         nameInput.value.trim(),
     contact_name: inputs.contact.value.trim(),
-    email:      inputs.email.value.trim(),
-    phone:      inputs.phone.value.trim(),
-    joined:     inputs.joined.value || null,
-    status:     inputs.status.value || 'Active',
-    address:    inputs.address.value.trim(),
-    sector:     inputs.sector.value.trim(),
-    notes:      inputs.notes.value.trim(),
+    email:        inputs.email.value.trim(),
+    phone:        inputs.phone.value.trim(),
+    joined:       inputs.joined.value || null,
+    status:       inputs.status.value || 'Active',
+    address:      inputs.address.value.trim(),
+    sector:       inputs.sector.value.trim(),
+    notes:        inputs.notes.value.trim(),
   };
 
-  if (!payload.name || !payload.email.includes('@')) {
+  if (!basePayload.name || !basePayload.email.includes('@')) {
     err.textContent = 'Client name and a valid email are required.'; return;
   }
 
-  if (current) {
-    const { error } = await sb.from('clients').update(payload).eq('id', current.id);
-    if (error) { err.textContent = error.message; return; }
-  } else {
-    const { error } = await sb.from('clients').insert([payload]);
-    if (error) { err.textContent = error.message; return; }
-  }
+  try {
+    if (current) {
+      // UPDATE: do NOT touch client_no
+      const { error } = await sb.from('clients').update(basePayload).eq('id', current.id);
+      if (error) throw error;
 
-  await fetchClients();
-  current = rows.find(r => r.client_no === payload.client_no) || rows.find(r => r.email === payload.email) || null;
-  if (current) openView(current); else closeModal();
+      await fetchClients();
+      current = rows.find(r => r.id === current.id) || null;
+      if (current) openView(current); else closeModal();
+    } else {
+      // INSERT: generate next client_no
+      const nextNo = await getNextClientNo('ZAC', 4);
+      const payload = { ...basePayload, client_no: nextNo };
+
+      const { data: inserted, error } = await sb
+        .from('clients')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await fetchClients();
+      current = rows.find(r => r.id === inserted.id) || rows.find(r => r.client_no === nextNo) || null;
+      if (current) openView(current); else closeModal();
+    }
+  } catch (e) {
+    console.error('[clients] save error:', e);
+    err.textContent = e?.message || 'Failed to save client.';
+  }
 });
 
 // ---------- Init ----------

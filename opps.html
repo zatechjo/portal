@@ -198,17 +198,6 @@
       </div>
     </div>
 
-    <div id="opp-delete-modal" class="modal" aria-hidden="true">
-      <div class="modal-content" style="max-width:520px;">
-        <h3 style="margin-bottom:8px;">Delete opportunity?</h3>
-        <p id="opp-delete-msg" style="margin:0 0 16px;">Are you sure?</p>
-        <div style="display:flex;justify-content:flex-end;gap:10px;">
-          <button id="opp-delete-cancel" class="btn2" style="background:#394b6d;">Cancel</button>
-          <button id="opp-delete-confirm" class="btn2" style="background:#d32f2f;">Yes, delete</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Actions -->
     <div id="oppEditActions" class="section-divider" style="display:none;justify-content:flex-end;gap:10px;">
       <span id="oppModalError" style="color:#ff8b8b;margin-right:auto;"></span>
@@ -221,6 +210,19 @@
     </div>
   </div>
 </div>
+
+<!-- Standalone Delete Modal (not nested inside #opp-modal) -->
+<div id="opp-delete-modal" class="modal" aria-hidden="true">
+  <div class="modal-content" style="max-width:520px;">
+    <h3 style="margin-bottom:8px;">Delete opportunity?</h3>
+    <p id="opp-delete-msg" style="margin:0 0 16px;">Are you sure?</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button id="opp-delete-cancel" class="btn2" style="background:#394b6d;">Cancel</button>
+      <button id="opp-delete-confirm" class="btn2" style="background:#d32f2f;">Yes, delete</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
   

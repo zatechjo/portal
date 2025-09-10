@@ -283,7 +283,7 @@
 
   function openDeleteModal(rec) {
     pendingDeleteId = rec.id;
-    delMsg.textContent = `Are you sure you want to delete opportunity #${rec.id} (${rec.opportunity || "Untitled"})?`;
+    delMsg.textContent = `Are you sure you want to delete opportunity ${rec.opp_no} for ${rec.name} (${rec.opportunity || "Untitled"})?`;
     delModal.classList.add("show");
   }
   function closeDeleteModal() {
@@ -331,26 +331,22 @@
     });
 
 
-    // View
+    // View only
     tbody.addEventListener("click", (evt) => {
       const btn = evt.target.closest("button.view-opp");
       if (!btn) return;
-      // AFTER (string-compare always matches)
       const id = btn.getAttribute("data-id");
       const rec = rows.find(r => String(r.id) === String(id));
-
       if (!rec) return;
       openModalView(rec);
     });
 
-    // Delete (open confirm)
+    // Delete only
     tbody.addEventListener("click", (evt) => {
-      const btn = evt.target.closest(".delete-opp");
+      const btn = evt.target.closest("button.delete-opp");
       if (!btn) return;
-      // AFTER (string-compare always matches)
       const id = btn.getAttribute("data-id");
       const rec = rows.find(r => String(r.id) === String(id));
-
       if (!rec) return;
       openDeleteModal(rec);
     });
