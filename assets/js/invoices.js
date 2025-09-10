@@ -250,7 +250,6 @@ function renderTable(){
     );
     const statusClass = statusClassFor(inv.status);
     const hasNote = !!(inv.note && String(inv.note).trim());
-    const title = `Notes for "${escapeHTML(c.name || 'Client')}" — Invoice ${escapeHTML(inv.invoice_no || '')}`;
 
     const docCellHtml = inv.docx_url
       ? `<a class="mini" href="${inv.docx_url}" target="_blank" rel="noopener">View</a>`
@@ -283,15 +282,21 @@ function renderTable(){
 
             <!-- Header: Title + action button -->
             <div class="note-header">
-              <div class="note-title">${title}</div>
+              <div class="note-title"
+                  data-id="${inv.id}"
+                  data-title="Notes for &quot;${escapeHTML(c.name || 'Client')}&quot; — Invoice ${escapeHTML(inv.invoice_no || '')}">
+                ${escapeHTML(inv.note || 'No note yet.')}
+              </div>
               <div class="note-actions" data-kind="note-actions">
                 ${
-                  hasNote
+                  inv.note && inv.note.trim()
                     ? `<button type="button" class="btn-note btn-note--ghost note-edit-btn" data-id="${inv.id}">Edit</button>`
                     : `<button type="button" class="btn-note btn-note--ghost note-new-btn"  data-id="${inv.id}">Write new</button>`
                 }
               </div>
             </div>
+
+
 
             <!-- Editor (hidden until editing) -->
             <div class="note-edit-wrap" data-id="${inv.id}" style="display:none;">
@@ -409,18 +414,27 @@ function setEditMode(id, on, isNew=false){
   const editWrap = tbody.querySelector(`.note-edit-wrap[data-id="${id}"]`);
   const footer   = tbody.querySelector(`.note-footer[data-id="${id}"]`);
   const ta       = tbody.querySelector(`.note-textarea[data-id="${id}"]`);
-  if (!editWrap || !footer || !ta) return;
+  const headerEl = tbody.querySelector(`.note-title[data-id="${id}"]`);
+  if (!editWrap || !footer || !ta || !headerEl) return;
 
   if (on) {
     const inv = invoices.find(x => String(x.id) === String(id));
     ta.value = isNew ? "" : (inv?.note || "");
     editWrap.style.display = "";
     footer.style.display   = "";
+    // swap header to edit-mode title
+    if (headerEl.dataset.title) {
+      headerEl.textContent = headerEl.dataset.title;
+    }
   } else {
     editWrap.style.display = "none";
     footer.style.display   = "none";
+    // restore header back to note text
+    const inv = invoices.find(x => String(x.id) === String(id));
+    headerEl.textContent = (inv?.note && inv.note.trim()) ? inv.note : "No note yet.";
   }
 }
+
 
 function refreshNoteActionButton(id){
   const inv = invoices.find(x => String(x.id) === String(id));
@@ -466,8 +480,12 @@ tbody?.addEventListener("click", async (e) => {
   if (!btn) return;
   const id = btn.getAttribute("data-id");
   const ta = tbody.querySelector(`.note-textarea[data-id="${id}"]`);
-  const viewEl = tbody.querySelector(`.note-view[data-id="${id}"]`);
+  // support either old ".note-view" or new header ".note-title"
+  const viewEl =
+    tbody.querySelector(`.note-title[data-id="${id}"]`) ||
+    tbody.querySelector(`.note-view[data-id="${id}"]`);
   if (!ta || !viewEl) return;
+
 
   const text = ta.value.trim();
 

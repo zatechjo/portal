@@ -304,8 +304,13 @@ tbody.innerHTML =
           <td colspan="9" class="details-cell">
             <div class="invoice-note-block">
               <!-- Header: Title + action -->
+              <!-- Header: NOTE TEXT (default) + action; title only used in edit mode -->
               <div class="note-header">
-                <div class="note-title">${title}</div>
+                <div class="note-title"
+                    data-id="${r.id}"
+                    data-title="Expense note for ${r.client || '—'}">
+                  ${(r.note && String(r.note).trim()) ? r.note : 'No note yet.'}
+                </div>
                 <div class="note-actions" data-kind="note-actions">
                   ${
                     hasNote
@@ -314,6 +319,7 @@ tbody.innerHTML =
                   }
                 </div>
               </div>
+
 
               <!-- Editor -->
               <div class="note-edit-wrap" data-id="${r.id}" style="display:none;">
@@ -408,18 +414,23 @@ tbody.innerHTML =
     const editWrap = expTbody.querySelector(`.note-edit-wrap[data-id="${id}"]`);
     const footer   = expTbody.querySelector(`.note-footer[data-id="${id}"]`);
     const ta       = expTbody.querySelector(`.note-textarea[data-id="${id}"]`);
-    if (!editWrap || !footer || !ta) return;
+    const headerEl = expTbody.querySelector(`.note-title[data-id="${id}"]`);
+    if (!editWrap || !footer || !ta || !headerEl) return;
 
-    // pull from items[] (expenses.js in-memory list)
     const rec = items.find(x => String(x.id) === String(id));
 
     if (on) {
       ta.value = isNew ? "" : (rec?.note || "");
       editWrap.style.display = "";
       footer.style.display   = "";
+      // show edit-mode title in header
+      if (headerEl.dataset.title) headerEl.textContent = headerEl.dataset.title;
     } else {
       editWrap.style.display = "none";
       footer.style.display   = "none";
+      // restore header to current note text
+      const noteText = (rec?.note && String(rec.note).trim()) ? rec.note : "No note yet.";
+      headerEl.textContent = noteText;
     }
   }
 

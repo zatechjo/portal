@@ -2171,7 +2171,7 @@ th {
 .invoice-note-block .note-header {
   display:flex; justify-content:space-between; align-items:center;
 }
-.invoice-note-block .note-title { font-weight:600; }
+.invoice-note-block .note-title { font-weight:600; margin-right: 15px;}
 
 /* Editor */
 .invoice-note-block .note-edit-wrap { margin-top:6px; }
