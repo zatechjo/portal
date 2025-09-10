@@ -57,6 +57,65 @@ function toUSD(amount, from = 'USD') {
   return Number(amount || 0) * rate;
 }
 
+// ===== Sorting state & utils =====
+let sortState = { key: null, dir: 'asc' }; // dir: 'asc' | 'desc'
+
+function getSortValue(inv, key) {
+  const c = inv.clients || {};
+  switch (key) {
+    case 'clientId':   return c.client_no || '';
+    case 'clientName': return c.name || '';
+    case 'invoiceNo':  return Number(inv.invoice_no) || 0;
+    case 'date':       return inv.issue_date ? new Date(inv.issue_date) : new Date(0);
+    case 'amount':     return Number(inv.total ?? ((inv.subtotal||0) + (inv.tax||0))) || 0;
+    case 'status':     return inv.status || '';
+    case 'coverage':   return inv.coverage_period || '';
+    case 'doc':        return inv.docx_url ? 1 : 0; // docs first if you click it
+    case 'pdf':        return inv.pdf_url ? 1 : 0;  // pdfs first if you click it
+    case 'note':       return inv.note || '';
+    default:           return '';
+  }
+}
+
+function updateSortIndicators(){
+  const thead = document.querySelector('#invoiceTable thead');
+  if (!thead) return;
+  // clear old carets
+  thead.querySelectorAll('.sort-caret').forEach(el => el.remove());
+  thead.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+
+  if (!sortState.key) return; // nothing active yet
+
+  const th = thead.querySelector(`th[data-sort="${sortState.key}"]`);
+  if (!th) return;
+  const caret = document.createElement('span');
+  caret.className = 'sort-caret';
+  caret.textContent = sortState.dir === 'desc' ? '▼' : '▲';
+  th.appendChild(caret);
+  th.classList.add('sorted');
+}
+
+// header click -> toggle sort
+(function wireHeaderSorting(){
+  const thead = document.querySelector('#invoiceTable thead');
+  if (!thead) return;
+  thead.addEventListener('click', (e) => {
+    const th = e.target.closest('th[data-sort]');
+    if (!th) return;
+    const key = th.getAttribute('data-sort');
+
+    if (sortState.key === key) {
+      // toggle direction
+      sortState.dir = (sortState.dir === 'asc') ? 'desc' : 'asc';
+    } else {
+      sortState.key = key;
+      sortState.dir = 'asc'; // fresh column starts asc
+    }
+
+    renderTable();
+  });
+})();
+
 
 // ====== Utils ======
 function escapeHTML(s){ return (s ?? '').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -134,11 +193,13 @@ let invoices = [];
 async function loadInvoices(){
   const { data, error } = await sb
     .from('invoices')
+    // In loadInvoices() .select(...) add note
     .select(`
       id, invoice_no, client_id, issue_date, due_date, currency,
-      subtotal, tax, total, status, coverage_period, docx_url, pdf_url,
+      subtotal, tax, total, status, coverage_period, docx_url, pdf_url, note,
       clients!invoices_client_id_fkey ( name, client_no )
     `)
+
     .order('invoice_no', { ascending: false });
   if (error){ console.error(error); return; }
   invoices = data || [];
@@ -146,16 +207,51 @@ async function loadInvoices(){
 }
 
 
-// Table render: two final cells are Doc + PDF (separate)
 function renderTable(){
   if (!tbody) return;
-  tbody.innerHTML = invoices.map(inv => {
+
+  // Start from data
+  let rows = [...invoices];
+
+  // Apply active sort (if any)
+  if (sortState.key) {
+    const dir = sortState.dir === 'desc' ? -1 : 1;
+    rows.sort((a, b) => {
+      const va = getSortValue(a, sortState.key);
+      const vb = getSortValue(b, sortState.key);
+
+      // numbers vs strings
+      const na = typeof va === 'number' ? va : Number.NaN;
+      const nb = typeof vb === 'number' ? vb : Number.NaN;
+
+      if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+        return (na - nb) * dir;
+      }
+      // Dates
+      if (va instanceof Date && vb instanceof Date) {
+        return (va - vb) * dir;
+      }
+      // Fallback string compare (case-insensitive)
+      const sa = (va ?? '').toString().toLowerCase();
+      const sb = (vb ?? '').toString().toLowerCase();
+      if (sa < sb) return -1 * dir;
+      if (sa > sb) return  1 * dir;
+      return 0;
+    });
+  }
+
+  tbody.innerHTML = rows.map(inv => {
     const c = inv.clients || {};
     const cur = inv.currency || 'USD';
-    const total = fmtMoney(inv.total ?? (Number(inv.subtotal||0) + Number(inv.tax||0)), undefined, cur);
+    const total = fmtMoney(
+      inv.total ?? (Number(inv.subtotal||0) + Number(inv.tax||0)),
+      undefined,
+      cur
+    );
     const statusClass = statusClassFor(inv.status);
+    const hasNote = !!(inv.note && String(inv.note).trim());
+    const title = `Notes for "${escapeHTML(c.name || 'Client')}" — Invoice ${escapeHTML(inv.invoice_no || '')}`;
 
-    // DOC cell: link if we have a URL, otherwise a no-op button (or a "Generate" later)
     const docCellHtml = inv.docx_url
       ? `<a class="mini" href="${inv.docx_url}" target="_blank" rel="noopener">View</a>`
       : `<button type="button" class="mini view-invoice" data-id="${inv.id}">View</button>`;
@@ -165,24 +261,64 @@ function renderTable(){
       : `<button type="button" class="mini pdf-upload" data-id="${inv.id}" style="background:#e58d00;color:#fff;border:0;">Upload PDF +</button>`;
 
     return `
-      <tr data-id="${inv.id}">
+      <tr class="inv-row" data-id="${inv.id}">
         <td>${escapeHTML(c.client_no || '—')}</td>
         <td>${escapeHTML(c.name || '—')}</td>
         <td>${escapeHTML(inv.invoice_no || '—')}</td>
         <td>${fmtDate(inv.issue_date)}</td>
         <td>${total}</td>
-        <td>
-          <span class="tag ${statusClass} status-pill" data-id="${inv.id}">
-            ${escapeHTML(inv.status || '—')}
-          </span>
-        </td>
+        <td><span class="tag ${statusClass} status-pill" data-id="${inv.id}">${escapeHTML(inv.status || '—')}</span></td>
         <td>${escapeHTML(inv.coverage_period || '—')}</td>
         <td class="doc-actions">${docCellHtml}</td>
         <td class="pdf-actions">${pdfCellHtml}</td>
+        <td style="text-align:center;">
+          <button type="button" class="inv-mini-btn" data-id="${inv.id}" aria-expanded="false">+</button>
+        </td>
+      </tr>
+
+      <!-- Details row -->
+      <tr class="inv-details" data-id="${inv.id}" style="display:none;">
+        <td colspan="10" class="details-cell">
+          <div class="invoice-note-block">
+
+            <!-- Header: Title + action button -->
+            <div class="note-header">
+              <div class="note-title">${title}</div>
+              <div class="note-actions" data-kind="note-actions">
+                ${
+                  hasNote
+                    ? `<button type="button" class="btn-note btn-note--ghost note-edit-btn" data-id="${inv.id}">Edit</button>`
+                    : `<button type="button" class="btn-note btn-note--ghost note-new-btn"  data-id="${inv.id}">Write new</button>`
+                }
+              </div>
+            </div>
+
+            <!-- Editor (hidden until editing) -->
+            <div class="note-edit-wrap" data-id="${inv.id}" style="display:none;">
+              <textarea class="note-textarea" data-id="${inv.id}" rows="4"></textarea>
+            </div>
+
+            <!-- Footer (hidden until editing) -->
+            <div class="note-footer" data-id="${inv.id}" style="display:none;">
+              <div class="note-sub">Single note per invoice. Saving overwrites it.</div>
+              <div class="note-buttons">
+                <button type="button" class="btn-note btn-note--danger note-cancel-btn" data-id="${inv.id}">Cancel</button>
+                <button type="button" class="btn-note btn-note--primary note-save-btn"  data-id="${inv.id}">Save</button>
+              </div>
+            </div>
+
+          </div>
+        </td>
       </tr>
     `;
   }).join('');
+
+  updateSortIndicators();
 }
+
+
+
+
 
 // ====== Service lines (desc + price) ======
 function addServiceRow(desc='', price=''){
@@ -240,6 +376,125 @@ function loadScriptOnceExact(src) {
     document.head.appendChild(s);
   });
 }
+
+// Toggle the per-row details (accordion style: only one open at a time)
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".inv-mini-btn");
+  if (!btn) return;
+  const id = btn.getAttribute("data-id");
+  const detailsRow = tbody.querySelector(`tr.inv-details[data-id="${id}"]`);
+  if (!detailsRow) return;
+
+  const isOpen = detailsRow.style.display !== "none";
+
+  // 1) Close all open rows
+  tbody.querySelectorAll("tr.inv-details").forEach(row => row.style.display = "none");
+  tbody.querySelectorAll(".inv-mini-btn").forEach(b => {
+    b.textContent = "+";
+    b.classList.remove("inv-open");
+    b.setAttribute("aria-expanded", "false");
+  });
+
+  // 2) Open this one if it was closed
+  if (!isOpen) {
+    detailsRow.style.display = "";
+    btn.textContent = "−";
+    btn.classList.add("inv-open");
+    btn.setAttribute("aria-expanded", "true");
+  }
+});
+
+
+function setEditMode(id, on, isNew=false){
+  const editWrap = tbody.querySelector(`.note-edit-wrap[data-id="${id}"]`);
+  const footer   = tbody.querySelector(`.note-footer[data-id="${id}"]`);
+  const ta       = tbody.querySelector(`.note-textarea[data-id="${id}"]`);
+  if (!editWrap || !footer || !ta) return;
+
+  if (on) {
+    const inv = invoices.find(x => String(x.id) === String(id));
+    ta.value = isNew ? "" : (inv?.note || "");
+    editWrap.style.display = "";
+    footer.style.display   = "";
+  } else {
+    editWrap.style.display = "none";
+    footer.style.display   = "none";
+  }
+}
+
+function refreshNoteActionButton(id){
+  const inv = invoices.find(x => String(x.id) === String(id));
+  const actions = tbody.querySelector(`tr.inv-details[data-id="${id}"] .note-actions[data-kind="note-actions"]`);
+  if (!actions) return;
+  const hasNote = !!(inv?.note && String(inv.note).trim());
+  actions.innerHTML = hasNote
+    ? `<button type="button" class="btn-note btn-note--ghost note-edit-btn" data-id="${id}">Edit</button>`
+    : `<button type="button" class="btn-note btn-note--ghost note-new-btn"  data-id="${id}">Write new</button>`;
+}
+
+
+
+// Enter edit mode (prefill with existing note)
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".note-edit-btn");
+  if (!btn) return;
+  const id = btn.getAttribute("data-id");
+  setEditMode(id, true, false);
+});
+
+// Start a fresh note (empty textarea)
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".note-new-btn");
+  if (!btn) return;
+  const id = btn.getAttribute("data-id");
+  setEditMode(id, true, true);
+});
+
+// Cancel edit
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".note-cancel-btn");
+  if (!btn) return;
+  const id = btn.getAttribute("data-id");
+  setEditMode(id, false);
+  refreshNoteActionButton(id);
+});
+
+// Save note
+// Save note
+tbody?.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".note-save-btn");
+  if (!btn) return;
+  const id = btn.getAttribute("data-id");
+  const ta = tbody.querySelector(`.note-textarea[data-id="${id}"]`);
+  const viewEl = tbody.querySelector(`.note-view[data-id="${id}"]`);
+  if (!ta || !viewEl) return;
+
+  const text = ta.value.trim();
+
+  try{
+    const { error } = await sb.from("invoices").update({ note: text }).eq("id", id);
+    if (error) throw error;
+
+    // update local cache
+    const idx = invoices.findIndex(x => String(x.id) === String(id));
+    if (idx >= 0) invoices[idx].note = text;
+
+    // reflect in UI
+    viewEl.textContent = text || "No note yet.";
+    viewEl.style.opacity = text ? "" : ".7";
+
+    // instantly swap "Write new" ↔ "Edit"
+    refreshNoteActionButton(id);
+
+    // exit edit mode
+    setEditMode(id, false);
+  }catch(err){
+    alert(err.message || "Failed to save note.");
+  }
+});
+
+
+
 async function ensureInvoiceLibs() {
   if (!window.docxtemplater && !window.Docxtemplater) {
     await loadScriptOnceExact('https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.43.0/docxtemplater.min.js');

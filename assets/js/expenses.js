@@ -128,7 +128,7 @@
       .from("expenses")
       .select(`
         id, vendor, description, client_name, service,
-        expense_date, amount, frequency, status
+        expense_date, amount, frequency, status, note
       `)
       .order("expense_date", { ascending: false });
 
@@ -148,6 +148,7 @@
       amount: r.amount ?? 0,
       frequency: r.frequency || "",
       status: r.status || "Unpaid",
+      note: r.note || ""
     }));
 
     // Sample of first two rows for sanity:
@@ -274,27 +275,65 @@
 
     updateSortIndicators();
 
-    tbody.innerHTML =
-      rows
-        .map((r) => {
-          const expenseLabel = `${r.vendor} — ${r.description || ""}`.trim();
-          return `
-         <tr data-id="${r.id}">
+tbody.innerHTML =
+  rows
+    .map((r) => {
+      const expenseLabel = `${r.vendor} — ${r.description || ""}`.trim();
+      const hasNote = !!(r.note && String(r.note).trim());
+      const title = `Expense note for ${r.client || "—"}`;
+
+      return `
+        <tr data-id="${r.id}">
           <td>${expenseLabel}</td>
-          <td>${r.client || "—"}</td>   <!-- NEW -->
+          <td>${r.client || "—"}</td>
           <td>${r.date}</td>
           <td>${titleCase(r.serviceType)}</td>
           <td>${fmt$(r.amount)}</td>
           <td>${r.frequency||"—"}</td>
           <td>${statusSelect(r.status, r.id)}</td>
           <td class="row-actions"><button class="mini view-expense" data-id="${r.id}">View</button></td>
+
+          <!-- Note toggle cell -->
+          <td class="note-toggle-cell" style="text-align:center;">
+            <button type="button" class="inv-mini-btn exp-mini-btn" data-id="${r.id}" aria-expanded="false">+</button>
+          </td>
+        </tr>
+
+        <!-- Expand row -->
+        <tr class="exp-details" data-id="${r.id}" style="display:none;">
+          <td colspan="9" class="details-cell">
+            <div class="invoice-note-block">
+              <!-- Header: Title + action -->
+              <div class="note-header">
+                <div class="note-title">${title}</div>
+                <div class="note-actions" data-kind="note-actions">
+                  ${
+                    hasNote
+                      ? `<button type="button" class="btn-note btn-note--ghost note-edit-btn" data-id="${r.id}">Edit</button>`
+                      : `<button type="button" class="btn-note btn-note--ghost note-new-btn"  data-id="${r.id}">Write new</button>`
+                  }
+                </div>
+              </div>
+
+              <!-- Editor -->
+              <div class="note-edit-wrap" data-id="${r.id}" style="display:none;">
+                <textarea class="note-textarea" data-id="${r.id}" rows="4"></textarea>
+              </div>
+
+              <!-- Footer -->
+              <div class="note-footer" data-id="${r.id}" style="display:none;">
+                <div class="note-sub">Single note per expense. Saving overwrites it.</div>
+                <div class="note-buttons">
+                  <button type="button" class="btn-note btn-note--danger note-cancel-btn" data-id="${r.id}">Cancel</button>
+                  <button type="button" class="btn-note btn-note--primary note-save-btn"  data-id="${r.id}">Save</button>
+                </div>
+              </div>
+            </div>
+          </td>
         </tr>
       `;
-        })
-        .join("") || `<tr><td colspan="7">No expenses for this filter.</td></tr>`;
-
-    // recolor status pills
-    tbody.querySelectorAll(".status-select").forEach(applyStatusClass);
+    })
+    .join("") || `<tr><td colspan="9">No expenses for this filter.</td></tr>`;
   }
 
   // ===== Modal logic (view/edit/create) =====
@@ -334,6 +373,109 @@
 
   let mode = "view"; // 'view' | 'edit' | 'create'
   let currentId = null;
+
+  // ===== Notes accordion (expenses) =====
+  const expTbody = document.querySelector("#expensesBody");
+
+  // Toggle open/close (single-open behavior)
+  expTbody?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".exp-mini-btn");
+    if (!btn) return;
+    const id = btn.getAttribute("data-id");
+    const detailsRow = expTbody.querySelector(`tr.exp-details[data-id="${id}"]`);
+    if (!detailsRow) return;
+
+    const isOpen = detailsRow.style.display !== "none";
+
+    // close all
+    expTbody.querySelectorAll("tr.exp-details").forEach(r => r.style.display = "none");
+    expTbody.querySelectorAll(".exp-mini-btn").forEach(b => {
+      b.textContent = "+";
+      b.classList.remove("inv-open");
+      b.setAttribute("aria-expanded","false");
+    });
+
+    // open current
+    if (!isOpen) {
+      detailsRow.style.display = "";
+      btn.textContent = "−";
+      btn.classList.add("inv-open");
+      btn.setAttribute("aria-expanded","true");
+    }
+  });
+
+  function setExpNoteEditMode(id, on, isNew=false){
+    const editWrap = expTbody.querySelector(`.note-edit-wrap[data-id="${id}"]`);
+    const footer   = expTbody.querySelector(`.note-footer[data-id="${id}"]`);
+    const ta       = expTbody.querySelector(`.note-textarea[data-id="${id}"]`);
+    if (!editWrap || !footer || !ta) return;
+
+    // pull from items[] (expenses.js in-memory list)
+    const rec = items.find(x => String(x.id) === String(id));
+
+    if (on) {
+      ta.value = isNew ? "" : (rec?.note || "");
+      editWrap.style.display = "";
+      footer.style.display   = "";
+    } else {
+      editWrap.style.display = "none";
+      footer.style.display   = "none";
+    }
+  }
+
+  function refreshExpNoteActionButton(id){
+    const rec = items.find(x => String(x.id) === String(id));
+    const actions = expTbody.querySelector(`tr.exp-details[data-id="${id}"] .note-actions[data-kind="note-actions"]`);
+    if (!actions) return;
+    const hasNote = !!(rec?.note && String(rec.note).trim());
+    actions.innerHTML = hasNote
+      ? `<button type="button" class="btn-note btn-note--ghost note-edit-btn" data-id="${id}">Edit</button>`
+      : `<button type="button" class="btn-note btn-note--ghost note-new-btn"  data-id="${id}">Write new</button>`;
+  }
+
+  // Enter edit / New
+  expTbody?.addEventListener("click", (e) => {
+    const newBtn = e.target.closest(".note-new-btn");
+    if (newBtn) { setExpNoteEditMode(newBtn.dataset.id, true, true); return; }
+    const editBtn = e.target.closest(".note-edit-btn");
+    if (editBtn){ setExpNoteEditMode(editBtn.dataset.id, true, false); return; }
+  });
+
+  // Cancel
+  expTbody?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".note-cancel-btn");
+    if (!btn) return;
+    const id = btn.getAttribute("data-id");
+    setExpNoteEditMode(id, false);
+    refreshExpNoteActionButton(id);
+  });
+
+  // Save -> Supabase, update items[], refresh button, close editor
+  expTbody?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".note-save-btn");
+    if (!btn) return;
+    const id = btn.getAttribute("data-id");
+    const ta = expTbody.querySelector(`.note-textarea[data-id="${id}"]`);
+    if (!ta) return;
+
+    const text = ta.value.trim();
+    try {
+      const { error } = await sb.from("expenses").update({ note: text }).eq("id", id);
+      if (error) throw error;
+
+      // update in-memory row
+      const idx = items.findIndex(x => String(x.id) === String(id));
+      if (idx >= 0) items[idx].note = text;
+
+      // flip "Write new" ↔ "Edit" immediately
+      refreshExpNoteActionButton(id);
+      setExpNoteEditMode(id, false);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to save note.");
+    }
+  });
+
 
   function openModalView(exp) {
     mode = "view";
