@@ -2230,3 +2230,15 @@ th {
 #expensesTable .exp-mini-btn.inv-open {
   background: #f0f0f0;
 }
+
+
+
+#expense-title-text {
+  flex-grow: 1; /* pushes buttons to the right */
+}
+
+#deleteExpenseBtn, #editExpenseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

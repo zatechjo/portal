@@ -116,6 +116,28 @@
     }
   }
 
+  
+  // Delete: elements
+  const deleteBtn = $("#deleteExpenseBtn");
+  const confirmDeleteModal = $("#confirm-delete-modal");
+  const confirmDeleteBtn = $("#confirmDeleteBtn");
+  const cancelDeleteBtn = $("#cancelDeleteBtn");
+
+  // Delete: small helpers
+  function openConfirmDelete() {
+    if (!confirmDeleteModal) return;
+    confirmDeleteModal.classList.add("show");
+  }
+  function closeConfirmDelete() {
+    if (!confirmDeleteModal) return;
+    confirmDeleteModal.classList.remove("show");
+  }
+
+  async function deleteExpenseFromDB(id) {
+    const { error } = await sb.from("expenses").delete().eq("id", id);
+    if (error) throw error;
+  }
+
 
 
   // ===== Data (Supabase) =====
@@ -380,6 +402,43 @@ tbody.innerHTML =
   let mode = "view"; // 'view' | 'edit' | 'create'
   let currentId = null;
 
+
+  // Open confirm modal from Delete button (view mode)
+  deleteBtn?.addEventListener("click", () => {
+    if (!currentId) return;
+    openConfirmDelete();
+  });
+
+  // Confirm delete
+  confirmDeleteBtn?.addEventListener("click", async () => {
+    if (!currentId) return;
+    try {
+      await deleteExpenseFromDB(currentId);
+
+      // remove from in-memory items and repaint
+      const idx = items.findIndex((x) => String(x.id) === String(currentId));
+      if (idx !== -1) items.splice(idx, 1);
+
+      // close both modals and refresh UI
+      closeConfirmDelete();
+      closeModal();
+      render();
+    } catch (err) {
+      console.error("[expenses:delete] FAILED:", err);
+      alert(err.message || "Failed to delete expense. Please try again.");
+    }
+  });
+
+  // Cancel delete
+  cancelDeleteBtn?.addEventListener("click", () => {
+    closeConfirmDelete();
+  });
+
+  // Close confirm if clicking outside content
+  confirmDeleteModal?.addEventListener("click", (e) => {
+    if (e.target === confirmDeleteModal) closeConfirmDelete();
+  });
+
   // ===== Notes accordion (expenses) =====
   const expTbody = document.querySelector("#expensesBody");
 
@@ -506,6 +565,7 @@ tbody.innerHTML =
     disp.status.textContent = exp.status || "—";
 
     editBtn.style.display = "inline-flex";
+    if (deleteBtn) deleteBtn.style.display = "inline-flex";
     actionsBar.style.display = "none";
     modal.classList.add("show");
 
@@ -529,6 +589,7 @@ tbody.innerHTML =
     inputs.status.value = exp.status || "Unpaid";
 
     editBtn.style.display = "none";
+    if (deleteBtn) deleteBtn.style.display = "none";
     actionsBar.style.display = "flex";
     modal.classList.add("show");
 
@@ -551,6 +612,7 @@ tbody.innerHTML =
     modal.classList.add("editing");
     err.textContent = "";
     editBtn.style.display = "none";
+    if (deleteBtn) deleteBtn.style.display = "none";
     actionsBar.style.display = "flex";
     modal.classList.add("show");
 
