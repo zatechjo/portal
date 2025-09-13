@@ -2231,7 +2231,11 @@ th {
   background: #f0f0f0;
 }
 
-
+#expense-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 #expense-title-text {
   flex-grow: 1; /* pushes buttons to the right */

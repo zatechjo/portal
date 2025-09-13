@@ -134,9 +134,19 @@
   }
 
   async function deleteExpenseFromDB(id) {
-    const { error } = await sb.from("expenses").delete().eq("id", id);
+    const { data, error } = await sb
+      .from("expenses")
+      .delete()
+      .eq("id", id)
+      .select("id");        // forces PostgREST to return deleted rows
+
     if (error) throw error;
+    if (!data || data.length === 0) {
+      // RLS blocked, wrong project, or ID mismatch
+      throw new Error("Delete did not affect any rows (RLS or ID mismatch).");
+    }
   }
+
 
 
 
