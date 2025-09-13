@@ -7,7 +7,7 @@
     console.log("[expenses:init] Supabase client detected ✅");
   }
 
-  const STATUS_OPTIONS = ["Unpaid", "Paid", "Upcoming", "Null"];
+  const STATUS_OPTIONS = ["Unpaid", "Paid", "Partial Payment", "Upcoming", "Null"];
 
   // ===== Helpers =====
   const $ = (s) => document.querySelector(s);
@@ -71,6 +71,46 @@
     console.groupEnd();
   }
 
+  // === Status pill helpers (match invoices look) ===
+function statusClassForExp(s){
+  const v = (s || '').toLowerCase();
+  return (
+    v === 'paid' ? 'ok' :
+    ['unpaid','not paid','overdue'].includes(v) ? 'due' :
+    v === 'partial payment' ? 'partial' :
+    v === 'upcoming' ? 'warn' :
+    ['cancelled','canceled','null'].includes(v) ? 'null' : 'null'
+  );
+}
+
+function openSelectDropdown(sel){
+  if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
+  sel.focus();
+  sel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+  sel.click();
+}
+
+function buildStatusSelectExp(current){
+  const wrap = document.createElement('div');
+  wrap.className = 'select-wrap inline';
+  const sel = document.createElement('select');
+  sel.className = 'filter-select status-select';
+  sel.innerHTML = `
+    <option value="Paid">Paid</option>
+    <option value="Unpaid">Unpaid</option>
+    <option value="Partial Payment">Partial Payment</option>
+    <option value="Upcoming">Upcoming</option>
+    <option value="Null">Null</option>
+  `;
+  // normalize selection
+  const cur = (current || '').trim();
+  const allowed = ['Paid','Unpaid','Partial Payment','Upcoming','Null'];
+  sel.value = allowed.includes(cur) ? cur : 'Unpaid';
+  wrap.appendChild(sel);
+  return { wrap, sel };
+}
+
+
 
   const freqOrder = (v) => {
     const t = String(v || "").toLowerCase();
@@ -81,9 +121,10 @@
   };
   const statusOrder = (v) => {
     const t = String(v || "").toLowerCase();
-    if (t === "paid") return 3;
-    if (t === "upcoming") return 2;
-    if (t === "unpaid") return 1;
+    if (t === "paid") return 4;
+    if (t === "upcoming") return 3;
+    if (t === "unpaid") return 2;
+    if (t === "partial payment") return 1;
     return 0; // Null/unknown
   };
   const statusClass = (val) => {
@@ -91,6 +132,7 @@
     if (t === "paid") return "ok";
     if (t === "unpaid") return "bad";
     if (t === "upcoming") return "warn";
+    if (t === "partial payment") return "partial";
     return "null";
   };
   const applyStatusClass = (el) => {
@@ -322,7 +364,7 @@ tbody.innerHTML =
           <td>${titleCase(r.serviceType)}</td>
           <td>${fmt$(r.amount)}</td>
           <td>${r.frequency||"—"}</td>
-          <td>${statusSelect(r.status, r.id)}</td>
+          <td><span class="tag ${statusClassForExp(r.status)} status-pill" data-id="${r.id}">${r.status || '—'}</span></td>
           <td class="row-actions"><button class="mini view-expense" data-id="${r.id}">View</button></td>
 
           <!-- Note toggle cell -->
@@ -713,32 +755,58 @@ tbody.innerHTML =
     });
 
     // 5) Inline status change (optimistic; persists to Supabase)
-    $("#expensesBody")?.addEventListener("change", async (e) => {
-      const el = e.target.closest(".status-select");
-      if (!el) return;
-      const id = el.getAttribute("data-id");
-      const rec = items.find((x) => x.id === id);
-      if (!rec) return;
+    // Click pill -> turn into dropdown; change -> save; escape/outside -> restore
+    document.addEventListener('click', (e) => {
+      const pill = e.target.closest('.status-pill');
+      if (!pill) return;
 
-      const prev = rec.status;
-      const next = el.value;
+      const id      = pill.dataset.id;
+      const initial = pill.textContent.trim();
+      const { wrap, sel } = buildStatusSelectExp(initial);
+      pill.replaceWith(wrap);
 
-      // optimistic UI
-      rec.status = next;
-      applyStatusClass(el);
-      if (state.sortKey === "status") render();
+      const restore = (value) => {
+        const span = document.createElement('span');
+        span.className = `tag ${statusClassForExp(value)} status-pill`;
+        span.dataset.id = id;
+        span.textContent = value;
+        wrap.replaceWith(span);
+        cleanup();
+      };
 
-      try {
-        await updateStatusInDB(id, next);
-        el.blur();
-      } catch (err) {
-        console.error("[expenses:status] FAILED:", err);
-        // revert on failure
-        rec.status = prev;
-        render();
-        alert("Failed to update status. Please try again.");
-      }
+      const onChange = async () => {
+        const next = sel.value;
+        if (next === initial) { restore(initial); return; }
+        try {
+          await updateStatusInDB(id, next);          // you already have this function
+          restore(next);
+        } catch (err) {
+          alert(err.message || 'Failed to update status.');
+          restore(initial);
+        }
+      };
+
+      const onKey = (ev) => {
+        if (ev.key === 'Escape') restore(initial);
+      };
+
+      const onDocDown = (ev) => {
+        if (!wrap.contains(ev.target)) restore(initial);
+      };
+
+      const cleanup = () => {
+        sel.removeEventListener('change', onChange);
+        sel.removeEventListener('keydown', onKey);
+        document.removeEventListener('pointerdown', onDocDown, true);
+      };
+
+      sel.addEventListener('change', onChange);
+      sel.addEventListener('keydown', onKey);
+      document.addEventListener('pointerdown', onDocDown, true);
+
+      openSelectDropdown(sel);
     });
+
 
     // 6) Row → open modal (view)
     $("#expensesBody")?.addEventListener("click", (e) => {

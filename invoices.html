@@ -60,7 +60,7 @@
     <div class="topbar">
       <div class="greeting">
         <h1 class="greet-title"><span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span></h1>
-        <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
+        <p class="greet-sub">Find all the ZAtech invoices in one place - oh you can filter them as well :D</p>
       </div>
 
       <div class="hud">
@@ -86,7 +86,16 @@
         <div class="card-head">
           <h4>Invoices</h4>
           <div class="filters">
-            <label for="dateFilter" class="filter-label">Date Range</label>
+            
+            <select id="statusFilter" class="filter-select" style="margin-right:8px;">
+              <option value="all" selected>All Status</option>
+              <option value="Paid">Paid</option>
+              <option value="Not Paid">Not Paid</option>
+              <option value="Partial Payment">Partial Payment</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Sent">Sent</option>
+            </select>
+
             <select id="dateFilter" class="filter-select">
               <option value="all" selected>All time</option>
               <option value="last30">Last 30 days</option>

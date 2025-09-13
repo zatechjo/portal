@@ -88,9 +88,9 @@
     const s = String(v || '').toLowerCase();
     // match your existing styles
     if (s === 'paid')     return 'tag ok';
-    if (s === 'upcoming') return 'tag sent';
+    if (s === 'upcoming') return 'tag warn';
     if (s === 'overdue')  return 'tag due';
-    if (s === 'partial')  return 'tag warn';
+    if (s === 'partial payment')  return 'tag partial';
     return 'tag null'; // unpaid or anything else
   }
   async function persistExpenseStatusToDb(id, desired){
@@ -109,6 +109,7 @@
     sel.innerHTML = `
       <option value="paid">Paid</option>
       <option value="unpaid">Unpaid</option>
+      <option value="partial payment">Partial Payment</option>
       <option value="upcoming">Upcoming</option>
     `;
     const cur = String(current || '').toLowerCase();
@@ -417,6 +418,7 @@
             st === "upcoming" ? "tag sent" :
             st === "paid"     ? "tag ok"   :
             st === "overdue"  ? "tag due"  :
+            st === "partial payment"  ? "tag partial"  :
             st === "partial"  ? "tag warn" : "tag null";
           const invNo = row.invoice_no || (row.isProjection ? "—" : row.id);
           return `
@@ -554,8 +556,9 @@
       ? rows.map(r => {
           const st  = r.status || "unpaid";
           const tag = st === "paid" ? "tag ok" :
-                      st === "upcoming" ? "tag sent" :
+                      st === "upcoming" ? "tag warn" :
                       st === "overdue" ? "tag due" :
+                      st === "partial payment" ? "tag partial" :
                       st === "partial" ? "tag warn" : "tag null";
 
           return `

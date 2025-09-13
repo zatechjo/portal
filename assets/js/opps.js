@@ -12,7 +12,7 @@
   const statusClass = (val) => {
     const t = String(val || "").toLowerCase();
     if (t === "won") return "ok";
-    if (t === "lost") return "bad";
+    if (t === "lost") return "due";
     if (t === "in review") return "warn";
     return "null"; // Proposed / other
   };
@@ -21,16 +21,26 @@
     el.classList.add("badge-" + statusClass(el.value));
   };
 
+  function openSelectDropdown(sel){
+  if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
+  sel.focus();
+  sel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+  sel.click();
+}
+
+
   const statusSelect = (value, id) => {
-    const cls = statusClass(value);
     return `
-      <select class="status-select badge-${cls}" data-id="${id}">
-        ${STATUS_OPTIONS.map(
-          (o) => `<option value="${o}" ${o === value ? "selected" : ""}>${o}</option>`
-        ).join("")}
-      </select>
+      <div class="select-wrap inline" data-id="${id}">
+        <select class="filter-select status-select" data-id="${id}">
+          ${STATUS_OPTIONS.map(
+            (o) => `<option value="${o}" ${o === value ? "selected" : ""}>${o}</option>`
+          ).join("")}
+        </select>
+      </div>
     `;
   };
+
 
   // ===== DOM =====
   const tbody       = document.querySelector("#oppsBody");
@@ -82,6 +92,8 @@
   let currentId = null;   // numeric Supabase id
   let pendingDeleteId = null;
 
+
+  
   // ===== Data =====
   async function loadOpps() {
     showLoader(true);
@@ -183,7 +195,7 @@
         <td>${r.opp_no || ('ZAOPP-' + String(r.id).padStart(3,'0'))}</td>
         <td>${escapeHTML(r.name || "")}</td>
         <td>${escapeHTML(r.opportunity || "")}</td>
-        <td>${statusSelect(r.status, r.id)}</td>
+        <td><span class="tag ${statusClass(r.status)} status-pill" data-id="${r.id}">${escapeHTML(r.status || "—")}</span></td>
         <td>${fmt$(r.value)}</td>
         <td>${r.last_contact || "—"}</td>
         <td class="row-actions">
@@ -318,17 +330,91 @@
     loadOpps();
 
     // Inline status change
-    tbody.addEventListener("change", (evt) => {
-      const el = evt.target.closest(".status-select");
-      if (!el) return;
+    // Click pill -> turn into select (like invoices)
+    // Inline status editor (match invoices UX)
+    tbody.addEventListener("click", (evt) => {
+      const pill = evt.target.closest(".status-pill");
+      if (!pill) return;
 
-      const id = el.getAttribute("data-id");                 // string-safe
+      const id  = pill.getAttribute("data-id");
       const rec = rows.find(r => String(r.id) === String(id));
       if (!rec) return;
 
-      updateStatus(id, el.value, el);
-      el.blur();
+      const initial = rec.status || "Proposed";
+
+      // Build invoices-style dropdown
+      const tmp = document.createElement("div");
+      tmp.innerHTML = statusSelect(initial, id).trim();
+      const wrap = tmp.firstElementChild;                   // <div.select-wrap.inline>
+      const sel  = wrap.querySelector(".status-select");    // <select.filter-select.status-select>
+
+      // Swap pill → select
+      pill.replaceWith(wrap);
+
+      const restore = (value) => {
+        const span = document.createElement("span");
+        span.className   = `tag ${statusClass(value)} status-pill`;
+        span.dataset.id  = id;
+        span.textContent = value;
+        wrap.replaceWith(span);
+        cleanup();
+      };
+
+      const onChange = async () => {
+        const next = sel.value;
+        if (next === initial) {            // SAME value → just restore pill
+          restore(initial);
+          return;
+        }
+        await updateStatus(id, next, sel); // persists to DB
+        restore(next);                     // show updated pill
+      };
+
+      const onKey = (ev) => {
+        if (ev.key === "Escape") restore(initial);
+      };
+
+      const onDocDown = (ev) => {
+        if (!wrap.contains(ev.target)) restore(initial);
+      };
+
+      const cleanup = () => {
+        sel.removeEventListener("change", onChange);
+        sel.removeEventListener("keydown", onKey);
+        document.removeEventListener("pointerdown", onDocDown, true);
+      };
+
+      sel.addEventListener("change", onChange);
+      sel.addEventListener("keydown", onKey);
+      document.addEventListener("pointerdown", onDocDown, true);
+
+      // open native dropdown immediately (same as invoices)
+      openSelectDropdown(sel);
     });
+
+
+    // When select changes, persist then restore pill
+    tbody.addEventListener("change", async (evt) => {
+      const el = evt.target.closest(".status-select");
+      if (!el) return;
+
+      const id  = el.getAttribute("data-id");
+      const val = el.value;
+      const rec = rows.find(r => String(r.id) === String(id));
+      if (!rec) return;
+
+      // Persist using your existing function
+      await updateStatus(id, val, el);
+
+      // Restore pill UI (match invoices design)
+      const span = document.createElement("span");
+      span.className = `tag ${statusClass(val)} status-pill`;
+      span.dataset.id = id;
+      span.textContent = val;
+
+      el.replaceWith(span);
+    });
+
 
 
     // View only

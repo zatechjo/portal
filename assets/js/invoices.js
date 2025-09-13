@@ -144,6 +144,7 @@ function statusClassFor(s){
   return (  
     v === 'paid' ? 'ok' :
     ['not paid','unpaid','overdue'].includes(v) ? 'due' :
+    v === 'partial payment' ? 'partial' :       // new case
     v === 'due soon' ? 'warn' :
     v === 'sent' ? 'sent' :
     ['cancelled','canceled'].includes(v) ? 'null' : 'null'
@@ -356,6 +357,67 @@ function updateTotals(){
   const cur = currencySel?.value || 'JOD';
   if (subtotalLbl) subtotalLbl.textContent = `${subtotal.toFixed(2)} ${cur}`;
 }
+
+const statusFilter = document.getElementById('statusFilter');
+const dateFilter = document.getElementById('dateFilter');
+
+async function applyFilters() {
+  // ---- Date window ----
+  let from = null, to = null;
+  const today = new Date();
+  switch (dateFilter?.value) {
+    case 'last30':
+      from = new Date(today); from.setDate(from.getDate() - 30);
+      break;
+    case 'last90':
+      from = new Date(today); from.setDate(from.getDate() - 90);
+      break;
+    case 'thisYear':
+      from = new Date(today.getFullYear(), 0, 1);
+      break;
+    case 'y2024':
+      from = new Date(2024, 0, 1);
+      to   = new Date(2025, 0, 1);
+      break;
+    case 'y2023':
+      from = new Date(2023, 0, 1);
+      to   = new Date(2024, 0, 1);
+      break;
+    case 'y2022':
+      from = new Date(2022, 0, 1);
+      to   = new Date(2023, 0, 1);
+      break;
+    default:
+      // "all" → no date constraints
+      break;
+  }
+
+  // ---- Build query ----
+  let query = sb.from('invoices').select(`
+      id, invoice_no, client_id, issue_date, due_date, currency,
+      subtotal, tax, total, status, coverage_period, docx_url, pdf_url, note,
+      clients!invoices_client_id_fkey ( name, client_no )
+    `).order('invoice_no', { ascending: false });
+
+  if (from) query = query.gte('issue_date', from.toISOString().slice(0,10));
+  if (to)   query = query.lt('issue_date',  to.toISOString().slice(0,10));
+
+  // ---- Status constraint ----
+  const wanted = statusFilter?.value || 'all';
+  if (wanted && wanted !== 'all') {
+    query = query.eq('status', wanted);
+  }
+
+  const { data, error } = await query;
+  if (error) { console.error(error); return; }
+  invoices = data || [];
+  renderTable();
+}
+
+// Run when either filter changes
+statusFilter?.addEventListener('change', applyFilters);
+dateFilter  ?.addEventListener('change', applyFilters);
+
 
 
 // ====== Modal open/close ======
@@ -664,6 +726,7 @@ function buildStatusSelect(current){
     <option value="Paid">Paid</option>
     <option value="Not Paid">Not Paid</option>
     <option value="Cancelled">Cancelled</option>
+    <option value="Partial Payment">Partial Payment</option>
   `;
   sel.value = ['Paid','Not Paid','Cancelled'].includes(current) ? current : 'Not Paid';
   wrap.appendChild(sel);
@@ -858,6 +921,7 @@ const hideLoader = () => loader?.classList.add('hidden');
 async function initInvoicesPage() {
   showLoader();
   await Promise.all([loadClientsForSelect(), loadInvoices()]);
+  await applyFilters(); // optional: start with current filter values
   hideLoader();
   mainEl?.classList.add('content-ready');
 }
@@ -883,51 +947,3 @@ loadClientsForSelect();
 loadInvoices();
 
 
-
-const dateFilter = document.getElementById('dateFilter');
-dateFilter?.addEventListener('change', async () => {
-  let from = null, to = null;
-  const today = new Date();
-
-  switch (dateFilter.value) {
-    case 'last30':
-      from = new Date(today); from.setDate(from.getDate() - 30);
-      break;
-    case 'last90':
-      from = new Date(today); from.setDate(from.getDate() - 90);
-      break;
-    case 'thisYear':
-      from = new Date(today.getFullYear(), 0, 1);
-      break;
-    case 'y2024':
-      from = new Date(2024, 0, 1);
-      to   = new Date(2025, 0, 1);
-      break;
-    case 'y2023':
-      from = new Date(2023, 0, 1);
-      to   = new Date(2024, 0, 1);
-      break;
-    case 'y2022':
-      from = new Date(2022, 0, 1);
-      to   = new Date(2023, 0, 1);
-      break;
-    default:
-      // "all" → no filtering
-      break;
-  }
-
-  // Build Supabase query
-  let query = sb.from('invoices').select(`
-      id, invoice_no, client_id, issue_date, due_date, currency,
-      subtotal, tax, total, status, coverage_period, docx_url, pdf_url,
-      clients!invoices_client_id_fkey ( name, client_no )
-    `).order('invoice_no', { ascending: false });
-
-  if (from) query = query.gte('issue_date', from.toISOString().slice(0,10));
-  if (to)   query = query.lt('issue_date', to.toISOString().slice(0,10));
-
-  const { data, error } = await query;
-  if (error) { console.error(error); return; }
-  invoices = data || [];
-  renderTable();
-});
