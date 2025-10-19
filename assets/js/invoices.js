@@ -134,6 +134,16 @@ function addMonths(dateStr, months){
   if (d.getDate() < day) d.setDate(0); // end-of-month rollover
   return d.toISOString().slice(0,10);
 }
+function fmtLongDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
 function show(el){
   if (!el) return;
   el.style.display = '';            // <-- clear any inline 'none'
@@ -662,17 +672,17 @@ async function saveInvoice(){
       address: clientRow.address || '',
       email: clientRow.email || '',
       customer_id_label: `Customer ID ${clientRow.client_no || client_id}`,
-      start_date: startInput?.value || issue_date,
-      end_date:   endInput?.value   || due_date,
+      start_date: fmtLongDate(startInput?.value || issue_date),
+      end_date:   fmtLongDate(endInput?.value   || due_date),
       payment_terms: term.label,
       currency: currencyDoc,
-      subtotal: subtotalDoc.toFixed(2),
-      total_due: subtotalDoc.toFixed(2),
+      subtotal: `${subtotalDoc.toFixed(2)} ${currencyDoc}`,
+      total_due: `${subtotalDoc.toFixed(2)} ${currencyDoc}`,
       invoice_no,
-      today: issue_date,
+      today: fmtLongDate(issue_date),
       lines: lines.map(l => ({
         service_desc:  l.desc,
-        service_price: Number(l.price || 0).toFixed(2)
+        service_price: `${Number(l.price || 0).toFixed(2)} ${currencyDoc}`
       })),
     };
 
