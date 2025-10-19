@@ -1224,6 +1224,13 @@ section {
   position: relative;
 }
 
+/* put this at the end of your CSS */
+#dashboard > #contentLoader {
+  position: fixed;  /* center against the viewport, not the tall main */
+  inset: 0;
+}
+
+
 /* Keep content visible so backdrop-filter can blur it */
 .main:not(.content-ready) .topbar,
 .main:not(.content-ready) .card {

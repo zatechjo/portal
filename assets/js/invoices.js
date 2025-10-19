@@ -30,6 +30,9 @@ const pdfBusy   = $('#pdfBusy');
 const pdfMsg    = $('#pdfMsg');
 let activePdfInvoiceId = null;
 
+const progressModal = $('#invProgressModal');
+const progressMsg   = $('#invProgressMsg');
+
 // ====== Form controls ======
 const clientSel    = $('#invoiceClient');
 const currencySel  = $('#invoiceCurrency');
@@ -588,10 +591,21 @@ async function ensureInvoiceLibs() {
 
 // ====== Save invoice (DOCX only) ======
 async function saveInvoice(){
+  if (generateBtn?.disabled) return;        // guard against double-clicks
   try{
+    // --- validate minimal inputs early
     const client_id = clientSel?.value;
     if (!client_id){ alert('Please choose a client.'); return; }
+    const lines = readServiceLines();
+    if (lines.length === 0) { alert('Add at least one service line.'); return; }
 
+    // --- UI: show progress and lock the button
+    const prevLabel = generateBtn?.textContent;
+    if (generateBtn){ generateBtn.disabled = true; generateBtn.textContent = 'Generating…'; }
+    if (progressMsg) progressMsg.textContent = 'Creating invoice record…';
+    show(progressModal);                     // <— show progress modal
+
+    // ===== ORIGINAL LOGIC (unchanged except for progress messages) =====
     const issue_date = todayISO();
     const termKey = termsSel?.value || 'monthly';
     const termMap = {
@@ -602,53 +616,47 @@ async function saveInvoice(){
       one_time: { label: 'One time', months: 0 },
     };
     const term = termMap[termKey] || termMap.monthly;
-
     const due_date = term.months > 0 ? addMonths(issue_date, term.months) : issue_date;
-    const lines = readServiceLines();
-    if (lines.length === 0) { alert('Add at least one service line.'); return; }
 
     const coverage_period = term.label;
-    const currencyDoc = currencySel?.value || 'JOD';       // used ONLY for the DOC/PDF
+    const currencyDoc = currencySel?.value || 'JOD';
     const subtotal = lines.reduce((s,l)=>s+(l.price||0),0);
     const tax      = 0;
     const total    = subtotal + tax;
 
-    // amounts for the DOC/PDF stay in selected currency
     const subtotalDoc = subtotal;
     const totalDoc    = total;
 
-    // amounts for the DB are converted to USD
     const subtotalUSD = toUSD(subtotalDoc, currencyDoc);
     const totalUSD    = toUSD(totalDoc,    currencyDoc);
 
-
     // 1) Insert invoice header
+    if (progressMsg) progressMsg.textContent = 'Saving to database…';
     const ins = await sb.from('invoices')
       .insert([{
         client_id,
         issue_date,
         due_date,
-        currency: 'USD',       // <-- store in USD
-        subtotal: subtotalUSD, // <-- USD value
-        tax,                   // if you add tax later, also convert if tax is in doc currency
-        // total: totalUSD,       // <-- USD value
+        currency: 'USD',
+        subtotal: subtotalUSD,
+        tax,
         status: 'Sent',
         coverage_period
       }])
       .select('id, invoice_no')
       .single();
 
-
-    if (ins.error) { console.error(ins.error); alert(ins.error.message); return; }
+    if (ins.error) { console.error(ins.error); throw ins.error; }
     const { id, invoice_no } = ins.data;
 
-    // 2) Fetch client info for template
+    // 2) Fetch client info
+    if (progressMsg) progressMsg.textContent = 'Fetching client info…';
     const clientRowResp = await sb.from('clients')
       .select('name, client_no, address, email')
       .eq('id', client_id).single();
     const clientRow = clientRowResp.data || {};
 
-    // 3) Build payload for template
+    // 3) Build payload
     const payload = {
       client_name: clientRow.name || '',
       address: clientRow.address || '',
@@ -657,9 +665,9 @@ async function saveInvoice(){
       start_date: startInput?.value || issue_date,
       end_date:   endInput?.value   || due_date,
       payment_terms: term.label,
-      currency: currencyDoc,                     // stays selected currency
-      subtotal: subtotalDoc.toFixed(2),          // selected currency
-      total_due: subtotalDoc.toFixed(2),         // selected currency
+      currency: currencyDoc,
+      subtotal: subtotalDoc.toFixed(2),
+      total_due: subtotalDoc.toFixed(2),
       invoice_no,
       today: issue_date,
       lines: lines.map(l => ({
@@ -668,8 +676,8 @@ async function saveInvoice(){
       })),
     };
 
-
-    // 4) Fetch and fill DOCX template
+    // 4) Fill DOCX
+    if (progressMsg) progressMsg.textContent = 'Generating Word file…';
     await ensureInvoiceLibs();
     const templateUrl = "https://eymqvzjwbolgmywpwhgi.supabase.co/storage/v1/object/public/Invoices/Templates/ZAtech%20Invoice.docx";
     const ab = await fetch(templateUrl).then(r => r.arrayBuffer());
@@ -689,10 +697,10 @@ async function saveInvoice(){
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     });
 
+    // 5) Upload DOCX
+    if (progressMsg) progressMsg.textContent = 'Uploading Word file…';
     const safeClient = (payload.client_name || 'Client').replace(/[^a-z0-9\- ]/gi, '').trim();
     const baseFileName = `Invoice No.${invoice_no} - ${safeClient}`;
-
-    // 5) Upload DOCX to Supabase
     const docxPath = `generated/Doc Version/${baseFileName}.docx`;
     const upDocx = await sb.storage.from('Invoices').upload(docxPath, docxBlob, {
       upsert: true,
@@ -702,19 +710,29 @@ async function saveInvoice(){
 
     const docxUrl = sb.storage.from('Invoices').getPublicUrl(docxPath).data.publicUrl;
 
-    // 6) Save DOCX URL in DB
+    // 6) Save URL + refresh
+    if (progressMsg) progressMsg.textContent = 'Finalizing…';
     await sb.from('invoices').update({ docx_url: docxUrl }).eq('id', id);
-
-    // 7) Update modal link + list
     if (docxLinkA) { docxLinkA.href = docxUrl; docxLinkA.removeAttribute('download'); }
     await loadInvoices();
+
+    // --- UI: swap modals
+    hide(progressModal);
     hide(modal);
     show(successModal);
+
   }catch(e){
     console.error(e);
+    hide(progressModal);                  // make sure to hide on error
     alert(e.message || 'Failed to create invoice.');
+  }finally{
+    if (generateBtn){
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Invoice';
+    }
   }
 }
+
 
 // ---- Inline status editor (click pill -> dropdown) ----
 function buildStatusSelect(current){

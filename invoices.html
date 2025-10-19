@@ -213,6 +213,23 @@
   </div>
 </div>
 
+<!-- ============ Progress Modal ============ -->
+<div id="invProgressModal" class="modal" aria-hidden="true">
+  <div class="modal-content modal-center">
+    <div class="success-top">
+      <h5>Generating your invoice…</h5>
+    </div>
+
+    <div class="centered" style="display:flex;flex-direction:column;align-items:center;gap:12px;margin:14px 0 6px;">
+      <div class="spinner" id="invProgressSpin" style="display:block;"></div>
+      <p id="invProgressMsg" class="muted center">Preparing files…</p>
+    </div>
+
+    <p class="muted center small">This usually takes a few seconds.</p>
+  </div>
+</div>
+
+
 <!-- ============ Success Modal ============ -->
 <div id="invSuccessModal" class="modal" aria-hidden="true">
   <div class="modal-content modal-center">
