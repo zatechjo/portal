@@ -60,6 +60,11 @@
   const today = new Date();
   const todayMonth = startOfMonth(today);
 
+  // Fuzzy suppression knobs
+  const MATCH_DAY_WINDOW = 30;   // days around projected date
+  const MATCH_AMOUNT_TOL = 0.05; // ±5% amount tolerance (min $1 handled below)
+
+
   // Anchors per card
   let anchorExp1  = startOfMonth(new Date()); // Card 1
   let anchorMonth2 = startOfMonth(new Date()); // Card 2
@@ -83,6 +88,7 @@
     sel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
     sel.click();
   }
+
   function capFirst(s){ s = String(s||''); return s ? s[0].toUpperCase() + s.slice(1) : s; }
   function expStatusToTagClass(v){
     const s = String(v || '').toLowerCase();
@@ -93,6 +99,7 @@
     if (s === 'partial payment')  return 'tag partial';
     return 'tag null'; // unpaid or anything else
   }
+
   async function persistExpenseStatusToDb(id, desired){
     // Write capitalized to DB (keeps it consistent with your Expenses page),
     // dues.js will lowercase when reading.
@@ -101,6 +108,7 @@
     if (error) return { ok:false, error };
     return { ok:true, value: writeVal };
   }
+
   function buildExpStatusSelect(current){
     const wrap = document.createElement('div');
     wrap.className = 'select-wrap inline';
@@ -160,75 +168,88 @@
   let actualA6  = [];      // actual invoices (any status) filtered to annual/6m (+paid one_time past) within [lastYearStart..nextYearEnd]
 
   // ===== Supabase fetches =====
-  async function fetchPaidSeedsLastYear() {
-    if (!window.sb) { console.error("[dues] Supabase client not found"); return []; }
-    const { data, error } = await window.sb
-      .from("invoices")
-      .select(`
-        id, invoice_no, client_id, issue_date, status, subtotal, currency, coverage_period, pdf_url,
-        clients!invoices_client_id_fkey ( name )
-      `)
-      .eq("status", "Paid")
-      .gte("issue_date", lastYearStart.toISOString())
-      .lte("issue_date", thisYearEnd.toISOString())
-      .order("issue_date", { ascending: true });
-
-
-    if (error) { console.error("[dues] fetchPaidSeedsLastYear:", error); return []; }
-
-    return (data || [])
-      .map(r => ({
-        id: r.id,
-        invoice_no: r.invoice_no,
-        client_id: r.client_id,
-        client_name: r?.clients?.name || (Array.isArray(r?.clients) ? r.clients[0]?.name : "") || "—",
-        issue_date: r.issue_date,
-        status: String(r.status || "").toLowerCase(),
-        subtotal: Number(r.subtotal || 0),
-        currency: r.currency || "USD",
-        coverage_period: normalizeTerms(r.coverage_period),
-        pdf_url: r.pdf_url || ""
-      }))
-
-      // Allow annual/6m always, and allow paid one_time (for past display)
-      .filter(r => {
-        const f = r.coverage_period;
-        if (isRecurring(f)) return true;                 // keep annual/6m always
-        if (f === "one_time" && r.status === "paid") return true; // allow paid one-time (past)
-        return false;
-      });
+ // ===== Supabase fetches =====
+async function fetchPaidSeedsLastYear() {
+  if (!window.sb) { 
+    console.error("[dues] Supabase client not found"); 
+    return []; 
   }
 
-  async function fetchActualAnnual6mWindow() {
-    if (!window.sb) { console.error("[dues] Supabase client not found"); return []; }
-    const { data, error } = await window.sb
-      .from("invoices")
-      .select(`
-        id, invoice_no, client_id, issue_date, status, subtotal, currency, coverage_period, pdf_url,
-        clients!invoices_client_id_fkey ( name )
-      `)
+  const { data, error } = await window.sb
+    .from("invoices")
+    .select(`
+      id, invoice_no, client_id, issue_date, status, subtotal, currency, coverage_period, pdf_url,
+      clients!invoices_client_id_fkey ( name )
+    `)
+    .eq("status", "Paid")
+    .gte("issue_date", lastYearStart.toISOString())
+    .lte("issue_date", thisYearEnd.toISOString())
+    .order("issue_date", { ascending: true });
 
-      .gte("issue_date", lastYearStart.toISOString())
-      .lte("issue_date", nextYearEnd.toISOString());
-
-    if (error) { console.warn("[dues] fetchActualAnnual6mWindow:", error); return []; }
-
-    return (data || [])
-      .map(r => ({
-        id: r.id,
-        invoice_no: r.invoice_no,
-        client_id: r.client_id,
-        client_name: r?.clients?.name || (Array.isArray(r?.clients) ? r.clients[0]?.name : "") || "—",
-        issue_date: r.issue_date,
-        status: String(r.status || "").toLowerCase(),
-        subtotal: Number(r.subtotal || 0),
-        pdf_url: r.pdf_url || "",
-        currency: r.currency || "USD",
-        coverage_period: normalizeTerms(r.coverage_period),
-      }))
-      // Keep annual/6m always; keep paid one_time for past display
-      .filter(r => isAllowedActual(r.coverage_period));
+  if (error) { 
+    console.error("[dues] fetchPaidSeedsLastYear:", error); 
+    return []; 
   }
+
+  return (data || [])
+    .map(r => ({
+      id: r.id,
+      invoice_no: r.invoice_no || "—",
+      client_id: r.client_id,
+      client_name: r?.clients?.name || (Array.isArray(r?.clients) ? r.clients[0]?.name : "") || "—",
+      issue_date: r.issue_date,
+      status: String(r.status || "").toLowerCase(),
+      subtotal: Number(r.subtotal || 0),
+      currency: r.currency || "USD",
+      coverage_period: normalizeTerms(r.coverage_period),
+      pdf_url: r.pdf_url || ""
+    }))
+    // Keep annual/6m always, and include paid one_time (for past display only)
+    .filter(r => {
+      const f = r.coverage_period;
+      if (isRecurring(f)) return true;
+      if (f === "one_time" && r.status === "paid") return true;
+      return false;
+    });
+}
+
+async function fetchActualAnnual6mWindow() {
+  if (!window.sb) { 
+    console.error("[dues] Supabase client not found"); 
+    return []; 
+  }
+
+  const { data, error } = await window.sb
+    .from("invoices")
+    .select(`
+      id, invoice_no, client_id, issue_date, status, subtotal, currency, coverage_period, pdf_url,
+      clients!invoices_client_id_fkey ( name )
+    `)
+    .gte("issue_date", lastYearStart.toISOString())
+    .lte("issue_date", nextYearEnd.toISOString());
+
+  if (error) { 
+    console.warn("[dues] fetchActualAnnual6mWindow:", error); 
+    return []; 
+  }
+
+  return (data || [])
+    .map(r => ({
+      id: r.id,
+      invoice_no: r.invoice_no || "—",
+      client_id: r.client_id,
+      client_name: r?.clients?.name || (Array.isArray(r?.clients) ? r.clients[0]?.name : "") || "—",
+      issue_date: r.issue_date,
+      status: String(r.status || "").toLowerCase(),
+      subtotal: Number(r.subtotal || 0),
+      pdf_url: r.pdf_url || "",
+      currency: r.currency || "USD",
+      coverage_period: normalizeTerms(r.coverage_period),
+    }))
+    // Keep annual/6m always; keep paid one_time only for past display
+    .filter(r => isAllowedActual(r.coverage_period));
+}
+
 
   // Build one-step projections from last year's PAID per stream (client|freq|month|day)
   function buildSeedsOneStep(paidRows){
@@ -252,6 +273,7 @@
         client_id: s.client_id,
         client_name: s.client_name,
         currency: s.currency,
+        invoice_no: s.invoice_no || "—",
         subtotal: s.subtotal,
         freq: s.coverage_period,       // 'annual' | '6m'
         seed_issue_date: s.issue_date, // last year's paid
@@ -263,6 +285,26 @@
 }
 
 
+  function hasRealMatch(seedNextDate, clientId, amount) {
+    const nd = new Date(seedNextDate);
+    const min = new Date(nd); min.setDate(min.getDate() - MATCH_DAY_WINDOW);
+    const max = new Date(nd); max.setDate(max.getDate() + MATCH_DAY_WINDOW);
+
+    const target = Number(amount) || 0;
+    const tol = Math.max(1, target * MATCH_AMOUNT_TOL); // at least $1 tolerance
+
+    return actualA6.some(r => {
+      if (String(r.client_id) !== String(clientId)) return false;
+      if (!r.issue_date) return false;
+      const d = new Date(r.issue_date);
+      if (d < min || d > max) return false;
+
+      const diff = Math.abs((Number(r.subtotal) || 0) - target);
+      return diff <= tol; // close enough in amount within window
+    });
+  }
+
+
   function projectForWindow(seeds, winStart, winEnd, realKeys){
     const out = [];
     for (const s of seeds){
@@ -271,10 +313,13 @@
       if (startOfMonth(nd) < todayMonth) continue; // only now/future
       const key = `${s.client_id}|${monthKey(nd)}`;
       if (realKeys.has(key)) continue; // real recurring overrides projection
+
+      if (hasRealMatch(s.next_issue_date, s.client_id, s.subtotal)) continue;
       out.push({
         client_id: s.client_id,
         client_name: s.client_name,
         issue_date: s.next_issue_date,
+        invoice_no: s.invoice_no || "—",
         status: "upcoming",
         subtotal: s.subtotal,
         currency: s.currency,
@@ -369,70 +414,98 @@
 
 
   // ===== Render: Card 2 (Month) — Past=Paid only; Now/Future=Upcoming (+real overrides) =====
-  function renderInvoicesMonth(anchor){
-    const body = els.incomeMonthBody;
-    if (!body) return;
+  function renderInvoicesMonth(anchor) {
+  const body = els.incomeMonthBody;
+  if (!body) return;
 
-    const mStart = startOfMonth(anchor);
-    const mEnd   = endOfMonth(anchor);
-    const isPast = mEnd < todayMonth;
+  const mStart = startOfMonth(anchor);
+  const mEnd   = endOfMonth(anchor);
+  const now = new Date();
+  const isPast = mEnd < todayMonth;
 
-    // REAL in this month (annual/6m or paid one_time)
-    let realInMonth = actualA6.filter(r => {
-      if (!r.issue_date) return false;
-      const d = new Date(r.issue_date);
-      return d >= mStart && d <= mEnd;
-    });
+  // === Get all real invoices for this month ===
+  let realInMonth = actualA6.filter(r => {
+    if (!r.issue_date) return false;
+    const d = new Date(r.issue_date);
+    return d >= mStart && d <= mEnd;
+  });
 
-    // Past → show only Paid (including one_time)
-    if (isPast) {
-      realInMonth = realInMonth.filter(r => r.status === "paid");
-    } else {
-      // This month & future → never show one_time
-      realInMonth = realInMonth.filter(r => r.coverage_period !== "one_time");
-    }
-
-    // Upcoming projections (from seeds; only for now/future; suppress if REAL recurring exists)
-    const realKeys = new Set(
-      actualA6
-        .filter(r => isRecurring(r.coverage_period))   // only recurring suppress projections
-        .map(r => `${r.client_id}|${(r.issue_date || "").slice(0,7)}`)
-    );
-
-    const seeds = buildSeedsOneStep(paidSeeds);
-    const upcoming = isPast ? [] : projectForWindow(seeds, mStart, mEnd, realKeys);
-
-    const rows = [
-      ...realInMonth.map(r => ({ ...r, isProjection: false })),
-      ...upcoming
-    ];
-
-    const total = rows.reduce((a,r)=> a + (Number(r.subtotal)||0), 0);
-    if (els.incomeMonthTotal) els.incomeMonthTotal.textContent = fmt$(total);
-
-    // Render (Invoice | Date | Client | Amount | Status)
-    body.innerHTML = rows.length
-      ? rows.map(row => {
-          const st = row.isProjection ? "upcoming" : (isPast ? "paid" : (row.status || "sent"));
-          const pill =
-            st === "upcoming" ? "tag sent" :
-            st === "paid"     ? "tag ok"   :
-            st === "overdue"  ? "tag due"  :
-            st === "partial payment"  ? "tag partial"  :
-            st === "partial"  ? "tag warn" : "tag null";
-          const invNo = row.invoice_no || (row.isProjection ? "—" : row.id);
-          return `
-            <tr ${row.pdf_url ? `data-url="${esc(row.pdf_url)}"` : ""} style="${row.pdf_url ? "cursor:pointer" : ""}" ${row.isProjection && row.pdf_url ? `title="Opens last year's invoice"` : ""}>
-              <td>${esc(invNo)}</td>
-              <td>${row.issue_date ? esc(toISODate(row.issue_date)) : "—"}</td>
-              <td>${esc(row.client_name || "—")}</td>
-              <td>${fmt$(row.subtotal)}</td>
-              <td><span class="${pill}">${esc(st)}</span></td>
-            </tr>
-          `;
-        }).join("")
-      : `<tr><td colspan="5" style="text-align:center;opacity:.75;">No invoices in ${esc(monthLabel(mStart))}</td></tr>`;
+  // Keep all real invoices for this month (even one_time)
+  // Only restrict for past months
+  if (isPast) {
+    realInMonth = realInMonth.filter(r => r.status === "paid");
   }
+
+  // === Add projected ones from last year’s paid ===
+  const realKeys = new Set(
+    actualA6
+      .filter(r => isRecurring(r.coverage_period))
+      .map(r => `${r.client_id}|${monthKey(new Date(r.issue_date))}`)
+  );
+
+  const seeds = buildSeedsOneStep(paidSeeds);
+  const projections = isPast ? [] : projectForWindow(seeds, mStart, mEnd, realKeys);
+
+  // === Combine ===
+  const rows = [
+    ...realInMonth.map(r => ({ ...r, isProjection: false })),
+    ...projections
+  ];
+
+  rows.sort((a, b) => new Date(a.issue_date) - new Date(b.issue_date));
+
+
+  // === Fix status dynamically ===
+  for (const row of rows) {
+    const d = new Date(row.issue_date);
+    const s = (row.status || '').toLowerCase();
+
+    // in renderInvoicesMonth() status normalization
+    if (row.isProjection) {
+      row.status = d > now ? 'upcoming' : 'overdue';
+    } else {
+      const s = (row.status || '').toLowerCase();
+      if (s === 'paid') {
+        row.status = 'paid';
+      } else if (s === 'partial payment') {
+        row.status = 'partial payment'; // ← keep as-is
+      } else if (d < now) {
+        row.status = 'overdue';
+      } else {
+        row.status = 'upcoming';
+      }
+    }
+  }
+
+  // === Calculate total ===
+  const total = rows.reduce((sum, r) => sum + (Number(r.subtotal) || 0), 0);
+  if (els.incomeMonthTotal) els.incomeMonthTotal.textContent = fmt$(total);
+
+  // === Render table ===
+  body.innerHTML = rows.length
+    ? rows.map(row => {
+        const pillClass =
+          row.status === 'paid'     ? 'tag ok'   :
+          row.status === 'overdue'  ? 'tag due'  :
+          row.status === 'upcoming' ? 'tag warn' :
+          row.status === 'partial payment' ? 'tag partial' : 'tag null';
+
+        const invNum = row.invoice_no || '—';
+        const click = row.pdf_url ? `data-url="${esc(row.pdf_url)}" style="cursor:pointer"` : '';
+
+        return `
+          <tr ${click}>
+            <td>${esc(invNum)}</td>
+            <td>${esc(toISODate(row.issue_date))}</td>
+            <td>${esc(row.client_name || "—")}</td>
+            <td>${fmt$(row.subtotal)}</td>
+            <td><span class="${pillClass}">${esc(row.status)}</span></td>
+          </tr>
+        `;
+      }).join('')
+    : `<tr><td colspan="5" style="text-align:center;opacity:.75;">No invoices in ${esc(monthLabel(mStart))}</td></tr>`;
+}
+
 
   // ===== Render: Card 4 (Rolling 5-month) — Paid (past) + Upcoming (future) =====
   function renderInvoicesRolling(anchor){
