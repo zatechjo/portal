@@ -1219,6 +1219,8 @@ section {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+
+
 /* Ensure main can position children absolutely */
 .main {
   position: relative;
@@ -1228,6 +1230,45 @@ section {
 #dashboard > #contentLoader {
   position: fixed;  /* center against the viewport, not the tall main */
   inset: 0;
+}
+
+/* Make mini buttons look the same inside modals */
+.modal .mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;        /* smaller padding */
+  border-radius: 6px;       /* slightly tighter corners */
+  border: 0;
+  cursor: pointer;
+  line-height: 1.1;
+  font: 600 14px "Poppins", sans-serif; /* smaller + bold */
+}
+
+/* same colors you use in the table */
+.modal .mini.pdf-options { background: #d32f2f; color: #fff; }
+.modal .mini.pdf-upload  { background: #e58d00; color: #fff; }
+
+/* hover behavior similar to table */
+.modal .mini:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+  transition: filter .2s ease, transform .1s ease;
+}
+
+#pdfOptionsModal h3 {
+  font-size: 23px;         /* bump up the size */
+  font-weight: 700;        /* make it bold */
+  margin-bottom: 10px;
+  text-align: center;
+  color: #fff;             /* keeps it bright if your modal bg is dark */
+  padding-bottom: 10px;
+}
+
+
+#pdfOptionsModal .modal-content {
+  max-width: 380px;   /* narrower box */
+  padding: 14px 20px; /* slightly less padding left/right */
 }
 
 

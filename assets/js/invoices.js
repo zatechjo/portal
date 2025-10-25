@@ -44,6 +44,25 @@ const addServiceBtn= $('#addServiceBtn');
 const serviceList  = $('#serviceList');
 const subtotalLbl  = $('#subtotalLabel');
 
+// PDF options modal
+const pdfOptionsModal = $('#pdfOptionsModal');
+const pdfOptView      = $('#pdfOptView');
+const pdfOptChange    = $('#pdfOptChange');
+const pdfOptClose     = $('#pdfOptClose');
+
+let lastClickedInvoiceId = null;
+let lastClickedInvoiceNo = null;
+let lastClickedClient    = null;
+
+const pdfInvoiceIdInput = $('#pdfInvoiceId');
+
+function cleanId(v){
+  const s = (v ?? '').toString().trim();
+  return (s && s !== 'undefined' && s !== 'null') ? s : '';
+}
+
+
+
 // --- FX: convert to USD for DB only (update rates as needed) ---
 const FX_USD_PER = {
   USD: 1,
@@ -270,8 +289,12 @@ function renderTable(){
       : `<button type="button" class="mini view-invoice" data-id="${inv.id}">View</button>`;
 
     const pdfCellHtml = inv.pdf_url
-      ? `<a class="mini" href="${inv.pdf_url}" target="_blank" rel="noopener" style="background:#d32f2f;color:#fff;border:0;">View PDF</a>`
-      : `<button type="button" class="mini pdf-upload" data-id="${inv.id}" style="background:#e58d00;color:#fff;border:0;">Upload PDF +</button>`;
+      ? `<button type="button" class="mini pdf-options" data-id="${inv.id}"
+          style="background:#d32f2f;color:#fff;border:0;">View PDF</button>`
+      : `<button type="button" class="mini pdf-upload" data-id="${inv.id}"
+          style="background:#e58d00;color:#fff;border:0;">Upload PDF +</button>`;
+
+
 
     return `
       <tr class="inv-row" data-id="${inv.id}">
@@ -588,6 +611,40 @@ tbody?.addEventListener("click", async (e) => {
 
 
 
+
+// Close options
+pdfOptClose?.addEventListener('click', () => hide(pdfOptionsModal));
+
+// View (red)
+pdfOptView?.addEventListener('click', () => {
+  if (!activePdfInvoiceId) return;
+  const inv = invoices.find(x => String(x.id) === String(activePdfInvoiceId));
+  if (!inv?.pdf_url) { alert('No PDF linked to this invoice yet.'); return; }
+  window.open(inv.pdf_url, '_blank');
+});
+
+// Change (yellow) -> opens upload modal
+pdfOptChange?.addEventListener('click', () => {
+  const rowId = cleanId(activePdfInvoiceId || pdfForm?.dataset?.invoiceId || lastClickedInvoiceId);
+  if (!rowId) { alert('No invoice selected.'); return; }
+
+  hide(pdfOptionsModal); // ensure only one modal is visible
+
+  if (pdfMsg)  pdfMsg.textContent = '';
+  if (pdfFile) pdfFile.value = '';
+  if (pdfBusy) pdfBusy.style.display = 'none';
+  if (pdfSubmit) pdfSubmit.disabled = false;
+
+  if (pdfForm)  pdfForm.dataset.invoiceId = rowId;
+  if (pdfInvoiceIdInput) pdfInvoiceIdInput.value = rowId;
+
+  show(pdfModal);
+});
+
+
+
+
+
 async function ensureInvoiceLibs() {
   if (!window.docxtemplater && !window.Docxtemplater) {
     await loadScriptOnceExact('https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.43.0/docxtemplater.min.js');
@@ -841,18 +898,51 @@ document.addEventListener('click', (e) => {
 });
 
 // ---- PDF buttons (Upload/View) ----
-// open upload modal (dark pink button)
 document.addEventListener('click', (e) => {
+  if (e.target.closest('#pdfOptionsModal')) return;
   const btn = e.target.closest('button.pdf-upload');
   if (!btn) return;
-  activePdfInvoiceId = btn.dataset.id;       // keep as string (works for UUID or number)
+
+  const rowId = cleanId(btn.dataset.id || btn.closest('tr.inv-row')?.dataset.id);
+  if (!rowId) { alert('Invalid invoice id on this row.'); return; }
+
+  // close options modal if it was open (avoid layering)
+  hide(pdfOptionsModal);
+
+  activePdfInvoiceId   = rowId;
+  lastClickedInvoiceId = rowId;
+
   if (!pdfModal) return alert('Upload modal missing.');
-  if (pdfMsg) { pdfMsg.textContent = ''; }
+  if (pdfMsg)  pdfMsg.textContent = '';
   if (pdfFile) pdfFile.value = '';
   if (pdfBusy) pdfBusy.style.display = 'none';
   if (pdfSubmit) pdfSubmit.disabled = false;
+
+  if (pdfForm)  pdfForm.dataset.invoiceId = rowId;
+  if (pdfInvoiceIdInput) pdfInvoiceIdInput.value = rowId;
+
   show(pdfModal);
 });
+
+// View PDF (red) → open options modal (ignore clicks from inside the options modal itself)
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#pdfOptionsModal')) return;
+  const btn = e.target.closest('button.pdf-options');
+  if (!btn) return;
+
+  const rowId = cleanId(btn.dataset.id || btn.closest('tr.inv-row')?.dataset.id);
+  if (!rowId) { alert('Invalid invoice id on this row.'); return; }
+
+  activePdfInvoiceId   = rowId;
+  lastClickedInvoiceId = rowId;
+
+  if (pdfForm)  pdfForm.dataset.invoiceId = rowId;
+  if (pdfInvoiceIdInput) pdfInvoiceIdInput.value = rowId;
+
+  show(pdfOptionsModal);
+});
+
+
 
 // view PDF (red button)
 document.addEventListener('click', (e) => {
@@ -876,11 +966,26 @@ pdfCancel?.addEventListener('click', () => {
 
 // submit upload
 pdfForm?.addEventListener("submit", async (e) => {
+
   e.preventDefault();
-  if (!activePdfInvoiceId) {
+
+  // ---- Resolve invoice id robustly, once, and freeze it
+  const formId = pdfForm?.dataset?.invoiceId;
+  // ---- Resolve invoice id robustly, once, and freeze it
+  const sources = [
+    activePdfInvoiceId,
+    pdfForm?.dataset?.invoiceId,
+    pdfInvoiceIdInput?.value,
+    lastClickedInvoiceId
+  ];
+  const invoiceId = sources.map(cleanId).find(Boolean) || '';
+
+  if (!invoiceId) {
     alert("No invoice selected for PDF upload.");
     return;
   }
+
+
   if (!pdfFile?.files?.length) {
     alert("Please choose a PDF file first.");
     return;
@@ -888,47 +993,40 @@ pdfForm?.addEventListener("submit", async (e) => {
 
   const file = pdfFile.files[0];
   const ext = file.name.split(".").pop().toLowerCase();
-  if (ext !== "pdf") {
-    alert("Only PDF files are allowed.");
-    return;
-  }
+  if (ext !== "pdf") { alert("Only PDF files are allowed."); return; }
 
   try {
     if (pdfBusy) pdfBusy.style.display = "block";
     if (pdfSubmit) pdfSubmit.disabled = true;
 
-    // 1) Look up invoice number + client name
-    const inv = invoices.find(x => String(x.id) === String(activePdfInvoiceId));
-    if (!inv) throw new Error("Invoice not found.");
-
-    const clientName = inv.clients?.name || "Client";
-    const safeClient = clientName.replace(/[^a-z0-9\- ]/gi, "").trim();
-    const baseFileName = `Invoice No.${inv.invoice_no} - ${safeClient}`;
-
-    // 2) Build storage path
+    // --- Build filename from the stashed metadata (optional; keep your version if you prefer)
+    const invoiceNo  = pdfForm?.dataset?.invoiceNo  || lastClickedInvoiceNo || '';
+    const clientName = pdfForm?.dataset?.client     || lastClickedClient    || 'Client';
+    const safeClient = clientName.replace(/[^a-z0-9\- ]/gi, "").trim() || "Client";
+    const baseFileName = invoiceNo ? `Invoice No.${invoiceNo} - ${safeClient}` : `Invoice - ${safeClient}`;
     const pdfPath = `generated/${baseFileName}.pdf`;
 
-    // 3) Upload to Supabase
-    const { error } = await sb.storage
+    // === Upload (overwrite)
+    const { error: upErr } = await sb.storage
       .from("Invoices")
-      .upload(pdfPath, file, {
-        upsert: true,
-        contentType: "application/pdf",
-      });
-    if (error) throw error;
+      .upload(pdfPath, file, { upsert: true, contentType: "application/pdf" });
+    if (upErr) throw upErr;
 
-    // 4) Get public URL
-    const { data } = sb.storage.from("Invoices").getPublicUrl(pdfPath);
-    const publicUrl = data.publicUrl;
+    // === Fresh public URL (cache-bust)
+    const { data: urlData } = sb.storage.from("Invoices").getPublicUrl(pdfPath);
+    const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
-    // 5) Update DB
-    await sb.from("invoices")
+    // === Update DB row using the frozen invoiceId
+    const { error: updateErr } = await sb
+      .from("invoices")
       .update({ pdf_url: publicUrl })
-      .eq("id", activePdfInvoiceId);
+      .eq("id", invoiceId);
+    if (updateErr) throw updateErr;
 
-    // 6) Refresh table + close modal
     await loadInvoices();
     hide(pdfModal);
+    // optional: clear id so a stale one can't leak
+    // activePdfInvoiceId = null;
 
   } catch (err) {
     console.error(err);
@@ -938,6 +1036,7 @@ pdfForm?.addEventListener("submit", async (e) => {
     if (pdfSubmit) pdfSubmit.disabled = false;
   }
 });
+
 
 
 // in assets/js/invoices.js (near the bottom)
