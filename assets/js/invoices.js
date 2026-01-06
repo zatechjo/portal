@@ -906,7 +906,17 @@ document.addEventListener('click', (e) => {
   const rowId = cleanId(btn.dataset.id || btn.closest('tr.inv-row')?.dataset.id);
   if (!rowId) { alert('Invalid invoice id on this row.'); return; }
 
-  // close options modal if it was open (avoid layering)
+  // ✅ NEW: stash invoice metadata for filename
+  const inv = invoices.find(x => String(x.id) === String(rowId));
+  lastClickedInvoiceNo = inv?.invoice_no || '';
+  lastClickedClient    = inv?.clients?.name || 'Client';
+
+  if (pdfForm) {
+    pdfForm.dataset.invoiceNo = String(lastClickedInvoiceNo || '');
+    pdfForm.dataset.client    = String(lastClickedClient || 'Client');
+  }
+
+  // existing stuff...
   hide(pdfOptionsModal);
 
   activePdfInvoiceId   = rowId;
@@ -933,6 +943,17 @@ document.addEventListener('click', (e) => {
   const rowId = cleanId(btn.dataset.id || btn.closest('tr.inv-row')?.dataset.id);
   if (!rowId) { alert('Invalid invoice id on this row.'); return; }
 
+  // ✅ NEW: stash invoice metadata for filename
+  const inv = invoices.find(x => String(x.id) === String(rowId));
+  lastClickedInvoiceNo = inv?.invoice_no || '';
+  lastClickedClient    = inv?.clients?.name || 'Client';
+
+  if (pdfForm) {
+    pdfForm.dataset.invoiceNo = String(lastClickedInvoiceNo || '');
+    pdfForm.dataset.client    = String(lastClickedClient || 'Client');
+  }
+
+  // existing stuff...
   activePdfInvoiceId   = rowId;
   lastClickedInvoiceId = rowId;
 
