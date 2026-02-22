@@ -147,5 +147,50 @@
     </section>
   </main>
 </div>
+
+<!-- ZAtech AI Assistant - Iris -->
+<button id="aiFab" class="ai-fab" aria-label="Open Iris" title="Ask Iris">
+  <img src="./assets/img/iris.png" alt="Iris" class="ai-fab-img" />
+</button>
+
+<section id="aiChat" class="ai-chat" aria-hidden="true">
+  <header class="ai-chat-head">
+    <div class="ai-chat-title">
+      <img src="./assets/img/iris.png" alt="Iris" class="ai-avatar" />
+      <div>
+        <div class="ai-name">Iris</div>
+        <div class="ai-sub">ZAtech AI Assistant</div>
+      </div>
+    </div>
+
+    <div class="ai-chat-actions">
+      <button id="aiMinBtn" class="ai-icon-btn" title="Minimize">—</button>
+      <button id="aiCloseBtn" class="ai-icon-btn danger" title="Close">✕</button>
+    </div>
+  </header>
+
+  <div class="ai-chat-body" id="aiBody">
+    <div class="ai-msg ai">
+      <div class="ai-bubble">
+        Hi there! 👋 I'm Iris.
+        <div class="ai-chips">
+          <button class="ai-chip" data-prompt="How much unpaid total do we have?">Unpaid total</button>
+          <button class="ai-chip" data-prompt="What invoices are due in the next 14 days?">Due next 14d</button>
+          <button class="ai-chip" data-prompt="Show revenue for last 90 days.">Revenue 90d</button>
+          <button class="ai-chip" data-prompt="Any expenses coming up soon?">Expenses soon</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="ai-chat-foot">
+    <div class="ai-input-wrap">
+      <input id="aiInput" class="ai-input" type="text" placeholder="Ask Iris anything…" />
+      <button id="aiSend" class="ai-send">↵</button>
+    </div>
+  </footer>
+</section>
+
+<script defer src="./assets/js/ai-chat-widget.js"></script>
 </body>
 </html>

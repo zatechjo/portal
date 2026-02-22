@@ -2312,3 +2312,351 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+
+/* =========================
+   IRIS – ZAtech AI Assistant
+   ========================= */
+
+:root{
+  --iris-purple: #6C4CF1;
+  --iris-purple-dark: #5A3EE0;
+  --iris-purple-soft: #EEE9FF;
+
+  --iris-bg: #0f172a;
+  --iris-card: #1e293b;
+  --iris-border: rgba(255,255,255,.08);
+  --iris-text: #f8fafc;
+  --iris-muted: #94a3b8;
+
+  --iris-ai-bubble-bg: #302e49; /* <-- your new AI bubble color */
+
+
+  --iris-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+
+/* ===== Animated purple gradient (reusable) ===== */
+@keyframes irisGradientShift{
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Floating Button */
+.ai-fab{
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
+
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  /* ✅ Animated Purple Gradient (circle) */
+  background: linear-gradient(
+    -45deg,
+    #5B2EFF,
+    #7A3BFF,
+    #A855F7,
+    #C084FC
+  );
+  background-size: 300% 300%;
+  animation: irisGradientShift 8s ease infinite;
+
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.35),
+    0 0 35px rgba(123,58,255,.45);
+
+  transition: transform .15s ease, filter .15s ease;
+  overflow: hidden;
+}
+
+.ai-fab:hover{
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.ai-fab:active{
+  transform: translateY(0) scale(.98);
+}
+
+/* subtle gloss layer */
+.ai-fab::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255,255,255,.35),
+    transparent 65%
+  );
+  mix-blend-mode: overlay;
+  pointer-events:none;
+}
+
+.ai-fab-img{
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+}
+
+/* Chat Panel */
+.ai-chat{
+  position: fixed;
+  right: 20px;
+  bottom: 95px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 520px;
+  border-radius: 20px;
+  background: var(--iris-bg);
+  box-shadow: var(--iris-shadow);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: "Poppins", sans-serif;
+}
+.ai-chat.show{ display:flex; }
+
+/* Header */
+.ai-chat-head{
+  padding: 16px;
+  background: var(--iris-card);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.ai-chat-title{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.ai-avatar{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--iris-purple);
+  padding: 6px;
+}
+.ai-name{
+  color: var(--iris-text);
+  font-weight: 700;
+  font-size: 15px;
+}
+.ai-sub{
+  color: var(--iris-muted);
+  font-size: 12px;
+}
+
+/* Header buttons */
+.ai-icon-btn{
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,.05);
+  color: white;
+  cursor:pointer;
+}
+.ai-icon-btn:hover{ background: rgba(255,255,255,.1); }
+.ai-icon-btn.danger:hover{ background: rgba(255,70,70,.2); }
+
+/* Body */
+.ai-chat-body{
+  flex:1;
+  padding:16px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.ai-msg{ display:flex; }
+.ai-msg.ai{ justify-content:flex-start; }
+.ai-msg.user{ justify-content:flex-end; }
+
+/* Message bubbles */
+.ai-bubble{
+  max-width:85%;
+  padding:12px 14px;
+  border-radius:16px;
+  font-size:13px;
+  line-height:1.4;
+
+
+  /* ✅ THIS is the line-break fix */
+  white-space: pre-wrap;
+}
+
+.ai-msg.ai .ai-bubble{
+  background: var(--iris-ai-bubble-bg);
+  color: var(--iris-text);
+}
+
+/* ✅ Animated gradient for USER bubble (the inner box) */
+.ai-msg.user .ai-bubble{
+  background: linear-gradient(
+    -45deg,
+    #5B2EFF,
+    #7A3BFF,
+    #A855F7,
+    #C084FC
+  );
+  background-size: 300% 300%;
+  animation: irisGradientShift 8s ease infinite;
+
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle gloss for the bubble too */
+.ai-msg.user .ai-bubble::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255,255,255,.22),
+    transparent 65%
+  );
+  mix-blend-mode: overlay;
+  pointer-events:none;
+}
+
+/* Chips */
+.ai-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.ai-chip{
+  background: var(--iris-purple-soft);
+  color: var(--iris-purple-dark);
+  border:none;
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:12px;
+  cursor:pointer;
+}
+.ai-chip:hover{
+  background: var(--iris-purple);
+  color:white;
+}
+
+/* Footer */
+.ai-chat-foot{
+  padding:14px;
+  background: var(--iris-card);
+}
+.ai-input-wrap{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  background: #0b1220;
+  border-radius:14px;
+  padding:8px;
+}
+.ai-input{
+  flex:1;
+  background:transparent;
+  border:none;
+  outline:none;
+  color:white;
+  font-family:"Poppins", sans-serif;
+}
+.ai-send{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  border:none;
+  background: var(--iris-purple);
+  color:white;
+  cursor:pointer;
+}
+.ai-send:hover{
+  background: var(--iris-purple-dark);
+}
+
+/* =========================
+   IRIS Header Avatar (animated)
+   ========================= */
+
+/* If you're using an IMAGE <img class="ai-avatar"> */
+.ai-avatar{
+  /* keep your sizing if already set */
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+
+  /* ✅ animated gradient behind the image */
+  background: linear-gradient(
+    -45deg,
+    #5B2EFF,
+    #7A3BFF,
+    #A855F7,
+    #C084FC
+  );
+  background-size: 300% 300%;
+  animation: irisGradientShift 8s ease infinite;
+
+  padding: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optional: subtle gloss on the header avatar too */
+.ai-avatar::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255,255,255,.22),
+    transparent 65%
+  );
+  mix-blend-mode: overlay;
+  pointer-events:none;
+}
+
+/* If your header is STILL using the old badge div (like in screenshot) */
+.ai-badge{
+  background: linear-gradient(
+    -45deg,
+    #5B2EFF,
+    #7A3BFF,
+    #A855F7,
+    #C084FC
+  ) !important;
+  background-size: 300% 300% !important;
+  animation: irisGradientShift 8s ease infinite !important;
+
+  border: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-badge::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255,255,255,.22),
+    transparent 65%
+  );
+  mix-blend-mode: overlay;
+  pointer-events:none;
+}
