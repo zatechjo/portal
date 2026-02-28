@@ -151,6 +151,7 @@ function buildStatusSelectExp(current){
       case "this_year":  return d.getFullYear() === y;
       case "next_90":    { const end = new Date(now); end.setDate(end.getDate()+90); return d >= now && d <= end; }
       case "last_90":    { const start = new Date(now); start.setDate(start.getDate()-90); return d >= start && d <= now; }
+      case "y2025":      return d.getFullYear() === 2025;
       case "y2024":      return d.getFullYear() === 2024;
       case "y2023":      return d.getFullYear() === 2023;
       case "y2022":      return d.getFullYear() === 2022;

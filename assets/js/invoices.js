@@ -210,6 +210,24 @@ async function loadClientsForSelect(){
   ).join('');
 }
 
+// ====== Client filter dropdown (table filters) ======
+async function loadClientsForFilter(){
+  if (!clientFilter) return;
+
+  const { data, error } = await sb
+    .from('clients')
+    .select('id, client_no, name')
+    .order('name', { ascending: true });
+
+  if (error){ console.error(error); return; }
+
+  clientFilter.innerHTML =
+    `<option value="all" selected>All Clients</option>` +
+    (data || []).map(c =>
+      `<option value="${c.id}">${escapeHTML(c.client_no || '')}${c.client_no ? ' — ' : ''}${escapeHTML(c.name)}</option>`
+    ).join('');
+}
+
 function fmtDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
@@ -395,12 +413,14 @@ function updateTotals(){
 }
 
 const statusFilter = document.getElementById('statusFilter');
+const clientFilter = document.getElementById('clientFilter'); // NEW
 const dateFilter = document.getElementById('dateFilter');
 
 async function applyFilters() {
   // ---- Date window ----
   let from = null, to = null;
   const today = new Date();
+
   switch (dateFilter?.value) {
     case 'last30':
       from = new Date(today); from.setDate(from.getDate() - 30);
@@ -410,6 +430,10 @@ async function applyFilters() {
       break;
     case 'thisYear':
       from = new Date(today.getFullYear(), 0, 1);
+      break;
+    case 'y2025':
+      from = new Date(2025, 0, 1);
+      to   = new Date(2026, 0, 1);
       break;
     case 'y2024':
       from = new Date(2024, 0, 1);
@@ -422,9 +446,6 @@ async function applyFilters() {
     case 'y2022':
       from = new Date(2022, 0, 1);
       to   = new Date(2023, 0, 1);
-      break;
-    default:
-      // "all" → no date constraints
       break;
   }
 
@@ -440,18 +461,23 @@ async function applyFilters() {
 
   // ---- Status constraint ----
   const wanted = statusFilter?.value || 'all';
-  if (wanted && wanted !== 'all') {
-    query = query.eq('status', wanted);
-  }
+  if (wanted !== 'all') query = query.eq('status', wanted);
+
+  // ---- Client constraint (MUST be before await) ----
+  const clientWanted = clientFilter?.value || 'all';
+  if (clientWanted !== 'all') query = query.eq('client_id', clientWanted);
 
   const { data, error } = await query;
   if (error) { console.error(error); return; }
+
   invoices = data || [];
   renderTable();
 }
 
+
 // Run when either filter changes
 statusFilter?.addEventListener('change', applyFilters);
+clientFilter?.addEventListener('change', applyFilters); // NEW
 dateFilter  ?.addEventListener('change', applyFilters);
 
 
@@ -683,7 +709,7 @@ async function saveInvoice(){
       one_time: { label: 'One time', months: 0 },
     };
     const term = termMap[termKey] || termMap.monthly;
-    const due_date = term.months > 0 ? addMonths(issue_date, term.months) : issue_date;
+    const due_date = (endInput?.value || '').trim() || issue_date; // use Service End as due date
 
     const coverage_period = term.label;
     const currencyDoc = currencySel?.value || 'JOD';
@@ -1068,8 +1094,8 @@ const hideLoader = () => loader?.classList.add('hidden');
 
 async function initInvoicesPage() {
   showLoader();
-  await Promise.all([loadClientsForSelect(), loadInvoices()]);
-  await applyFilters(); // optional: start with current filter values
+  await Promise.all([loadClientsForSelect(), loadClientsForFilter(), loadInvoices()]);
+  await applyFilters();
   hideLoader();
   mainEl?.classList.add('content-ready');
 }
