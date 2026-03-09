@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZAtech CRM Portal - Subcontractors</title>
+
+  <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+
+  <script type="module" src="./assets/js/firebase.js"></script>
+  <script type="module" src="./assets/js/auth-guard.js"></script>
+  <script type="module" src="./assets/js/idle.js"></script>
+  <script defer src="./assets/js/app.js"></script>
+  <script defer src="./assets/js/topbar.js"></script>
+
+  <script type="module" src="./assets/js/supabase.js"></script>
+  <script defer src="./assets/js/subcontractors.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
+    </div>
+    <nav class="nav" id="nav">
+      <a href="./index.html"><img src="./assets/img/dashboard.png" class="nav-icon" alt=""><span class="txt">Dashboard</span></a>
+      <a href="./clients.html"><img src="./assets/img/multiple-users-silhouette.png" class="nav-icon" alt=""><span class="txt">Clients</span></a>
+      <a href="./invoices.html"><img src="./assets/img/file.png" class="nav-icon" alt=""><span class="txt">Invoices</span></a>
+      <a href="./schedule.html"><img src="./assets/img/schedule.png" class="nav-icon" alt=""><span class="txt">Invoice Schedule</span></a>
+      <a href="./revenue.html"><img src="./assets/img/increase.png" class="nav-icon" alt=""><span class="txt">Revenue</span></a>
+      <a href="./dues.html"><img src="./assets/img/deadline.png" class="nav-icon" alt=""><span class="txt">Dues</span></a>
+      <a href="./expenses.html"><img src="./assets/img/credit-card.png" class="nav-icon" alt=""><span class="txt">Expenses</span></a>
+      <a href="./opps.html"><img src="./assets/img/rocket.png" class="nav-icon" alt=""><span class="txt">Opportunities</span></a>
+      <a href="./subcontractors.html" class="active"><img src="./assets/img/multiple-users-silhouette.png" class="nav-icon" alt=""><span class="txt">Subcontractors</span></a>
+      <a href="./settings.html"><img src="./assets/img/gear.png" class="nav-icon" alt=""><span class="txt">Settings</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div id="contentLoader" aria-hidden="true">
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading data…</div>
+      </div>
+    </div>
+
+    <div class="topbar">
+      <div class="greeting">
+        <h1 class="greet-title"><span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span></h1>
+        <p class="greet-sub">Track subcontractors and linked project allocations.</p>
+      </div>
+
+      <div class="hud">
+        <div class="date-badge" id="todayBadge">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search subcontractors, projects, clients…" />
+          </div>
+        </div>
+        <button class="icon-btn" id="notifyBtn" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false">
+            <img class="avatar" src="./assets/img/user-icon.png" alt=""> Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="subcontractors">
+      <div class="grid cols-4 sub-kpi-grid">
+        <div class="card kpi-card">
+          <div class="kpi">
+            <div>
+              <h4>Total Subcontractors</h4>
+              <div class="muted">Visible records</div>
+            </div>
+            <span class="chip" id="subKpiCountBadge">0</span>
+          </div>
+          <h5 class="kpi-num" id="subKpiCount">0</h5>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi">
+            <div>
+              <h4>Total Assigned Value</h4>
+              <div class="muted">From linked projects</div>
+            </div>
+            <span class="chip ok">USD</span>
+          </div>
+          <h5 class="kpi-num" id="subKpiAgreed">$0</h5>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi">
+            <div>
+              <h4>Total Paid</h4>
+              <div class="muted">Based on project payment logs</div>
+            </div>
+            <span class="chip ok">USD</span>
+          </div>
+          <h5 class="kpi-num" id="subKpiPaid">$0</h5>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi">
+            <div>
+              <h4>Total Remaining</h4>
+              <div class="muted">Assigned minus paid</div>
+            </div>
+            <span class="chip warn">USD</span>
+          </div>
+          <h5 class="kpi-num" id="subKpiRemaining">$0</h5>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h4>Subcontractors</h4>
+
+          <div class="filters sub-filters">
+            <input id="subSearch" class="sub-search-input" type="search" placeholder="Search by name, project, client..." />
+
+            <div class="select-wrap">
+              <select id="subStatusFilter" class="filter-select">
+                <option value="all">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Paused">Paused</option>
+                <option value="Archived">Archived</option>
+              </select>
+            </div>
+
+            <div class="select-wrap">
+              <select id="subProjectFilter" class="filter-select">
+                <option value="all">All Projects</option>
+              </select>
+            </div>
+
+            <button id="newSubcontractorBtn" class="btn2">+ New Subcontractor</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table id="subcontractorsTable">
+            <thead>
+              <tr>
+                <th data-sort="code">ID</th>
+                <th data-sort="name">Subcontractor</th>
+                <th data-sort="projects">Projects</th>
+                <th data-sort="agreed">Assigned</th>
+                <th data-sort="paid">Paid</th>
+                <th data-sort="remaining">Remaining</th>
+                <th data-sort="status">Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="subcontractorsBody">
+              <tr><td colspan="8">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- SUBCONTRACTOR MODAL -->
+<div id="subcontractorModal" class="modal" aria-hidden="true">
+  <div class="modal-content sub-modal-content">
+    <button class="close" id="subModalCloseBtn" aria-label="Close">×</button>
+
+    <div class="sub-modal-title-row">
+      <h3 id="subModalTitle">Subcontractor</h3>
+      <div class="sub-modal-actions-top">
+        <button id="subEditBtn" class="btn2">Edit</button>
+      </div>
+    </div>
+
+    <p id="subModalSubtitle" class="muted">View and manage subcontractor details.</p>
+
+    <!-- VIEW MODE -->
+    <div id="subViewMode" class="sub-mode">
+      <div class="client-details sub-info-grid">
+        <div class="info-box">
+          <span class="label">Subcontractor ID</span>
+          <span id="vSubCode"></span>
+        </div>
+
+        <div class="info-box">
+          <span class="label">Name</span>
+          <span id="vSubName"></span>
+        </div>
+
+        <div class="info-box">
+          <span class="label">Email</span>
+          <span id="vSubEmail" class="value-clip"></span>
+        </div>
+
+        <div class="info-box">
+          <span class="label">Phone</span>
+          <span id="vSubPhone"></span>
+        </div>
+
+        <div class="info-box">
+          <span class="label">Country</span>
+          <span id="vSubCountry"></span>
+        </div>
+
+        <div class="info-box">
+          <span class="label">Status</span>
+          <span id="vSubStatus"></span>
+        </div>
+
+        <div class="info-box notes full">
+          <span class="label">Notes</span>
+          <p id="vSubNotes"></p>
+        </div>
+      </div>
+
+      <div class="tab-card sub-projects-card">
+        <h4>Assigned Projects</h4>
+        <div class="table-scroll">
+          <table id="subAssignedProjectsTable">
+            <thead>
+              <tr>
+                <th>Project ID</th>
+                <th>Project Name</th>
+                <th>Client</th>
+                <th>Contract Value</th>
+                <th>This Subcontractor Gets</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+              </tr>
+            </thead>
+            <tbody id="subAssignedProjectsBody">
+              <tr><td colspan="7">No assigned projects yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub-summary-grid-row">
+        <div class="sub-summary-box">
+          <span class="label">Assigned Value</span>
+          <strong id="vSubAgreed">$0</strong>
+        </div>
+        <div class="sub-summary-box">
+          <span class="label">Paid</span>
+          <strong id="vSubPaid">$0</strong>
+        </div>
+        <div class="sub-summary-box">
+          <span class="label">Remaining</span>
+          <strong id="vSubRemaining">$0</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT / CREATE MODE -->
+    <div id="subEditMode" class="sub-mode" style="display:none;">
+      <div class="sub-tab-panel active" data-mode="edit" data-tab-panel="basic">
+        <div class="sub-form-grid">
+          <div class="form-field">
+            <label class="label" for="subNameInput">Name</label>
+            <input id="subNameInput" class="pm-input" type="text" placeholder="e.g. Adil Nawasrah" />
+          </div>
+
+          <div class="form-field">
+            <label class="label" for="subEmailInput">Email</label>
+            <input id="subEmailInput" class="pm-input" type="email" placeholder="name@email.com" />
+          </div>
+
+          <div class="form-field">
+            <label class="label" for="subPhoneInput">Phone</label>
+            <input id="subPhoneInput" class="pm-input" type="text" placeholder="+962..." />
+          </div>
+
+          <div class="form-field">
+            <label class="label" for="subCountryInput">Country</label>
+            <input id="subCountryInput" class="pm-input" type="text" placeholder="Jordan" />
+          </div>
+
+          <div class="form-field">
+            <label class="label" for="subStatusInput">Status</label>
+            <div class="select-wrap">
+              <select id="subStatusInput" class="pm-input">
+                <option value="Active">Active</option>
+                <option value="Paused">Paused</option>
+                <option value="Archived">Archived</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-field full">
+            <label class="label" for="subNotesInput">Notes</label>
+            <textarea id="subNotesInput" class="pm-input" placeholder="Any notes about this subcontractor..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-modal-footer">
+        <div id="subModalError" class="sub-modal-error"></div>
+        <button id="subCancelBtn" class="btn2">Cancel</button>
+        <button id="subSaveBtn" class="btn2 btn-success">Save Subcontractor</button>
+      </div>
+
+    
+    </div>
+  </div>
+</div>
+</body>
+</html>

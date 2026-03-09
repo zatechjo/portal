@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZAtech CRM Portal - Projects</title>
+
+  <link rel="icon" type="image/png" href="assets/img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+
+  <!-- core app scripts -->
+  <script type="module" src="./assets/js/firebase.js"></script>
+  <script type="module" src="./assets/js/auth-guard.js"></script>
+  <script type="module" src="./assets/js/idle.js"></script>
+  <script defer src="./assets/js/app.js"></script>
+  <script defer src="./assets/js/topbar.js"></script>
+
+  <!-- charts -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- supabase + page logic -->
+  <script type="module" src="./assets/js/supabase.js"></script>
+
+  <script type="module" src="./assets/js/projects.js"></script>
+
+  
+</head>
+
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
+    </div>
+    <nav class="nav" id="nav">
+      <a href="./index.html">
+        <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
+        <span class="txt">Dashboard</span>
+      </a>
+      <a href="./clients.html">
+        <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
+        <span class="txt">Clients</span>
+      </a>
+      <a href="./invoices.html">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
+      <a href="./projects.html" class="active">
+        <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
+        <span class="txt">Projects</span>
+      </a>
+      <a href="./revenue.html">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
+      </a>
+      <a href="./dues.html">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
+      </a>
+      <a href="./expenses.html">
+        <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
+        <span class="txt">Expenses</span>
+      </a>
+      <a href="./opps.html">
+        <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
+        <span class="txt">Opportunities</span>
+      </a>
+      
+      <a href="./settings.html">
+        <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
+        <span class="txt">Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="projectsMain">
+    <div id="contentLoader" aria-hidden="true">
+      <div class="loader-wrap">
+        <div class="loader-ring"></div>
+        <div class="loader-text">Loading projects…</div>
+      </div>
+    </div>
+
+    <div class="topbar">
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">Projects dashboard — profitability, delivery status, and project-linked performance in one place.</p>
+      </div>
+
+      <div class="hud">
+        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search projects, clients, managers…" />
+          </div>
+        </div>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <div class="account">
+          <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
+            <img class="avatar" src="./assets/img/user-icon.png" alt="" />
+            Ahmad <span class="caret">▾</span>
+          </button>
+          <div class="account-menu" id="accountMenu" role="menu">
+            <a href="#" role="menuitem">Profile</a>
+            <button id="logoutBtn" role="menuitem" class="menu-danger">Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="projects">
+      <div class="projects-stack">
+        <div class="grid cols-4 kpi-grid">
+          <div class="card kpi-card">
+            <div class="kpi">
+              <div>
+                <h4>Total Active Projects</h4>
+                <div class="muted">Currently in delivery or running live</div>
+              </div>
+              <span class="chip ok" id="kpiActiveProjectsCount">0</span>
+            </div>
+            <h5 class="kpi-num" id="kpiActiveProjects">0</h5>
+            <div class="kpi-foot">
+              <span id="kpiOpenVsTotal">0 of 0 open</span>
+              <span class="muted-inline" id="kpiArchivedCount">0 archived</span>
+            </div>
+          </div>
+
+          <div class="card kpi-card">
+            <div class="kpi">
+              <div>
+                <h4>Total Project Revenue</h4>
+                <div class="muted">Recognized project-linked revenue</div>
+              </div>
+              <span class="chip money good" id="kpiRevenueMargin">0%</span>
+            </div>
+            <h5 class="kpi-num" id="kpiProjectRevenue">$0</h5>
+            <div class="kpi-foot">
+              <span id="kpiAvgRevenue">Avg $0 per project</span>
+              <span class="muted-inline" id="kpiRevenueSubtitle">Across visible projects</span>
+            </div>
+          </div>
+
+          <div class="card kpi-card">
+            <div class="kpi">
+              <div>
+                <h4>Total Project Cost</h4>
+                <div class="muted">Internal, subcontractor, and direct costs</div>
+              </div>
+              <span class="chip money mid" id="kpiCostShare">0%</span>
+            </div>
+            <h5 class="kpi-num" id="kpiProjectCost">$0</h5>
+            <div class="kpi-foot">
+              <span id="kpiAvgCost">Avg $0 per project</span>
+              <span class="muted-inline" id="kpiCostSubtitle">Across visible projects</span>
+            </div>
+          </div>
+
+          <div class="card kpi-card">
+            <div class="kpi">
+              <div>
+                <h4>Total Project Profit</h4>
+                <div class="muted">Revenue minus all allocated project costs</div>
+              </div>
+              <span class="chip money good" id="kpiProfitMargin">0%</span>
+            </div>
+            <h5 class="kpi-num" id="kpiProjectProfit">$0</h5>
+            <div class="kpi-foot">
+              <span id="kpiHealthyProjects">0 healthy projects</span>
+              <span class="muted-inline" id="kpiProfitSubtitle">Margin-based view</span>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <div class="insights-grid">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h4 style="margin-bottom:4px;">Recent Project Activity</h4>
+                <div class="muted">Latest movement, milestones, and updates across projects</div>
+              </div>
+            </div>
+            <div id="recentActivityList" class="activity-list">
+              <div class="empty-state">No activity yet.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h4 style="margin-bottom:4px;">Project Health Summary</h4>
+                <div class="muted">Quick read on margin strength and active delivery health</div>
+              </div>
+            </div>
+            <div id="projectHealthList" class="health-list">
+              <div class="empty-state">No project health data yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-head">
+            <div>
+              <h4 style="margin-bottom:4px;">All Projects</h4>
+              <div class="muted">Search, filter, sort, and manage your full project portfolio <span id="demoDataBadge" class="chip warn demo-badge">Demo data</span></div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input id="projectTableSearch" class="search-input" type="search" placeholder="Search by project, client, manager, description, or code" />
+              <div class="select-wrap">
+                <select id="statusFilter" class="filter-select" aria-label="Filter by status">
+                  <option value="all">All Statuses</option>
+                  <option value="Planned">Planned</option>
+                  <option value="Active">Active</option>
+                  <option value="On Hold">On Hold</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div class="select-wrap">
+                <select id="clientFilter" class="filter-select" aria-label="Filter by client">
+                  <option value="all">All Clients</option>
+                </select>
+              </div>
+
+              <div class="select-wrap">
+                <select id="recordFilter" class="filter-select" aria-label="Filter by record state">
+                  <option value="active" selected>Active Records</option>
+                  <option value="archived">Archived Only</option>
+                  <option value="all">All Records</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="toolbar-right">
+              <button class="btn2" id="resetProjectFiltersBtn">Reset Filters</button>
+              <button class="btn2" id="newProjectBtn">+ New Project</button>
+            </div>
+          </div>
+
+          <div class="summary-strip" id="tableSummaryStrip">
+            <div class="summary-box">
+              <span class="label">Visible Projects</span>
+              <strong id="visibleProjectsCount">0</strong>
+            </div>
+            <div class="summary-box">
+              <span class="label">Visible Revenue</span>
+              <strong id="visibleRevenue">$0</strong>
+            </div>
+            <div class="summary-box">
+              <span class="label">Visible Cost</span>
+              <strong id="visibleCost">$0</strong>
+            </div>
+            <div class="summary-box">
+              <span class="label">Visible Profit</span>
+              <strong id="visibleProfit">$0</strong>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table id="projectsTable">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="project_code">Project ID</th>
+                  <th class="sortable" data-sort="project_name">Project Name</th>
+                  <th class="sortable" data-sort="client_name">Client</th>
+                  <th class="sortable" data-sort="status">Status</th>
+                  <th class="sortable" data-sort="contract_value">Contract Value</th>
+                  <th class="sortable" data-sort="total_revenue">Total Revenue</th>
+                  <th class="sortable" data-sort="total_cost">Total Cost</th>
+                  <th class="sortable" data-sort="total_profit">Profit</th>
+                  <th class="sortable" data-sort="start_date">Start Date</th>
+                  <th class="sortable" data-sort="end_date">End Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="projectsBody">
+                <tr class="table-empty-row"><td colspan="11">Loading projects…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ===== Project Modal ===== -->
+<div id="projectsModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close" id="projectModalCloseBtn" aria-label="Close">&times;</button>
+
+    <div class="modal-title-row">
+      <h3 id="projectModalTitle">Project Details</h3>
+      <span id="projectModalStatusTag" class="tag null">Planned</span>
+
+      <div class="modal-top-actions view-mode">
+        <button class="btn2" id="projectEditBtn">Edit</button>
+        <button class="btn2" id="projectArchiveBtn" style="background:#8f1d1d;">Archive</button>
+      </div>
+    </div>
+    <p class="modal-subtitle" id="projectModalSubtitle">Project summary, financials, activity, and allocation details.</p>
+
+    <div class="modal-tabs view-mode" id="projectModalTabs">
+      <button class="tab-btn active" type="button" data-tab="summary">Summary</button>
+      <button class="tab-btn" type="button" data-tab="revenue">Revenue</button>
+      <button class="tab-btn" type="button" data-tab="expenses">Expenses</button>
+      <button class="tab-btn" type="button" data-tab="activity">Activity</button>
+      <button class="tab-btn" type="button" data-tab="team">Team / Resources</button>
+    </div>
+
+    <!-- VIEW MODE -->
+    <div class="view-mode">
+      <div class="modal-tab-panel active" data-panel="summary">
+        <div class="info-grid">
+          <div class="info-box"><span class="label">Project ID</span><span id="pmProjectCode">—</span></div>
+          <div class="info-box"><span class="label">Project Name</span><span id="pmProjectName">—</span></div>
+          <div class="info-box"><span class="label">Client</span><span id="pmClientName">—</span></div>
+          <div class="info-box"><span class="label">Project Manager</span><span id="pmProjectManager">—</span></div>
+          <div class="info-box"><span class="label">Status</span><span id="pmStatus">—</span></div>
+          <div class="info-box"><span class="label">Contract Value</span><span id="pmContractValue">—</span></div>
+          <div class="info-box"><span class="label">Start Date</span><span id="pmStartDate">—</span></div>
+          <div class="info-box"><span class="label">End Date</span><span id="pmEndDate">—</span></div>
+          <div class="info-box full">
+            <span class="label">Description</span>
+            <div id="pmDescription" class="description-box">—</div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="tab-card">
+            <h4>Financial Summary</h4>
+            <div class="data-list">
+              <div class="data-item"><span class="data-item-title">Total Revenue</span><span class="data-item-value" id="pmTotalRevenue">$0</span></div>
+              <div class="data-item"><span class="data-item-title">Total Cost</span><span class="data-item-value" id="pmTotalCost">$0</span></div>
+              <div class="data-item"><span class="data-item-title">Total Profit</span><span class="data-item-value" id="pmTotalProfit">$0</span></div>
+              <div class="data-item"><span class="data-item-title">Profit Margin</span><span class="data-item-value" id="pmProfitMargin">0%</span></div>
+            </div>
+          </div>
+
+          <div class="tab-card">
+            <h4>Cost Allocation</h4>
+            <div id="pmCostBreakdown" class="data-list">
+              <div class="data-item"><span class="data-item-title">No cost breakdown yet.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-tab-panel" data-panel="revenue">
+        <div class="card-head" style="margin-bottom:12px;">
+          <div>
+            <h4 style="margin-bottom:4px;">Revenue Lines</h4>
+            <div class="muted">Project-linked invoices for this project</div>
+          </div>
+          <button class="btn2" id="pmNewInvoiceBtn">+ New Invoice</button>
+        </div>
+        <div class="tab-card">
+          <h4>Revenue Lines</h4>
+          <div id="pmRevenueList" class="data-list">
+            <div class="data-item"><span class="data-item-title">No revenue lines yet.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-tab-panel" data-panel="expenses">
+        <div class="card-head" style="margin-bottom:12px;">
+          <div>
+            <h4 style="margin:0 0 4px;">Expense Lines</h4>
+            <div class="muted">Project-linked expenses for this project</div>
+          </div>
+          <button class="btn2" id="pmNewExpenseBtn">+ New Expense</button>
+        </div>
+        <div class="tab-card">
+          <h4>Expense Lines</h4>
+          <div id="pmExpenseList" class="data-list">
+            <div class="data-item"><span class="data-item-title">No expenses yet.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-tab-panel" data-panel="activity">
+        <div class="project-tab-shell">
+          <div class="project-entry-card">
+            <div class="card-head project-entry-head">
+              <div>
+                <h4 style="margin:0 0 4px;">Add Project Activity</h4>
+                <div class="muted">Log milestones, blockers, reviews, and delivery progress</div>
+              </div>
+            </div>
+
+            <div class="project-entry-grid activity-entry-grid">
+              <div class="form-field">
+                <span class="label">Activity Title</span>
+                <input id="pmActivityTitleInput" class="pm-input" type="text" placeholder="e.g. Homepage review completed" />
+              </div>
+
+              <div class="form-field">
+                <span class="label">Stage</span>
+                <select id="pmActivityStageInput" class="pm-input">
+                  <option>Planning</option>
+                  <option>Discovery</option>
+                  <option>Design</option>
+                  <option>Building</option>
+                  <option>QA</option>
+                  <option>Review</option>
+                  <option>Delivery</option>
+                  <option>Support</option>
+                  <option>Blocked</option>
+                </select>
+              </div>
+
+              <div class="form-field full">
+                <span class="label">Description</span>
+                <textarea id="pmActivityDescriptionInput" class="pm-input" placeholder="Write a short update about what happened"></textarea>
+              </div>
+            </div>
+
+            <div class="project-entry-actions">
+              <button class="btn2" id="pmAddActivityBtn" type="button">+ Add Activity</button>
+            </div>
+          </div>
+
+          <div class="tab-card project-list-card">
+            <div class="card-head" style="margin-bottom:12px;">
+              <div>
+                <h4 style="margin:0 0 4px;">Activity Timeline</h4>
+                <div class="muted">Latest project movement in one place</div>
+              </div>
+            </div>
+
+            <div id="pmActivityList" class="project-scroll-list activity-timeline-list">
+              <div class="empty-state compact">No activity yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-tab-panel" data-panel="team">
+        <div class="project-tab-shell">
+          <div class="detail-grid project-team-grid">
+            <!-- LEFT -->
+            <div class="project-entry-card">
+              <div class="card-head project-entry-head">
+                <div>
+                  <h4 style="margin:0 0 4px;">Assign Team Member</h4>
+                  <div class="muted">Add who is working on this project and what they agreed on</div>
+                </div>
+              </div>
+
+              <div class="project-entry-grid team-entry-grid">
+                <div class="form-field">
+                  <span class="label">Team Member</span>
+                  <select id="pmTeamMemberSelect" class="pm-input">
+                    <option value="">Select member</option>
+                    <option>Adil</option>
+                    <option>Ahmad</option>
+                    <option>Zuhri</option>
+                    <option>Rami</option>
+                    <option>Maya</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <span class="label">Role</span>
+                  <input id="pmTeamRoleInput" class="pm-input" type="text" placeholder="Developer / Designer / PM" />
+                </div>
+
+                <div class="form-field">
+                  <span class="label">Agreed Amount</span>
+                  <input id="pmTeamAgreedInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+                </div>
+
+                <div class="form-field">
+                  <span class="label">Planned Payments</span>
+                  <input id="pmTeamInstallmentsInput" class="pm-input" type="number" min="1" step="1" placeholder="e.g. 4" />
+                </div>
+
+                <div class="form-field full">
+                  <span class="label">Notes</span>
+                  <input id="pmTeamNoteInput" class="pm-input" type="text" placeholder="Optional notes about this agreement" />
+                </div>
+
+              </div>
+
+              <div class="project-entry-actions">
+                <button class="btn2" id="pmAddTeamMemberBtn" type="button">+ Add Member</button>
+              </div>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="project-entry-card">
+              <div class="card-head project-entry-head">
+                <div>
+                  <h4 style="margin:0 0 4px;">Track Payment</h4>
+                  <div class="muted">Log how much was paid, when, and to whom</div>
+                </div>
+              </div>
+
+              <div class="project-entry-grid payment-entry-grid">
+                <div class="form-field">
+                  <span class="label">Member</span>
+                  <select id="pmPaymentMemberSelect" class="pm-input">
+                    <option value="">Select member</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <span class="label">Payment Date</span>
+                  <input id="pmPaymentDateInput" class="pm-input" type="date" />
+                </div>
+
+                <div class="form-field">
+                  <span class="label">Amount Sent</span>
+                  <input id="pmPaymentAmountInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+                </div>
+
+                <div class="form-field full">
+                  <span class="label">Notes</span>
+                  <input id="pmPaymentNoteInput" class="pm-input" type="text" placeholder="Optional note" />
+                </div>
+              </div>
+
+              <div class="project-entry-actions">
+                <button class="btn2" id="pmAddTeamPaymentBtn" type="button">+ Add Payment</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-grid project-team-grid" style="margin-top:14px;">
+            <div class="tab-card project-list-card">
+              <div class="card-head" style="margin-bottom:12px;">
+                <div>
+                  <h4 style="margin-bottom:4px;">Team Summary</h4>
+                  <div class="muted">Agreed amount, paid amount, remaining balance, and derived share</div>
+                </div>
+              </div>
+
+              <div id="pmTeamList" class="project-scroll-list team-summary-list">
+                <div class="empty-state empty-team">
+                  <div class="empty-icon">👥</div>
+                  <div class="empty-title">No team members yet</div>
+                  <div class="empty-sub">Add a team member above to start tracking payments</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-card project-list-card">
+              <div class="card-head" style="margin-bottom:12px;">
+                <div>
+                  <h4 style="margin:0 0 4px;">Payment History</h4>
+                  <div class="muted">Every transfer recorded with date and amount</div>
+                </div>
+              </div>
+
+              <div id="pmTeamPaymentsList" class="project-scroll-list payment-history-list">
+                <div class="empty-state empty-payments">
+                  <div class="empty-icon">💸</div>
+                  <div class="empty-title">No payments recorded</div>
+                  <div class="empty-sub">Payments logged for this project will appear here</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- EDIT / CREATE MODE -->
+    <div class="edit-mode">
+      <div class="form-grid">
+        <div class="form-field">
+          <span class="label">Project ID</span>
+          <input id="projectCodeInput" class="pm-input" type="text" placeholder="e.g. ZAPROJ-001" />
+        </div>
+        <div class="form-field">
+          <span class="label">Project Name</span>
+          <input id="projectNameInput" class="pm-input" type="text" placeholder="Project name" />
+        </div>
+        <div class="form-field">
+          <span class="label">Client</span>
+          <input id="projectClientInput" class="pm-input" type="text" placeholder="Client name" />
+        </div>
+
+        <div class="form-field">
+          <span class="label">Status</span>
+          <div class="select-wrap">
+            <select id="projectStatusInput" class="pm-input">
+              <option>Planned</option>
+              <option>Active</option>
+              <option>On Hold</option>
+              <option>Completed</option>
+              <option>Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <span class="label">Project Manager</span>
+          <input id="projectManagerInput" class="pm-input" type="text" placeholder="Project manager" />
+        </div>
+        <div class="form-field">
+          <span class="label">Contract Value</span>
+          <input id="projectContractInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+
+        <div class="form-field">
+          <span class="label">Total Revenue</span>
+          <input id="projectRevenueInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-field">
+          <span class="label">Total Cost</span>
+          <input id="projectCostInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-field">
+          <span class="label">Cost Type</span>
+          <div class="select-wrap">
+            <select id="projectCostTypeInput" class="pm-input">
+              <option value="Mixed">Mixed</option>
+              <option value="Internal Cost">Internal Cost</option>
+              <option value="Subcontractor Cost">Subcontractor Cost</option>
+              <option value="Direct Cost">Direct Cost</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <span class="label">Start Date</span>
+          <input id="projectStartInput" class="pm-input" type="date" />
+        </div>
+        <div class="form-field">
+          <span class="label">End Date</span>
+          <input id="projectEndInput" class="pm-input" type="date" />
+        </div>
+        <div class="form-field">
+          <span class="label">Profit (auto)</span>
+          <input id="projectProfitPreviewInput" class="pm-input" type="text" placeholder="$0.00" readonly />
+        </div>
+
+        <div class="form-field full">
+          <span class="label">Description</span>
+          <textarea id="projectDescriptionInput" class="pm-input" placeholder="Describe the project scope, deliverables, or notes"></textarea>
+        </div>
+      </div>
+
+      <div class="helper-row">
+        <span>Revenue, cost, profit, and margin recalculate instantly while editing.</span>
+      </div>
+    </div>
+
+    <div class="modal-actions-bar" id="projectModalActionsBar">
+      <span class="modal-error" id="projectModalError"></span>
+      <button class="btn2" id="projectSaveBtn">Save</button>
+      <button class="btn2" id="projectCancelBtn" style="background:#394b6d;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Archive Confirm Modal ===== -->
+<div id="archiveProjectModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <h3 style="margin-bottom:8px;">Archive project?</h3>
+    <p id="archiveProjectMessage">This will hide the project from active views, but keep the history and financial data intact.</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn2" id="archiveProjectCancelBtn" style="background:#394b6d;">Cancel</button>
+      <button class="btn2" id="archiveProjectConfirmBtn" style="background:#8f1d1d;">Archive</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
