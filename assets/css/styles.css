@@ -3049,7 +3049,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin: 8px 0 16px;
+  margin: 8px 0 26px;
 }
 
 #projectsModal .tab-btn {
@@ -3067,6 +3067,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: #2c8ecd;
   color: #fff;
 }
+
+  #projectsModal {
+    padding: 20px;
+  }
+
+  #projectsModal .modal-content {
+    width: min(1100px, 96vw);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  #projectsModal .modal-content::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  #projectsModal .modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
+  }
+
+  #projectsModal .modal-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
 #projectsModal .modal-tab-panel {
   display: none;
@@ -3136,7 +3161,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 #projectsModal .data-item-title {
-  font-weight: 700;
+  font-weight: 500;
+  font-size: 15px;
   color: #eef5ff;
 }
 
@@ -3148,12 +3174,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 #projectsModal .data-item-sub {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
 }
 
 #projectsModal .data-item-value {
   text-align: right;
-  font-weight: 700;
+  font-weight: 500;
+  font-size: 15px;
   white-space: nowrap;
 }
 
@@ -3195,6 +3222,54 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 6px;
+}
+
+#recentActivityList {
+  max-height: 260px;   /* roughly 4 activity items */
+  overflow-y: auto;
+  padding-right: 4px;  /* prevents scrollbar from touching text */
+}
+
+/* optional nicer scrollbar */
+#recentActivityList::-webkit-scrollbar {
+  width: 6px;
+}
+
+#recentActivityList::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+}
+
+#recentActivityList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.activity-card {
+  position: relative;
+}
+
+#invModal .edit-field,
+#projectInvoiceModal .edit-field {
+  width: 100%;
+  padding: 12px 14px;
+  height: auto;
+}
+
+#invModal .inv-grid .edit-field.show,
+#projectInvoiceModal .inv-grid .edit-field.show {
+  display: block;
+  padding-bottom: 10px;
+}
+
+.activity-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, #111827);
 }
 
 #projectsModal .helper-row {

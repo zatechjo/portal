@@ -64,11 +64,14 @@
         <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
         <span class="txt">Expenses</span>
       </a>
+      <a href="./subcontractors.html" class="active">
+        <img src="./assets/img/sub.png" alt="Subcontractors" class="nav-icon">
+        <span class="txt">Subcontractors</span>
+      </a>
       <a href="./opps.html">
         <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
         <span class="txt">Opportunities</span>
       </a>
-      
       <a href="./settings.html">
         <img src="./assets/img/gear.png" alt="Settings" class="nav-icon">
         <span class="txt">Settings</span>
@@ -152,7 +155,7 @@
             <div class="kpi">
               <div>
                 <h4>Total Project Cost</h4>
-                <div class="muted">Internal, subcontractor, and direct costs</div>
+                <div class="muted">Expenses and subcontractor costs</div>
               </div>
               <span class="chip money mid" id="kpiCostShare">0%</span>
             </div>
@@ -211,7 +214,7 @@
           <div class="card-head">
             <div>
               <h4 style="margin-bottom:4px;">All Projects</h4>
-              <div class="muted">Search, filter, sort, and manage your full project portfolio <span id="demoDataBadge" class="chip warn demo-badge">Demo data</span></div>
+              <div class="muted">Search, filter, sort, and manage your full project portfolio</div>
             </div>
           </div>
 
@@ -362,13 +365,12 @@
       <div class="modal-tab-panel" data-panel="revenue">
         <div class="card-head" style="margin-bottom:12px;">
           <div>
-            <h4 style="margin-bottom:4px;">Revenue Lines</h4>
+            <h4 style="margin:0 0 4px;">Revenue Lines</h4>
             <div class="muted">Project-linked invoices for this project</div>
           </div>
           <button class="btn2" id="pmNewInvoiceBtn">+ New Invoice</button>
         </div>
         <div class="tab-card">
-          <h4>Revenue Lines</h4>
           <div id="pmRevenueList" class="data-list">
             <div class="data-item"><span class="data-item-title">No revenue lines yet.</span></div>
           </div>
@@ -384,7 +386,6 @@
           <button class="btn2" id="pmNewExpenseBtn">+ New Expense</button>
         </div>
         <div class="tab-card">
-          <h4>Expense Lines</h4>
           <div id="pmExpenseList" class="data-list">
             <div class="data-item"><span class="data-item-title">No expenses yet.</span></div>
           </div>
@@ -464,12 +465,7 @@
                 <div class="form-field">
                   <span class="label">Team Member</span>
                   <select id="pmTeamMemberSelect" class="pm-input">
-                    <option value="">Select member</option>
-                    <option>Adil</option>
-                    <option>Ahmad</option>
-                    <option>Zuhri</option>
-                    <option>Rami</option>
-                    <option>Maya</option>
+                    <option value="">Select subcontractor</option>
                   </select>
                 </div>
 
@@ -582,7 +578,7 @@
       <div class="form-grid">
         <div class="form-field">
           <span class="label">Project ID</span>
-          <input id="projectCodeInput" class="pm-input" type="text" placeholder="e.g. ZAPROJ-001" />
+          <input id="projectCodeInput" class="pm-input" type="text" placeholder="Auto-generated" readonly />
         </div>
         <div class="form-field">
           <span class="label">Project Name</span>
@@ -590,7 +586,11 @@
         </div>
         <div class="form-field">
           <span class="label">Client</span>
-          <input id="projectClientInput" class="pm-input" type="text" placeholder="Client name" />
+          <div class="select-wrap">
+            <select id="projectClientInput" class="pm-input">
+              <option value="">Select client</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-field">
@@ -614,25 +614,6 @@
           <input id="projectContractInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
         </div>
 
-        <div class="form-field">
-          <span class="label">Total Revenue</span>
-          <input id="projectRevenueInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
-        </div>
-        <div class="form-field">
-          <span class="label">Total Cost</span>
-          <input id="projectCostInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
-        </div>
-        <div class="form-field">
-          <span class="label">Cost Type</span>
-          <div class="select-wrap">
-            <select id="projectCostTypeInput" class="pm-input">
-              <option value="Mixed">Mixed</option>
-              <option value="Internal Cost">Internal Cost</option>
-              <option value="Subcontractor Cost">Subcontractor Cost</option>
-              <option value="Direct Cost">Direct Cost</option>
-            </select>
-          </div>
-        </div>
 
         <div class="form-field">
           <span class="label">Start Date</span>
@@ -654,7 +635,7 @@
       </div>
 
       <div class="helper-row">
-        <span>Revenue, cost, profit, and margin recalculate instantly while editing.</span>
+        <span>Revenue follows contract value. Cost is calculated from linked expenses and subcontractor payments.</span>
       </div>
     </div>
 
@@ -677,5 +658,303 @@
     </div>
   </div>
 </div>
+
+<!-- ===== Project Expense Bridge Modal ===== -->
+<div id="expense-modal" class="modal">
+  <div class="modal-content">
+    <button class="close" id="expenseCloseBtn">&times;</button>
+
+    <h3 id="expense-title" style="display:flex;align-items:center;gap:10px;">
+      <span id="expense-title-text">New Expense</span>
+      <button
+        class="btn2"
+        id="deleteExpenseBtn"
+        style="background:#a5030e;margin-top:13px;display:none;"
+        type="button"
+      >
+        Delete
+      </button>
+      <button
+        class="btn2"
+        id="editExpenseBtn"
+        style="display:none;"
+        type="button"
+      >
+        Edit
+      </button>
+    </h3>
+
+    <!-- hidden linked project id -->
+    <input id="exp-project-id-input" type="hidden" />
+
+    <div class="client-details">
+      <div class="info-box">
+        <span class="label">Project</span>
+        <span id="exp-project" class="value-clip"></span>
+        <input
+          id="exp-project-input"
+          class="edit-field"
+          type="text"
+          readonly
+          placeholder="Linked project"
+        />
+      </div>
+
+      <div class="info-box">
+        <span class="label">Vendor</span>
+        <span id="exp-vendor" class="value-clip"></span>
+        <input
+          id="exp-vendor-input"
+          class="edit-field"
+          type="text"
+          placeholder="e.g., AWS, Namecheap, Freelancer"
+        />
+      </div>
+
+      <div class="info-box">
+        <span class="label">Description</span>
+        <span id="exp-desc" class="value-clip"></span>
+        <input
+          id="exp-desc-input"
+          class="edit-field"
+          type="text"
+          placeholder="e.g., Hosting renewal for ArLAR"
+        />
+      </div>
+
+      <div class="info-box">
+        <span class="label">Client</span>
+        <span id="exp-client" class="value-clip"></span>
+        <input
+          id="exp-client-input"
+          class="edit-field"
+          type="text"
+          readonly
+          placeholder="Auto-filled from project"
+        />
+      </div>
+
+      <div class="info-box">
+        <span class="label">Service</span>
+        <span id="exp-service" class="value-clip"></span>
+        <select id="exp-service-input" class="edit-field">
+          <option value="email">Email</option>
+          <option value="hosting">Hosting</option>
+          <option value="domain">Domain</option>
+          <option value="cloud">Cloud</option>
+          <option value="design">Design</option>
+          <option value="automation">Automation</option>
+          <option value="cdn">CDN</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="info-box">
+        <span class="label">Date</span>
+        <span id="exp-date"></span>
+        <input id="exp-date-input" class="edit-field" type="date" />
+      </div>
+
+      <div class="info-box">
+        <span class="label">Amount (USD)</span>
+        <span id="exp-amount"></span>
+        <input
+          id="exp-amount-input"
+          class="edit-field"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+        />
+      </div>
+
+      <div class="info-box">
+        <span class="label">Frequency</span>
+        <span id="exp-frequency"></span>
+        <select id="exp-frequency-input" class="edit-field">
+          <option value="Monthly">Monthly</option>
+          <option value="2 Years">2 Years</option>
+          <option value="Yearly">Yearly</option>
+          <option value="One time">One time</option>
+        </select>
+      </div>
+
+      <div class="info-box">
+        <span class="label">Status</span>
+        <span id="exp-status"></span>
+        <select id="exp-status-input" class="edit-field">
+          <option value="Unpaid">Unpaid</option>
+          <option value="Paid">Paid</option>
+          <option value="Partial Payment">Partial Payment</option>
+          <option value="Upcoming">Upcoming</option>
+          <option value="Null">Null</option>
+        </select>
+      </div>
+    </div>
+
+    <div
+      id="expense-edit-actions"
+      class="section-divider"
+      style="display:none;justify-content:flex-end;gap:10px;"
+    >
+      <span id="expenseEditError" style="color:#ff8b8b;margin-right:auto;"></span>
+      <button class="btn2" id="saveExpenseBtn" type="button">Save</button>
+      <button
+        class="btn2"
+        id="cancelExpenseBtn"
+        type="button"
+        style="background:#394b6d;"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Project Invoice Bridge Modal ===== -->
+<div id="projectInvoiceModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close" id="projectInvoiceCloseBtn" aria-label="Close">×</button>
+
+    <h3>Create a New Invoice</h3>
+    <p class="muted">Choose a client, set the service period and payment terms, add one or more services, then generate the invoice files.</p>
+
+    <input type="hidden" id="projectInvoiceProjectIdInput" />
+
+    <div id="projectInvFormWrap">
+      <div class="grid cols-3 inv-grid">
+        <div class="field">
+          <label for="projectInvoiceClientSelect" class="filter-label">Client</label>
+          <div class="select-wrap">
+            <select id="projectInvoiceClientSelect" class="filter-select"></select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="projectInvoiceCurrency" class="filter-label">Currency</label>
+          <div class="select-wrap">
+            <select id="projectInvoiceCurrency" class="filter-select">
+              <option value="JOD">JOD</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="CAD">CAD</option>
+              <option value="GBP">GBP</option>
+              <option value="SAR">SAR</option>
+              <option value="AED">AED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="projectInvoiceTerms" class="filter-label">Payment Terms</label>
+          <div class="select-wrap">
+            <select id="projectInvoiceTerms" class="filter-select">
+              <option value="monthly" selected>Monthly</option>
+              <option value="3m">3 Months</option>
+              <option value="6m">6 Months</option>
+              <option value="annual">Annual</option>
+              <option value="one_time">One time</option>
+            </select>
+          </div>
+          <small class="muted">Due date will be calculated from invoice date.</small>
+        </div>
+      </div>
+
+      <div class="grid cols-2 inv-grid">
+        <div class="field">
+          <label for="projectInvoiceStart" class="filter-label">Service Start</label>
+          <input type="date" id="projectInvoiceStart" class="edit-field show" />
+        </div>
+
+        <div class="field">
+          <label for="projectInvoiceEnd" class="filter-label">Service End</label>
+          <input type="date" id="projectInvoiceEnd" class="edit-field show" />
+        </div>
+      </div>
+
+      <div class="services">
+        <div class="services-head">
+          <h4>Service Lines</h4>
+          <button id="projectInvoiceAddServiceBtn" class="btn2 btn-dashed" type="button">+ Add another service</button>
+        </div>
+
+        <div id="projectInvoiceServiceList" class="service-list"></div>
+
+        <div class="totals">
+          <div class="totals-item">Subtotal: <strong><span id="projectInvoiceSubtotalLabel">0.00</span></strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="projectInvoiceClearBtn" class="btn2 btn-danger" type="button">Clear Invoice</button>
+      <div class="spacer"></div>
+      <span id="projectInvoiceError" class="modal-error" style="margin-right:12px;"></span>
+      <button id="projectInvoiceGenerateBtn" class="btn2 btn-success" type="button">Generate Invoice</button>
+      <button id="projectInvoiceCancelBtn" class="btn2" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Project Invoice Progress Modal ===== -->
+<div id="projectInvoiceProgressModal" class="modal" aria-hidden="true">
+  <div class="modal-content modal-center">
+    <div class="success-top">
+      <h5>Generating your invoice…</h5>
+    </div>
+
+    <div class="centered" style="display:flex;flex-direction:column;align-items:center;gap:12px;margin:14px 0 6px;">
+      <div class="spinner" style="display:block;"></div>
+      <p id="projectInvoiceProgressMsg" class="muted center">Preparing files…</p>
+    </div>
+
+    <p class="muted center small">This usually takes a few seconds.</p>
+  </div>
+</div>
+
+<!-- ZAtech AI Assistant - Iris -->
+<button id="aiFab" class="ai-fab" aria-label="Open Iris" title="Ask Iris">
+  <img src="./assets/img/iris.png" alt="Iris" class="ai-fab-img" />
+</button>
+
+<section id="aiChat" class="ai-chat" aria-hidden="true">
+  <header class="ai-chat-head">
+    <div class="ai-chat-title">
+      <img src="./assets/img/iris.png" alt="Iris" class="ai-avatar" />
+      <div>
+        <div class="ai-name">Iris</div>
+        <div class="ai-sub">ZAtech AI Assistant</div>
+      </div>
+    </div>
+
+    <div class="ai-chat-actions">
+      <button id="aiMinBtn" class="ai-icon-btn" title="Minimize">—</button>
+      <button id="aiCloseBtn" class="ai-icon-btn danger" title="Close">✕</button>
+    </div>
+  </header>
+
+  <div class="ai-chat-body" id="aiBody">
+    <div class="ai-msg ai">
+      <div class="ai-bubble">
+        Hi there! 👋 I'm Iris.
+        <div class="ai-chips">
+          <button class="ai-chip" data-prompt="How much unpaid total do we have?">Unpaid total</button>
+          <button class="ai-chip" data-prompt="What invoices are due in the next 14 days?">Due next 14d</button>
+          <button class="ai-chip" data-prompt="Show revenue for last 90 days.">Revenue 90d</button>
+          <button class="ai-chip" data-prompt="Any expenses coming up soon?">Expenses soon</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="ai-chat-foot">
+    <div class="ai-input-wrap">
+      <input id="aiInput" class="ai-input" type="text" placeholder="Ask Iris anything…" />
+      <button id="aiSend" class="ai-send">↵</button>
+    </div>
+  </footer>
+</section>
+
+<script defer src="./assets/js/ai-chat-widget.js"></script>
 </body>
 </html>

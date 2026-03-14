@@ -66,122 +66,17 @@
     subNotesInput: $("#subNotesInput"),
   };
 
-  const state = {
-    rows: [],
-    projects: [],
-    sortKey: "name",
-    sortDir: "asc",
-    currentId: null,
-    modalMode: "view", // view | create | edit
-    usingDemo: false,
-  };
+    const state = {
+      rows: [],
+      projects: [],
+      sortKey: "name",
+      sortDir: "asc",
+      currentId: null,
+      modalMode: "view", // view | create | edit
+    };
 
-  const DEMO_SUBS = [
-    {
-      id: "demo-sub-1",
-      subcontractor_code: "SUB-001",
-      name: "Adil Nawasrah",
-      email: "adil@example.com",
-      phone: "+962 7 9000 1111",
-      country: "Jordan",
-      status: "Active",
-      notes: "Main external frontend dev."
-    },
-    {
-      id: "demo-sub-2",
-      subcontractor_code: "SUB-002",
-      name: "Mariam K.",
-      email: "mariam@example.com",
-      phone: "+962 7 9555 3333",
-      country: "Jordan",
-      status: "Active",
-      notes: "Visual design support."
-    },
-    {
-      id: "demo-sub-3",
-      subcontractor_code: "SUB-003",
-      name: "Zuhair Audio",
-      email: "zuhair@example.com",
-      phone: "+962 7 7777 2222",
-      country: "Jordan",
-      status: "Paused",
-      notes: "Motion / video support."
-    }
-  ];
 
-  const DEMO_PROJECTS = [
-    {
-      id: "proj-1",
-      project_code: "PRJ-001",
-      project_name: "Faces of Palestine UX Refresh",
-      client_name: "Faces of Palestine",
-      contract_value: 5400,
-      start_date: "2026-02-01",
-      end_date: "2026-03-25",
-      team_allocation: [
-        {
-          subcontractor_id: "demo-sub-1",
-          member_name: "Adil Nawasrah",
-          agreed_amount: 3500,
-          payments: [
-            { amount: 1000, date: "2026-02-10", note: "First transfer" },
-            { amount: 1000, date: "2026-03-03", note: "Second transfer" }
-          ]
-        }
-      ]
-    },
-    {
-      id: "proj-2",
-      project_code: "PRJ-002",
-      project_name: "JSR Congress UX Improvements",
-      client_name: "Jordanian Society of Rheumatology",
-      contract_value: 3100,
-      start_date: "2026-02-15",
-      end_date: "2026-04-05",
-      team_allocation: [
-        {
-          subcontractor_id: "demo-sub-1",
-          member_name: "Adil Nawasrah",
-          agreed_amount: 1300,
-          payments: []
-        }
-      ]
-    },
-    {
-      id: "proj-3",
-      project_code: "PRJ-003",
-      project_name: "ArLAR Congress Portal Enhancements",
-      client_name: "ArLAR",
-      contract_value: 4200,
-      start_date: "2026-01-20",
-      end_date: "2026-03-30",
-      team_allocation: [
-        {
-          subcontractor_id: "demo-sub-2",
-          member_name: "Mariam K.",
-          agreed_amount: 1800,
-          payments: [{ amount: 1800, date: "2026-02-14", note: "Paid in full" }]
-        }
-      ]
-    },
-    {
-      id: "proj-4",
-      project_code: "PRJ-004",
-      project_name: "Pupa Job Simulation Platform",
-      client_name: "Pupa",
-      contract_value: 8000,
-      start_date: "2026-03-01",
-      end_date: "2026-06-10",
-      team_allocation: [
-        {
-          subcontractor_id: "demo-sub-3",
-          member_name: "Zuhair Audio",
-          agreed_amount: 1200,
-          payments: [{ amount: 400, date: "2026-03-09", note: "Advance" }]
-        }
-      ]
-    }
-  ];
+
 
   function setLoader(on) {
     if (!els.loader) return;
@@ -201,7 +96,7 @@
   function normalizeSub(row) {
     return {
       id: row.id,
-      subcontractor_code: row.subcontractor_code || row.code || `SUB-${String(row.id).slice(-3).padStart(3, "0")}`,
+      subcontractor_code: row.subcontractor_code || "Auto-generated",
       name: row.name || "",
       email: row.email || "",
       phone: row.phone || "",
@@ -210,6 +105,8 @@
       notes: row.notes || ""
     };
   }
+
+
 
   function normalizeProject(row) {
     return {
@@ -225,45 +122,26 @@
   }
 
   async function fetchSubcontractors() {
-    if (!window.sb) {
-      state.usingDemo = true;
-      return DEMO_SUBS.map(normalizeSub);
-    }
+    const { data, error } = await window.sb
+      .from("subcontractors")
+      .select("*")
+      .order("name", { ascending: true });
 
-    try {
-      const { data, error } = await window.sb
-        .from("subcontractors")
-        .select("*")
-        .order("name", { ascending: true });
-
-      if (error) throw error;
-      state.usingDemo = false;
-      return (data || []).map(normalizeSub);
-    } catch (err) {
-      console.warn("[subcontractors] using demo subcontractors:", err.message);
-      state.usingDemo = true;
-      return DEMO_SUBS.map(normalizeSub);
-    }
+    if (error) throw error;
+    return (data || []).map(normalizeSub);
   }
+
 
   async function fetchProjects() {
-    if (!window.sb || state.usingDemo) {
-      return DEMO_PROJECTS.map(normalizeProject);
-    }
+    const { data, error } = await window.sb
+      .from("projects")
+      .select("id, project_code, project_name, client_name, contract_value, start_date, end_date, team_allocation")
+      .order("project_name", { ascending: true });
 
-    try {
-      const { data, error } = await window.sb
-        .from("projects")
-        .select("id, project_code, project_name, client_name, contract_value, start_date, end_date, team_allocation")
-        .order("project_name", { ascending: true });
-
-      if (error) throw error;
-      return (data || []).map(normalizeProject);
-    } catch (err) {
-      console.warn("[subcontractors] using demo projects:", err.message);
-      return DEMO_PROJECTS.map(normalizeProject);
-    }
+    if (error) throw error;
+    return (data || []).map(normalizeProject);
   }
+
 
   function datestr(v) {
     if (!v) return "—";
@@ -586,13 +464,6 @@
     return "";
   }
 
-  function nextCode() {
-    const nums = state.rows
-      .map(r => Number(String(r.subcontractor_code || "").replace(/\D/g, "")))
-      .filter(n => Number.isFinite(n));
-
-    return `SUB-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0")}`;
-  }
 
   async function saveSub() {
     const payload = buildPayload();
@@ -607,37 +478,10 @@
       els.saveBtn.disabled = true;
       els.saveBtn.textContent = "Saving…";
 
-      if (state.usingDemo || !window.sb) {
-        if (state.modalMode === "create") {
-          const row = normalizeSub({
-            id: `demo-sub-${Date.now()}`,
-            subcontractor_code: nextCode(),
-            ...payload
-          });
-          state.rows.unshift(row);
-          renderTable();
-          openView(row.id);
-        } else {
-          const idx = state.rows.findIndex(r => String(r.id) === String(state.currentId));
-          if (idx >= 0) {
-            state.rows[idx] = normalizeSub({
-              ...state.rows[idx],
-              ...payload
-            });
-            renderTable();
-            openView(state.rows[idx].id);
-          }
-        }
-        return;
-      }
-
       if (state.modalMode === "create") {
         const { data, error } = await window.sb
           .from("subcontractors")
-          .insert([{
-            subcontractor_code: nextCode(),
-            ...payload
-          }])
+          .insert([payload])
           .select("*")
           .single();
 
@@ -670,6 +514,7 @@
       els.saveBtn.textContent = "Save Subcontractor";
     }
   }
+
 
   function wireEvents() {
     els.newBtn?.addEventListener("click", openCreate);
@@ -740,6 +585,15 @@
     setLoader(false);
     els.main?.classList.add("content-ready");
   }
+
+  init().catch((err) => {
+    console.error("[subcontractors] init failed:", err);
+    setLoader(false);
+    if (els.body) {
+      els.body.innerHTML = `<tr><td colspan="8" class="table-empty">Failed to load subcontractors.</td></tr>`;
+    }
+  });
+
 
   init();
 })();
