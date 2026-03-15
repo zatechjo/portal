@@ -101,6 +101,7 @@ import { sb } from './supabase.js';
     projectStatusInput: byId('projectStatusInput'),
     projectManagerInput: byId('projectManagerInput'),
     projectContractInput: byId('projectContractInput'),
+    projectCurrencyInput: byId('projectCurrencyInput'),
     projectStartInput: byId('projectStartInput'),
     projectEndInput: byId('projectEndInput'),
     projectProfitPreviewInput: byId('projectProfitPreviewInput'),
@@ -110,7 +111,9 @@ import { sb } from './supabase.js';
     // revenue / expense buttons
     pmNewInvoiceBtn: byId('pmNewInvoiceBtn'),
     pmNewExpenseBtn: byId('pmNewExpenseBtn'),
+    pmLinkExpenseBtn: byId('pmLinkExpenseBtn'),
 
+    
     // expense bridge modal
     expenseModal: byId('expense-modal'),
     expenseCloseBtn: byId('expenseCloseBtn'),
@@ -119,6 +122,14 @@ import { sb } from './supabase.js';
     editExpenseBtn: byId('editExpenseBtn'),
     expenseActionsBar: byId('expense-edit-actions'),
     expenseEditError: byId('expenseEditError'),
+
+    linkExpenseModal: byId('linkExpenseModal'),
+    linkExpenseCloseBtn: byId('linkExpenseCloseBtn'),
+    linkExpenseProjectIdInput: byId('linkExpenseProjectIdInput'),
+    linkExpenseSelect: byId('linkExpenseSelect'),
+    linkExpenseError: byId('linkExpenseError'),
+    linkExpenseSaveBtn: byId('linkExpenseSaveBtn'),
+    linkExpenseCancelBtn: byId('linkExpenseCancelBtn'),
 
     expVendorInput: byId('exp-vendor-input'),
     expDescInput: byId('exp-desc-input'),
@@ -146,6 +157,7 @@ import { sb } from './supabase.js';
     pmTeamMemberSelect: byId('pmTeamMemberSelect'),
     pmTeamRoleInput: byId('pmTeamRoleInput'),
     pmTeamAgreedInput: byId('pmTeamAgreedInput'),
+    pmTeamCurrencyInput: byId('pmTeamCurrencyInput'),
     pmTeamInstallmentsInput: byId('pmTeamInstallmentsInput'),
     pmAddTeamMemberBtn: byId('pmAddTeamMemberBtn'),
     pmTeamNoteInput: byId('pmTeamNoteInput'),
@@ -154,6 +166,7 @@ import { sb } from './supabase.js';
     pmPaymentMemberSelect: byId('pmPaymentMemberSelect'),
     pmPaymentDateInput: byId('pmPaymentDateInput'),
     pmPaymentAmountInput: byId('pmPaymentAmountInput'),
+    pmPaymentCurrencyInput: byId('pmPaymentCurrencyInput'),
     pmPaymentNoteInput: byId('pmPaymentNoteInput'),
     pmAddTeamPaymentBtn: byId('pmAddTeamPaymentBtn'),
 
@@ -195,11 +208,26 @@ import { sb } from './supabase.js';
     activeTab: 'summary',
   
     expenseBridgeProjectId: null,
+    linkExpenseProjectId: null,
 
     invoiceBridgeProjectId: null,
     clientsFull: [],
 
   };
+
+  const PROJECT_FX_USD_PER = {
+    USD: 1,
+    JOD: 1.41,
+    EUR: 1.09,
+    GBP: 1.28,
+    SAR: 0.2667,
+    AED: 0.2723
+  };
+
+  function convertToUSD(amount, currency = 'USD') {
+    const rate = PROJECT_FX_USD_PER[String(currency || 'USD').toUpperCase()] ?? 1;
+    return safeNum(amount) * rate;
+  }
 
   function fmtMoney(value) {
     const n = Number(value || 0);
@@ -425,8 +453,8 @@ import { sb } from './supabase.js';
       sumExpenseLines(expenseLines, 'Expenses');
 
     const derivedSubcontractorCost =
+      getProjectSubcontractorValue({ team_allocation: teamAllocation }) ||
       safeNum(project.subcontractor_cost) ||
-      sumTeamPayments(teamAllocation) ||
       sumExpenseLines(expenseLines, 'Subcontractor Costs');
 
     const derivedTotalCost = derivedExpenseCost + derivedSubcontractorCost;
@@ -1091,6 +1119,113 @@ import { sb } from './supabase.js';
     state.expenseBridgeProjectId = null;
   }
 
+  function currentYearRange() {
+    const now = new Date();
+    const year = now.getFullYear();
+    return {
+      start: `${year}-01-01`,
+      end: `${year}-12-31`
+    };
+  }
+
+  function closeLinkExpenseModal() {
+    els.linkExpenseModal?.classList.remove('show');
+    els.linkExpenseModal?.setAttribute('aria-hidden', 'true');
+    if (els.linkExpenseError) els.linkExpenseError.textContent = '';
+    if (els.linkExpenseSelect) {
+      els.linkExpenseSelect.innerHTML = '<option value="">Select an expense</option>';
+      els.linkExpenseSelect.value = '';
+    }
+    if (els.linkExpenseProjectIdInput) els.linkExpenseProjectIdInput.value = '';
+    state.linkExpenseProjectId = null;
+  }
+
+  async function openLinkExpenseModal(projectId) {
+    const project = findProject(projectId);
+    if (!project) return;
+
+    state.linkExpenseProjectId = project.id;
+    if (els.linkExpenseProjectIdInput) els.linkExpenseProjectIdInput.value = project.id;
+    if (els.linkExpenseError) els.linkExpenseError.textContent = '';
+
+    const { start, end } = currentYearRange();
+
+    try {
+      const { data, error } = await sb
+        .from('expenses')
+        .select('id, vendor, description, expense_date, amount, client_name, project_id')
+        .eq('client_name', project.client_name)
+        .is('project_id', null)
+        .gte('expense_date', start)
+        .lte('expense_date', end)
+        .order('expense_date', { ascending: false });
+
+      if (error) throw error;
+
+      const rows = data || [];
+
+      if (!els.linkExpenseSelect) return;
+
+      els.linkExpenseSelect.innerHTML =
+        '<option value="">Select an expense</option>' +
+        rows.map((row) => {
+          const label = `${fmtMoney(row.amount)}: ${row.description || 'No description'} - ${row.vendor || 'Unknown vendor'} - ${fmtDate(row.expense_date)}`;
+          return `<option value="${row.id}">${escapeHTML(label)}</option>`;
+        }).join('');
+
+      els.linkExpenseModal?.classList.add('show');
+      els.linkExpenseModal?.setAttribute('aria-hidden', 'false');
+    } catch (error) {
+      console.error('[projects] openLinkExpenseModal failed:', error);
+      if (els.linkExpenseError) {
+        els.linkExpenseError.textContent = error?.message || 'Failed to load available expenses.';
+      }
+      els.linkExpenseModal?.classList.add('show');
+      els.linkExpenseModal?.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  async function saveLinkedExpenseToProject() {
+    const project = findProject(state.linkExpenseProjectId || state.selectedId);
+    if (!project) return;
+
+    const expenseId = els.linkExpenseSelect?.value || '';
+
+    if (els.linkExpenseError) els.linkExpenseError.textContent = '';
+
+    if (!expenseId) {
+      if (els.linkExpenseError) els.linkExpenseError.textContent = 'Please select an expense.';
+      return;
+    }
+
+    try {
+      const { error } = await sb
+        .from('expenses')
+        .update({
+          project_id: project.id
+        })
+        .eq('id', expenseId);
+
+      if (error) throw error;
+
+      await refreshProjectLinkedFinancials(project.id);
+
+      await logProjectActivity(project.id, {
+        title: 'Expense linked',
+        type: 'Expense',
+        note: 'An existing expense was linked to this project'
+      });
+
+      closeLinkExpenseModal();
+      showToast('Expense linked to project');
+    } catch (error) {
+      console.error('[projects] saveLinkedExpenseToProject failed:', error);
+      if (els.linkExpenseError) {
+        els.linkExpenseError.textContent = error?.message || 'Failed to link expense.';
+      }
+    }
+  }
+
   function openProjectExpenseModal(projectId) {
     const project = findProject(projectId);
     if (!project) return;
@@ -1730,6 +1865,7 @@ import { sb } from './supabase.js';
     els.projectStatusInput.value = normalizeStatus(project?.status || 'Planned');
     els.projectManagerInput.value = project?.project_manager || '';
     els.projectContractInput.value = safeNum(project?.contract_value || 0) || '';
+    if (els.projectCurrencyInput) els.projectCurrencyInput.value = 'USD';
     els.projectStartInput.value = project?.start_date || '';
     els.projectEndInput.value = project?.end_date || '';
     els.projectDescriptionInput.value = project?.description || '';
@@ -1737,7 +1873,10 @@ import { sb } from './supabase.js';
   }
 
   function updateProfitPreview() {
-    const contractValue = safeNum(els.projectContractInput.value);
+    const rawContractValue = safeNum(els.projectContractInput.value);
+    const selectedCurrency = els.projectCurrencyInput?.value || 'USD';
+    const contractValue = convertToUSD(rawContractValue, selectedCurrency);
+
     const currentProject = state.selectedId ? findProject(state.selectedId) : null;
 
     const expenseCost = safeNum(currentProject?.expense_cost || 0);
@@ -1762,7 +1901,9 @@ import { sb } from './supabase.js';
   }
 
   function getProjectExpenseValue(expenseRows = []) {
-    return (expenseRows || []).reduce((sum, row) => {
+    return coerceArray(expenseRows, []).reduce((sum, row) => {
+      const service = String(row?.service || '').toLowerCase().trim();
+      if (service === 'subcontractor') return sum;
       return sum + safeNum(row.amount);
     }, 0);
   }
@@ -1771,10 +1912,7 @@ import { sb } from './supabase.js';
     const team = coerceArray(project?.team_allocation, []).map(normalizeTeamMember);
 
     return team.reduce((sum, member) => {
-      const paid = coerceArray(member.payments, []).reduce((memberSum, payment) => {
-        return memberSum + safeNum(payment.amount);
-      }, 0);
-      return sum + paid;
+      return sum + safeNum(member.agreed_amount);
     }, 0);
   }
 
@@ -1798,7 +1936,7 @@ import { sb } from './supabase.js';
 
     renderDataList(els.pmCostBreakdown, [
       { label: 'Expenses', amount: expenseCost, sub: 'Linked project expenses' },
-      { label: 'Subcontractor Costs', amount: subcontractorCost, sub: 'Tracked subcontractor payments' }
+      { label: 'Subcontractor Costs', amount: subcontractorCost, sub: 'Agreed subcontractor amounts' }
     ], (item) => `
       <div class="data-item">
         <div class="data-item-main">
@@ -1906,8 +2044,14 @@ import { sb } from './supabase.js';
   }
 
   function collectPayload() {
-    const contractValue = safeNum(els.projectContractInput.value);
+    const rawContractValue = safeNum(els.projectContractInput.value);
+    const selectedCurrency = els.projectCurrencyInput?.value || 'USD';
+    const contractValue = convertToUSD(rawContractValue, selectedCurrency);
     const currentProject = state.selectedId ? findProject(state.selectedId) : null;
+
+    const currentExpenseCost = safeNum(currentProject?.expense_cost || 0);
+    const currentSubcontractorCost = getProjectSubcontractorValue(currentProject || {});
+    const currentTotalCost = currentExpenseCost + currentSubcontractorCost;
 
     const payload = {
       project_name: els.projectNameInput.value.trim(),
@@ -1923,17 +2067,17 @@ import { sb } from './supabase.js';
 
     if (state.modalMode === 'create') {
       payload.total_revenue = contractValue;
-      payload.total_cost = 0;
-      payload.total_profit = contractValue;
       payload.expense_cost = 0;
       payload.subcontractor_cost = 0;
+      payload.total_cost = 0;
+      payload.total_profit = contractValue;
     } else {
       payload.project_code = els.projectCodeInput.value.trim();
-      payload.total_revenue = safeNum(currentProject?.total_revenue || contractValue);
-      payload.total_cost = safeNum(currentProject?.total_cost || 0);
-      payload.total_profit = safeNum(currentProject?.total_profit || (payload.total_revenue - payload.total_cost));
-      payload.expense_cost = safeNum(currentProject?.expense_cost || 0);
-      payload.subcontractor_cost = safeNum(currentProject?.subcontractor_cost || 0);
+      payload.total_revenue = contractValue;
+      payload.expense_cost = currentExpenseCost;
+      payload.subcontractor_cost = currentSubcontractorCost;
+      payload.total_cost = currentTotalCost;
+      payload.total_profit = contractValue - currentTotalCost;
     }
 
     return payload;
@@ -2003,6 +2147,8 @@ import { sb } from './supabase.js';
       const idx = state.projects.findIndex((item) => String(item.id) === String(state.selectedId));
       if (idx !== -1) state.projects[idx] = buildProject(data, idx);
 
+      await refreshProjectLinkedFinancials(data.id);
+
       populateClientFilter();
       renderAll();
       openModalView(state.selectedId);
@@ -2068,7 +2214,9 @@ import { sb } from './supabase.js';
 
     const name = matchedSub?.name || '';
     const role = els.pmTeamRoleInput?.value.trim();
-    const agreed = safeNum(els.pmTeamAgreedInput?.value);
+    const rawAgreed = safeNum(els.pmTeamAgreedInput?.value);
+    const agreedCurrency = els.pmTeamCurrencyInput?.value || 'USD';
+    const agreed = convertToUSD(rawAgreed, agreedCurrency);
     const installments = safeNum(els.pmTeamInstallmentsInput?.value);
     const note = els.pmTeamNoteInput?.value.trim();
 
@@ -2112,14 +2260,16 @@ import { sb } from './supabase.js';
       const refreshed = buildProject(project);
       Object.assign(project, refreshed);
 
+      await refreshProjectLinkedFinancials(project.id);
+
       renderProjectTeam(project);
       renderProjectPaymentHistory(project);
       syncProjectMemberDropdowns(project);
-      applyLiveFinancialSummary(project, [], []);
 
       if (els.pmTeamMemberSelect) els.pmTeamMemberSelect.value = '';
       if (els.pmTeamRoleInput) els.pmTeamRoleInput.value = '';
       if (els.pmTeamAgreedInput) els.pmTeamAgreedInput.value = '';
+      if (els.pmTeamCurrencyInput) els.pmTeamCurrencyInput.value = 'USD';
       if (els.pmTeamInstallmentsInput) els.pmTeamInstallmentsInput.value = '';
       if (els.pmTeamNoteInput) els.pmTeamNoteInput.value = '';
     } catch (error) {
@@ -2176,7 +2326,9 @@ import { sb } from './supabase.js';
     if (!project) return;
 
     const memberName = els.pmPaymentMemberSelect?.value.trim();
-    const amount = safeNum(els.pmPaymentAmountInput?.value);
+    const rawAmount = safeNum(els.pmPaymentAmountInput?.value);
+    const paymentCurrency = els.pmPaymentCurrencyInput?.value || 'USD';
+    const amount = convertToUSD(rawAmount, paymentCurrency);
     const date = els.pmPaymentDateInput?.value || new Date().toISOString().slice(0, 10);
     const note = els.pmPaymentNoteInput?.value.trim();
 
@@ -2211,29 +2363,51 @@ import { sb } from './supabase.js';
     team[memberIndex] = member;
 
     try {
-      const { error } = await sb
+      const nowIso = new Date().toISOString();
+
+      const { error: projectUpdateError } = await sb
         .from('projects')
         .update({
           team_allocation: team,
-          updated_at: new Date().toISOString()
+          updated_at: nowIso
         })
         .eq('id', project.id);
 
-      if (error) throw error;
+      if (projectUpdateError) throw projectUpdateError;
+
+      const expensePayload = {
+        vendor: memberName,
+        description: note || `Subcontractor payment for ${project.project_name || 'project'}`,
+        client_name: project.client_name || '',
+        service: 'subcontractor',
+        expense_date: date,
+        amount,
+        frequency: 'One-time',
+        status: 'Paid',
+        project_id: project.id
+      };
+
+      const { error: expenseInsertError } = await sb
+        .from('expenses')
+        .insert(expensePayload);
+
+      if (expenseInsertError) throw expenseInsertError;
 
       project.team_allocation = team;
 
       const refreshed = buildProject(project);
       Object.assign(project, refreshed);
 
+      await refreshProjectLinkedFinancials(project.id);
+
       renderProjectTeam(project);
       renderProjectPaymentHistory(project);
       syncProjectMemberDropdowns(project);
-      applyLiveFinancialSummary(project, [], []);
 
       if (els.pmPaymentMemberSelect) els.pmPaymentMemberSelect.value = '';
       if (els.pmPaymentDateInput) els.pmPaymentDateInput.value = '';
       if (els.pmPaymentAmountInput) els.pmPaymentAmountInput.value = '';
+      if (els.pmPaymentCurrencyInput) els.pmPaymentCurrencyInput.value = 'USD';
       if (els.pmPaymentNoteInput) els.pmPaymentNoteInput.value = '';
     } catch (error) {
       console.error('[projects] add payment failed:', error);
@@ -2309,6 +2483,19 @@ import { sb } from './supabase.js';
       openProjectExpenseModal(state.selectedId);
     });
 
+    els.pmLinkExpenseBtn?.addEventListener('click', () => {
+      if (!state.selectedId) return;
+      openLinkExpenseModal(state.selectedId);
+    });
+
+    els.linkExpenseSaveBtn?.addEventListener('click', saveLinkedExpenseToProject);
+    els.linkExpenseCancelBtn?.addEventListener('click', closeLinkExpenseModal);
+    els.linkExpenseCloseBtn?.addEventListener('click', closeLinkExpenseModal);
+
+    els.linkExpenseModal?.addEventListener('click', (e) => {
+      if (e.target === els.linkExpenseModal) closeLinkExpenseModal();
+    });
+
     els.saveExpenseBtn?.addEventListener('click', saveProjectExpenseBridge);
     els.cancelExpenseBtn?.addEventListener('click', closeProjectExpenseModal);
     els.expenseCloseBtn?.addEventListener('click', closeProjectExpenseModal);
@@ -2376,6 +2563,7 @@ import { sb } from './supabase.js';
     els.archiveBtn?.addEventListener('click', () => state.selectedId && openArchiveModal(state.selectedId));
 
     els.projectContractInput?.addEventListener('input', updateProfitPreview);
+    els.projectCurrencyInput?.addEventListener('change', updateProfitPreview);
 
     els.tabsWrap?.addEventListener('click', (e) => {
       const btn = e.target.closest('.tab-btn');

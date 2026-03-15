@@ -3224,29 +3224,86 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-bottom: 6px;
 }
 
-#recentActivityList {
-  max-height: 260px;   /* roughly 4 activity items */
+#recentActivityList,
+#projectHealthList {
+  max-height: 340px;
   overflow-y: auto;
-  padding-right: 4px;  /* prevents scrollbar from touching text */
+  padding-right: 6px;
 }
 
 /* optional nicer scrollbar */
-#recentActivityList::-webkit-scrollbar {
+#recentActivityList::-webkit-scrollbar,
+#projectHealthList::-webkit-scrollbar {
   width: 6px;
 }
 
-#recentActivityList::-webkit-scrollbar-thumb {
+#recentActivityList::-webkit-scrollbar-thumb,
+#projectHealthList::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.2);
   border-radius: 6px;
 }
 
-#recentActivityList::-webkit-scrollbar-track {
+#recentActivityList::-webkit-scrollbar-track,
+#projectHealthList::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .activity-card {
   position: relative;
 }
+
+/* ===== Link Expense Modal Layout ===== */
+
+/* ===== Link Expense Modal Layout ===== */
+
+#linkExpenseModal .modal-content{
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 18px 20px 20px 20px;
+}
+
+#linkExpenseModal h3{
+  margin: 5px 0 8px 0;
+  line-height: 1.2;
+}
+
+#linkExpenseModal .muted{
+  margin: 0 0 14px 0;
+  line-height: 1.5;
+}
+
+#linkExpenseModal .form-field{
+  margin: 0;
+}
+
+#linkExpenseModal .label{
+  display: block;
+  margin: 0 0 8px 0;
+}
+
+#linkExpenseModal .select-wrap{
+  width: 100%;
+}
+
+#linkExpenseModal .filter-select{
+  width: 100%;
+}
+
+#linkExpenseModal .modal-actions-bar{
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0 0;
+  padding: 0;
+  border: 0;
+}
+
+#linkExpenseModal .modal-error{
+  display: none;
+}
+
 
 #invModal .edit-field,
 #projectInvoiceModal .edit-field {

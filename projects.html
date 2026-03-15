@@ -383,7 +383,18 @@
             <h4 style="margin:0 0 4px;">Expense Lines</h4>
             <div class="muted">Project-linked expenses for this project</div>
           </div>
-          <button class="btn2" id="pmNewExpenseBtn">+ New Expense</button>
+
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button
+              class="btn2"
+              id="pmLinkExpenseBtn"
+              type="button"
+              style="background:#8b6df5;color:#fff;"
+            >
+              Link Existing Expense
+            </button>
+            <button class="btn2" id="pmNewExpenseBtn" type="button">+ New Expense</button>
+          </div>
         </div>
         <div class="tab-card">
           <div id="pmExpenseList" class="data-list">
@@ -410,17 +421,19 @@
 
               <div class="form-field">
                 <span class="label">Stage</span>
-                <select id="pmActivityStageInput" class="pm-input">
-                  <option>Planning</option>
-                  <option>Discovery</option>
-                  <option>Design</option>
-                  <option>Building</option>
-                  <option>QA</option>
-                  <option>Review</option>
-                  <option>Delivery</option>
-                  <option>Support</option>
-                  <option>Blocked</option>
-                </select>
+                <div class="select-wrap">
+                  <select id="pmActivityStageInput" class="filter-select">
+                    <option>Planning</option>
+                    <option>Discovery</option>
+                    <option>Design</option>
+                    <option>Building</option>
+                    <option>QA</option>
+                    <option>Review</option>
+                    <option>Delivery</option>
+                    <option>Support</option>
+                    <option>Blocked</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-field full">
@@ -464,9 +477,11 @@
               <div class="project-entry-grid team-entry-grid">
                 <div class="form-field">
                   <span class="label">Team Member</span>
-                  <select id="pmTeamMemberSelect" class="pm-input">
-                    <option value="">Select subcontractor</option>
-                  </select>
+                  <div class="select-wrap">
+                    <select id="pmTeamMemberSelect" class="filter-select">
+                      <option value="">Select subcontractor</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="form-field">
@@ -476,7 +491,27 @@
 
                 <div class="form-field">
                   <span class="label">Agreed Amount</span>
-                  <input id="pmTeamAgreedInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+                  <div style="display:flex;gap:10px;align-items:center;">
+                    <input
+                      id="pmTeamAgreedInput"
+                      class="pm-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      style="flex:1.35;min-width:0;"
+                    />
+                    <div class="select-wrap" style="flex:0 0 100px;min-width:100px;">
+                      <select id="pmTeamCurrencyInput" class="pm-input">
+                        <option value="USD" selected>USD</option>
+                        <option value="JOD">JOD</option>
+                        <option value="EUR">EURO</option>
+                        <option value="GBP">GBP</option>
+                        <option value="SAR">Saudi Riyal</option>
+                        <option value="AED">UAE Dirham</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="form-field">
@@ -508,9 +543,11 @@
               <div class="project-entry-grid payment-entry-grid">
                 <div class="form-field">
                   <span class="label">Member</span>
-                  <select id="pmPaymentMemberSelect" class="pm-input">
-                    <option value="">Select member</option>
-                  </select>
+                  <div class="select-wrap">
+                    <select id="pmPaymentMemberSelect" class="filter-select">
+                      <option value="">Select member</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="form-field">
@@ -520,7 +557,27 @@
 
                 <div class="form-field">
                   <span class="label">Amount Sent</span>
-                  <input id="pmPaymentAmountInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+                  <div style="display:flex;gap:10px;align-items:center;">
+                    <input
+                      id="pmPaymentAmountInput"
+                      class="pm-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      style="flex:1.35;min-width:0;"
+                    />
+                    <div class="select-wrap" style="flex:0 0 100px;min-width:100px;">
+                      <select id="pmPaymentCurrencyInput" class="pm-input">
+                        <option value="USD" selected>USD</option>
+                        <option value="JOD">JOD</option>
+                        <option value="EUR">EURO</option>
+                        <option value="GBP">GBP</option>
+                        <option value="SAR">Saudi Riyal</option>
+                        <option value="AED">UAE Dirham</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="form-field full">
@@ -611,7 +668,27 @@
         </div>
         <div class="form-field">
           <span class="label">Contract Value</span>
-          <input id="projectContractInput" class="pm-input" type="number" min="0" step="0.01" placeholder="0.00" />
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input
+              id="projectContractInput"
+              class="pm-input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              style="flex:1.5;min-width:0;"
+            />
+            <div class="select-wrap" style="flex:0 0 100px;min-width:100px;">
+              <select id="projectCurrencyInput" class="pm-input">
+                <option value="USD" selected>USD</option>
+                <option value="JOD">JOD</option>
+                <option value="EUR">EURO</option>
+                <option value="GBP">GBP</option>
+                <option value="SAR">Saudi Riyal</option>
+                <option value="AED">UAE Dirham</option>
+              </select>
+            </div>
+          </div>
         </div>
 
 
@@ -737,16 +814,18 @@
       <div class="info-box">
         <span class="label">Service</span>
         <span id="exp-service" class="value-clip"></span>
-        <select id="exp-service-input" class="edit-field">
-          <option value="email">Email</option>
-          <option value="hosting">Hosting</option>
-          <option value="domain">Domain</option>
-          <option value="cloud">Cloud</option>
-          <option value="design">Design</option>
-          <option value="automation">Automation</option>
-          <option value="cdn">CDN</option>
-          <option value="other">Other</option>
-        </select>
+        <div class="select-wrap">
+          <select id="exp-service-input" class="filter-select">
+            <option value="email">Email</option>
+            <option value="hosting">Hosting</option>
+            <option value="domain">Domain</option>
+            <option value="cloud">Cloud</option>
+            <option value="design">Design</option>
+            <option value="automation">Automation</option>
+            <option value="cdn">CDN</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
       </div>
 
       <div class="info-box">
@@ -771,24 +850,28 @@
       <div class="info-box">
         <span class="label">Frequency</span>
         <span id="exp-frequency"></span>
-        <select id="exp-frequency-input" class="edit-field">
-          <option value="Monthly">Monthly</option>
-          <option value="2 Years">2 Years</option>
-          <option value="Yearly">Yearly</option>
-          <option value="One time">One time</option>
-        </select>
+        <div class="select-wrap">
+          <select id="exp-frequency-input" class="filter-select">
+            <option value="Monthly">Monthly</option>
+            <option value="2 Years">2 Years</option>
+            <option value="Yearly">Yearly</option>
+            <option value="One time">One time</option>
+          </select>
+        </div>
       </div>
 
       <div class="info-box">
         <span class="label">Status</span>
         <span id="exp-status"></span>
-        <select id="exp-status-input" class="edit-field">
-          <option value="Unpaid">Unpaid</option>
-          <option value="Paid">Paid</option>
-          <option value="Partial Payment">Partial Payment</option>
-          <option value="Upcoming">Upcoming</option>
-          <option value="Null">Null</option>
-        </select>
+        <div class="select-wrap">
+          <select id="exp-status-input" class="filter-select">
+            <option value="Unpaid">Unpaid</option>
+            <option value="Paid">Paid</option>
+            <option value="Partial Payment">Partial Payment</option>
+            <option value="Upcoming">Upcoming</option>
+            <option value="Null">Null</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -805,6 +888,39 @@
         type="button"
         style="background:#394b6d;"
       >
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Link Existing Expense Modal ===== -->
+<div id="linkExpenseModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close" id="linkExpenseCloseBtn" aria-label="Close">&times;</button>
+
+    <h3>Link Existing Expense</h3>
+
+    <p class="muted">
+      Choose an unlinked expense for this client from the current year and attach it to this project.
+    </p>
+
+    <input type="hidden" id="linkExpenseProjectIdInput" />
+
+    <div class="form-field">
+      <div class="select-wrap">
+        <select id="linkExpenseSelect" class="filter-select">
+          <option value="">Select an expense</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions-bar">
+      <span class="modal-error" id="linkExpenseError"></span>
+      <button class="btn2" id="linkExpenseSaveBtn" type="button" style="background:#8b6df5;color:#fff;">
+        Link Expense
+      </button>
+      <button class="btn2" id="linkExpenseCancelBtn" type="button" style="background:#394b6d;">
         Cancel
       </button>
     </div>
