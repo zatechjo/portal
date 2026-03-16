@@ -112,6 +112,7 @@ import { sb } from './supabase.js';
     pmNewInvoiceBtn: byId('pmNewInvoiceBtn'),
     pmNewExpenseBtn: byId('pmNewExpenseBtn'),
     pmLinkExpenseBtn: byId('pmLinkExpenseBtn'),
+    pmLinkInvoiceBtn: byId('pmLinkInvoiceBtn'),
 
     
     // expense bridge modal
@@ -130,6 +131,14 @@ import { sb } from './supabase.js';
     linkExpenseError: byId('linkExpenseError'),
     linkExpenseSaveBtn: byId('linkExpenseSaveBtn'),
     linkExpenseCancelBtn: byId('linkExpenseCancelBtn'),
+
+    linkInvoiceModal: byId('linkInvoiceModal'),
+    linkInvoiceCloseBtn: byId('linkInvoiceCloseBtn'),
+    linkInvoiceProjectIdInput: byId('linkInvoiceProjectIdInput'),
+    linkInvoiceSelect: byId('linkInvoiceSelect'),
+    linkInvoiceError: byId('linkInvoiceError'),
+    linkInvoiceSaveBtn: byId('linkInvoiceSaveBtn'),
+    linkInvoiceCancelBtn: byId('linkInvoiceCancelBtn'),
 
     expVendorInput: byId('exp-vendor-input'),
     expDescInput: byId('exp-desc-input'),
@@ -209,6 +218,7 @@ import { sb } from './supabase.js';
   
     expenseBridgeProjectId: null,
     linkExpenseProjectId: null,
+    linkInvoiceProjectId: null,
 
     invoiceBridgeProjectId: null,
     clientsFull: [],
@@ -937,7 +947,8 @@ import { sb } from './supabase.js';
       .from('invoices')
       .select(`
         id, invoice_no, issue_date, due_date, currency,
-        subtotal, tax, total, status, coverage_period, project_id
+        subtotal, tax, total, status, coverage_period, project_id,
+        clients(name)
       `)
       .eq('project_id', projectId)
       .order('issue_date', { ascending: false });
@@ -970,6 +981,16 @@ import { sb } from './supabase.js';
     return data || [];
   }
 
+  function invoiceStatusClass(s) {
+    const v = (s || '').toLowerCase();
+    return v === 'paid' ? 'ok' :
+      ['not paid','unpaid','overdue'].includes(v) ? 'due' :
+      v === 'partial payment' ? 'partial' :
+      v === 'due soon' ? 'warn' :
+      v === 'sent' ? 'sent' :
+      ['cancelled','canceled'].includes(v) ? 'null' : 'null';
+  }
+
   function renderProjectInvoices(invoices = []) {
     if (!els.pmRevenueList) return;
 
@@ -980,13 +1001,19 @@ import { sb } from './supabase.js';
 
     els.pmRevenueList.innerHTML = invoices.map((inv) => {
       const total = Number(inv.total ?? (Number(inv.subtotal || 0) + Number(inv.tax || 0)));
+      const statusCls = invoiceStatusClass(inv.status);
+      const clientName = inv.clients?.name || '—';
+      const coverage = inv.coverage_period ? ` · ${escapeHTML(inv.coverage_period)}` : '';
       return `
         <div class="data-item">
           <div class="data-item-main">
-            <div class="data-item-title">Invoice #${escapeHTML(inv.invoice_no || '—')}</div>
-            <div class="data-item-sub">${fmtDate(inv.issue_date)} · Due ${fmtDate(inv.due_date)} · ${escapeHTML(inv.status || '—')}</div>
+            <div class="data-item-title">Invoice #${escapeHTML(inv.invoice_no || '—')} · ${escapeHTML(clientName)}</div>
+            <div class="data-item-sub">${fmtDate(inv.issue_date)}${coverage}</div>
           </div>
-          <div class="data-item-value">${fmtMoney(total)}</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <div class="data-item-value">${fmtMoney(total)}</div>
+            <span class="tag ${statusCls} inv-status-pill" data-inv-id="${inv.id}" style="cursor:pointer;" title="Click to change status">${escapeHTML(inv.status || '—')}</span>
+          </div>
         </div>
       `;
     }).join('');
@@ -1224,6 +1251,132 @@ import { sb } from './supabase.js';
         els.linkExpenseError.textContent = error?.message || 'Failed to link expense.';
       }
     }
+  }
+
+  function closeLinkInvoiceModal() {
+    els.linkInvoiceModal?.classList.remove('show');
+    els.linkInvoiceModal?.setAttribute('aria-hidden', 'true');
+    if (els.linkInvoiceError) els.linkInvoiceError.textContent = '';
+    if (els.linkInvoiceSelect) {
+      els.linkInvoiceSelect.innerHTML = '<option value="">Select an invoice</option>';
+      els.linkInvoiceSelect.value = '';
+    }
+    if (els.linkInvoiceProjectIdInput) els.linkInvoiceProjectIdInput.value = '';
+    state.linkInvoiceProjectId = null;
+  }
+
+  async function openLinkInvoiceModal(projectId) {
+    const project = findProject(projectId);
+    if (!project) return;
+
+    state.linkInvoiceProjectId = project.id;
+    if (els.linkInvoiceProjectIdInput) els.linkInvoiceProjectIdInput.value = project.id;
+    if (els.linkInvoiceError) els.linkInvoiceError.textContent = '';
+
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const prevYear = thisYear - 1;
+    const start = `${prevYear}-01-01`;
+    const end   = `${thisYear}-12-31`;
+
+    const matchedClient = state.clientsFull.find(c => c.name === project.client_name);
+    if (!matchedClient) {
+      if (els.linkInvoiceError) els.linkInvoiceError.textContent = 'Could not resolve client — make sure the project has a valid client assigned.';
+      els.linkInvoiceModal?.classList.add('show');
+      els.linkInvoiceModal?.setAttribute('aria-hidden', 'false');
+      return;
+    }
+
+    try {
+      const { data, error } = await sb
+        .from('invoices')
+        .select('id, invoice_no, total, subtotal, tax, issue_date, coverage_period, status, clients(name)')
+        .eq('client_id', matchedClient.id)
+        .is('project_id', null)
+        .gte('issue_date', start)
+        .lte('issue_date', end)
+        .order('issue_date', { ascending: false });
+
+      if (error) throw error;
+
+      const rows = data || [];
+
+      if (!els.linkInvoiceSelect) return;
+
+      els.linkInvoiceSelect.innerHTML =
+        '<option value="">Select an invoice</option>' +
+        rows.map((row) => {
+          const total = Number(row.total ?? (Number(row.subtotal || 0) + Number(row.tax || 0)));
+          const clientName = row.clients?.name || matchedClient.name;
+          const coverage = row.coverage_period ? ` — ${row.coverage_period}` : '';
+          const label = `${escapeHTML(row.invoice_no || '—')} ${escapeHTML(clientName)} — ${fmtMoney(total)} (${fmtDate(row.issue_date)})${coverage}`;
+          return `<option value="${row.id}">${label}</option>`;
+        }).join('');
+
+      els.linkInvoiceModal?.classList.add('show');
+      els.linkInvoiceModal?.setAttribute('aria-hidden', 'false');
+    } catch (err) {
+      console.error('[projects] openLinkInvoiceModal failed:', err);
+      if (els.linkInvoiceError) els.linkInvoiceError.textContent = err?.message || 'Failed to load invoices.';
+      els.linkInvoiceModal?.classList.add('show');
+      els.linkInvoiceModal?.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  async function saveLinkedInvoice() {
+    const project = findProject(state.linkInvoiceProjectId || state.selectedId);
+    if (!project) return;
+
+    const invoiceId = els.linkInvoiceSelect?.value || '';
+
+    if (els.linkInvoiceError) els.linkInvoiceError.textContent = '';
+
+    if (!invoiceId) {
+      if (els.linkInvoiceError) els.linkInvoiceError.textContent = 'Please select an invoice.';
+      return;
+    }
+
+    try {
+      const { error } = await sb
+        .from('invoices')
+        .update({ project_id: project.id })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      const [invoiceRows, expenseRows] = await Promise.all([
+        fetchProjectInvoices(project.id),
+        fetchProjectExpenses(project.id)
+      ]);
+
+      renderProjectInvoices(invoiceRows);
+      applyLiveFinancialSummary(project, invoiceRows, expenseRows);
+
+      await logProjectActivity(project.id, {
+        title: 'Invoice linked',
+        type: 'Revenue',
+        note: 'An existing invoice was linked to this project'
+      });
+
+      closeLinkInvoiceModal();
+      showToast('Invoice linked to project');
+    } catch (err) {
+      console.error('[projects] saveLinkedInvoice failed:', err);
+      if (els.linkInvoiceError) els.linkInvoiceError.textContent = err?.message || 'Failed to link invoice.';
+    }
+  }
+
+  async function updateInvoiceStatus(invoiceId, newStatus) {
+    const candidates = [newStatus];
+    if (newStatus === 'Not Paid') candidates.push('Not paid', 'Unpaid', 'Pending', 'Due');
+    if (newStatus === 'Cancelled') candidates.push('Canceled');
+
+    for (const val of candidates) {
+      const { error } = await sb.from('invoices').update({ status: val }).eq('id', invoiceId);
+      if (!error) return { ok: true, value: val };
+      if (!/invoices_status_check/i.test(error.message)) return { ok: false, error };
+    }
+    return { ok: false, error: new Error('Status value not allowed by database.') };
   }
 
   function openProjectExpenseModal(projectId) {
@@ -1717,7 +1870,11 @@ import { sb } from './supabase.js';
               <div class="team-summary-name">${escapeHTML(member.name || `Member ${index + 1}`)}</div>
               <div class="team-summary-role">${escapeHTML(member.role || 'Contributor')}</div>
             </div>
-            <span class="tag sent">${planCount || 0} payments plan</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="tag sent">${planCount || 0} payments plan</span>
+              <button class="icon-btn team-edit-btn" data-index="${index}" title="Edit member" style="font-size:13px;">✏️</button>
+              <button class="icon-btn team-delete-btn" data-index="${index}" title="Remove member" style="font-size:13px;">🗑️</button>
+            </div>
           </div>
 
           <div class="team-summary-metrics">
@@ -1753,21 +1910,360 @@ import { sb } from './supabase.js';
     }).join('');
   }
 
+  async function deleteTeamMember(index) {
+    const project = findProject(state.selectedId);
+    if (!project) return;
+
+    const team = Array.isArray(project.team_allocation) ? [...project.team_allocation] : [];
+    const member = team[index];
+    if (!member) return;
+
+    if (!confirm(`Remove "${member.name || `Member ${index + 1}`}" from this project? Their payment history will also be removed.`)) return;
+
+    team.splice(index, 1);
+
+    try {
+      const { error } = await sb
+        .from('projects')
+        .update({ team_allocation: team, updated_at: new Date().toISOString() })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      project.team_allocation = team;
+
+      const refreshed = buildProject(project);
+      Object.assign(project, refreshed);
+
+      await refreshProjectLinkedFinancials(project.id);
+
+      renderProjectTeam(project);
+      renderProjectPaymentHistory(project);
+      syncProjectMemberDropdowns(project);
+
+      await logProjectActivity(project.id, {
+        title: 'Team member removed',
+        type: 'Team',
+        note: `${member.name || `Member ${index + 1}`}${member.role ? ' · ' + member.role : ''}`
+      });
+    } catch (err) {
+      console.error('[projects] deleteTeamMember failed:', err);
+      alert(err.message || 'Failed to remove team member.');
+    }
+  }
+
+  function openEditTeamMemberModal(index) {
+    const project = findProject(state.selectedId);
+    if (!project) return;
+
+    const team = Array.isArray(project.team_allocation) ? [...project.team_allocation] : [];
+    const member = team[index];
+    if (!member) return;
+
+    // Remove any existing inline edit modal
+    document.getElementById('teamEditInlineModal')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'teamEditInlineModal';
+    overlay.className = 'modal show';
+
+    overlay.innerHTML = `
+      <div class="modal-content" style="width:min(460px,96vw);">
+        <h3 style="margin:0 0 4px;font-size:20px;font-weight:700;">Edit Team Member</h3>
+        <p class="modal-subtitle" style="margin:0 0 20px;">Update this member's details. Existing payment records are preserved.</p>
+
+        <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+          <div class="form-field">
+            <label class="label">Name</label>
+            <input id="teamEditName" type="text" class="pm-input" value="${escapeHTML(member.name || '')}" placeholder="Full name" />
+          </div>
+          <div class="form-field">
+            <label class="label">Role</label>
+            <input id="teamEditRole" type="text" class="pm-input" value="${escapeHTML(member.role || '')}" placeholder="e.g. Developer" />
+          </div>
+          <div class="form-field">
+            <label class="label">Agreed Amount</label>
+            <input id="teamEditAgreed" type="number" class="pm-input" min="0" step="0.01" value="${safeNum(member.agreed_amount)}" placeholder="0.00" />
+          </div>
+          <div class="form-field">
+            <label class="label">Currency</label>
+            <select id="teamEditCurrency" class="pm-input">
+              ${Object.keys(PROJECT_FX_USD_PER).map(c => `<option value="${c}" ${c === (member.currency || 'USD') ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="label">Installments</label>
+            <input id="teamEditInstallments" type="number" class="pm-input" min="1" step="1" value="${safeNum(member.installments || 1)}" placeholder="1" />
+          </div>
+          <div class="form-field">
+            <label class="label">Note</label>
+            <input id="teamEditNote" type="text" class="pm-input" value="${escapeHTML(member.note || '')}" placeholder="Optional note" />
+          </div>
+        </div>
+
+        <div class="modal-error" id="teamEditError" style="display:none;margin-top:10px;"></div>
+
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);">
+          <button id="teamEditCancelBtn" class="btn2" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);">Cancel</button>
+          <button id="teamEditSaveBtn" class="btn2">Save Changes</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector('#teamEditCancelBtn').addEventListener('click', close);
+
+    overlay.querySelector('#teamEditSaveBtn').addEventListener('click', async () => {
+      const name = overlay.querySelector('#teamEditName').value.trim();
+      const role = overlay.querySelector('#teamEditRole').value.trim();
+      const rawAgreed = safeNum(overlay.querySelector('#teamEditAgreed').value);
+      const currency = overlay.querySelector('#teamEditCurrency').value || 'USD';
+      const agreed = convertToUSD(rawAgreed, currency);
+      const installments = safeNum(overlay.querySelector('#teamEditInstallments').value) || 1;
+      const note = overlay.querySelector('#teamEditNote').value.trim();
+      const errEl = overlay.querySelector('#teamEditError');
+
+      if (!name) { errEl.textContent = 'Name is required.'; errEl.style.display = 'block'; return; }
+      if (!agreed) { errEl.textContent = 'Agreed amount is required.'; errEl.style.display = 'block'; return; }
+
+      errEl.style.display = 'none';
+
+      const updatedMember = { ...team[index], name, role: role || 'Contributor', agreed_amount: agreed, installments, note };
+      team[index] = updatedMember;
+
+      try {
+        const { error } = await sb
+          .from('projects')
+          .update({ team_allocation: team, updated_at: new Date().toISOString() })
+          .eq('id', project.id);
+
+        if (error) throw error;
+
+        project.team_allocation = team;
+
+        const refreshed = buildProject(project);
+        Object.assign(project, refreshed);
+
+        await refreshProjectLinkedFinancials(project.id);
+
+        renderProjectTeam(project);
+        renderProjectPaymentHistory(project);
+        syncProjectMemberDropdowns(project);
+
+        await logProjectActivity(project.id, {
+          title: 'Team member updated',
+          type: 'Team',
+          note: `${name}${role ? ' · ' + role : ''}`
+        });
+
+        close();
+      } catch (err) {
+        console.error('[projects] editTeamMember failed:', err);
+        errEl.textContent = err.message || 'Failed to save changes.';
+        errEl.style.display = 'block';
+      }
+    });
+  }
+
+  async function deletePayment(memberIndex, paymentIndex) {
+    const project = findProject(state.selectedId);
+    if (!project) return;
+
+    const team = Array.isArray(project.team_allocation) ? [...project.team_allocation] : [];
+    const member = team[memberIndex];
+    if (!member) return;
+
+    const payments = Array.isArray(member.payments) ? [...member.payments] : [];
+    const payment = payments[paymentIndex];
+    if (!payment) return;
+
+    if (!confirm(`Delete this payment of ${fmtMoney(safeNum(payment.amount))} for "${member.name}"? This cannot be undone.`)) return;
+
+    payments.splice(paymentIndex, 1);
+    team[memberIndex] = { ...member, payments };
+
+    try {
+      const { error } = await sb
+        .from('projects')
+        .update({ team_allocation: team, updated_at: new Date().toISOString() })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      // Delete the matching expense row
+      await sb
+        .from('expenses')
+        .delete()
+        .eq('project_id', project.id)
+        .eq('vendor', member.name)
+        .eq('expense_date', payment.date)
+        .eq('amount', safeNum(payment.amount));
+
+      project.team_allocation = team;
+
+      const refreshed = buildProject(project);
+      Object.assign(project, refreshed);
+
+      await refreshProjectLinkedFinancials(project.id);
+
+      renderProjectTeam(project);
+      renderProjectPaymentHistory(project);
+      syncProjectMemberDropdowns(project);
+
+      await logProjectActivity(project.id, {
+        title: 'Team payment deleted',
+        type: 'Payment',
+        note: `${member.name} · ${fmtMoney(safeNum(payment.amount))}`
+      });
+    } catch (err) {
+      console.error('[projects] deletePayment failed:', err);
+      alert(err.message || 'Failed to delete payment.');
+    }
+  }
+
+  function openEditPaymentModal(memberIndex, paymentIndex) {
+    const project = findProject(state.selectedId);
+    if (!project) return;
+
+    const team = Array.isArray(project.team_allocation) ? [...project.team_allocation] : [];
+    const member = team[memberIndex];
+    if (!member) return;
+
+    const payments = Array.isArray(member.payments) ? [...member.payments] : [];
+    const payment = payments[paymentIndex];
+    if (!payment) return;
+
+    document.getElementById('paymentEditInlineModal')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'paymentEditInlineModal';
+    overlay.className = 'modal show';
+
+    overlay.innerHTML = `
+      <div class="modal-content" style="width:min(460px,96vw);">
+        <h3 style="margin:0 0 4px;font-size:20px;font-weight:700;">Edit Payment</h3>
+        <p class="modal-subtitle" style="margin:0 0 20px;">Editing payment for <strong>${escapeHTML(member.name || 'member')}</strong>.</p>
+
+        <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+          <div class="form-field">
+            <label class="label">Amount</label>
+            <input id="paymentEditAmount" type="number" class="pm-input" min="0" step="0.01" value="${safeNum(payment.amount)}" placeholder="0.00" />
+          </div>
+          <div class="form-field">
+            <label class="label">Currency</label>
+            <select id="paymentEditCurrency" class="pm-input">
+              ${Object.keys(PROJECT_FX_USD_PER).map(c => `<option value="${c}" ${c === 'USD' ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="label">Date</label>
+            <input id="paymentEditDate" type="date" class="pm-input" value="${payment.date || ''}" />
+          </div>
+          <div class="form-field">
+            <label class="label">Note</label>
+            <input id="paymentEditNote" type="text" class="pm-input" value="${escapeHTML(payment.note || '')}" placeholder="Optional note" />
+          </div>
+        </div>
+
+        <div class="modal-error" id="paymentEditError" style="display:none;margin-top:10px;"></div>
+
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);">
+          <button id="paymentEditCancelBtn" class="btn2" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);">Cancel</button>
+          <button id="paymentEditSaveBtn" class="btn2">Save Changes</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector('#paymentEditCancelBtn').addEventListener('click', close);
+
+    overlay.querySelector('#paymentEditSaveBtn').addEventListener('click', async () => {
+      const rawAmount = safeNum(overlay.querySelector('#paymentEditAmount').value);
+      const currency = overlay.querySelector('#paymentEditCurrency').value || 'USD';
+      const amount = convertToUSD(rawAmount, currency);
+      const date = overlay.querySelector('#paymentEditDate').value || new Date().toISOString().slice(0, 10);
+      const note = overlay.querySelector('#paymentEditNote').value.trim();
+      const errEl = overlay.querySelector('#paymentEditError');
+
+      if (!amount) { errEl.textContent = 'Amount is required.'; errEl.style.display = 'block'; return; }
+
+      errEl.style.display = 'none';
+
+      payments[paymentIndex] = { ...payment, amount, date, note };
+      team[memberIndex] = { ...member, payments };
+
+      try {
+        const { error } = await sb
+          .from('projects')
+          .update({ team_allocation: team, updated_at: new Date().toISOString() })
+          .eq('id', project.id);
+
+        if (error) throw error;
+
+        // Sync the matching expense row
+        await sb
+          .from('expenses')
+          .update({
+            amount,
+            expense_date: date,
+            description: note || `Subcontractor payment for ${project.project_name || 'project'}`,
+          })
+          .eq('project_id', project.id)
+          .eq('vendor', member.name)
+          .eq('expense_date', payment.date)
+          .eq('amount', payment.amount);
+
+        project.team_allocation = team;
+
+        const refreshed = buildProject(project);
+        Object.assign(project, refreshed);
+
+        await refreshProjectLinkedFinancials(project.id);
+
+        renderProjectTeam(project);
+        renderProjectPaymentHistory(project);
+        syncProjectMemberDropdowns(project);
+
+        await logProjectActivity(project.id, {
+          title: 'Team payment updated',
+          type: 'Payment',
+          note: `${member.name} · ${fmtMoney(amount)}`
+        });
+
+        close();
+      } catch (err) {
+        console.error('[projects] editPayment failed:', err);
+        errEl.textContent = err.message || 'Failed to save changes.';
+        errEl.style.display = 'block';
+      }
+    });
+  }
+
   function renderProjectPaymentHistory(project) {
     if (!els.pmTeamPaymentsList) return;
 
     const members = project.team_allocation || [];
     const paymentRows = [];
 
-    members.forEach((member) => {
+    members.forEach((member, memberIndex) => {
       const payments = Array.isArray(member.payments) ? member.payments : [];
-      payments.forEach((payment) => {
+      payments.forEach((payment, paymentIndex) => {
         paymentRows.push({
           member_name: member.name,
           role: member.role,
           date: payment.date,
           amount: safeNum(payment.amount),
-          note: payment.note || ''
+          note: payment.note || '',
+          memberIndex,
+          paymentIndex
         });
       });
     });
@@ -1792,7 +2288,13 @@ import { sb } from './supabase.js';
           <div class="payment-history-meta">${fmtDate(row.date)} · ${escapeHTML(row.role || 'Contributor')}</div>
           <div class="payment-history-note">${escapeHTML(row.note || 'No note')}</div>
         </div>
-        <div class="payment-history-amount">${fmtMoney(row.amount)}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+          <div style="display:flex;gap:6px;">
+            <button class="icon-btn payment-edit-btn" data-member="${row.memberIndex}" data-payment="${row.paymentIndex}" title="Edit payment" style="font-size:13px;width:32px;height:32px;">✏️</button>
+            <button class="icon-btn payment-delete-btn" data-member="${row.memberIndex}" data-payment="${row.paymentIndex}" title="Delete payment" style="font-size:13px;width:32px;height:32px;">🗑️</button>
+          </div>
+          <div class="payment-history-amount">${fmtMoney(row.amount)}</div>
+        </div>
       </div>
     `).join('');
   }
@@ -2478,6 +2980,20 @@ import { sb } from './supabase.js';
     els.pmAddTeamMemberBtn?.addEventListener('click', addProjectTeamMember);
     els.pmAddTeamPaymentBtn?.addEventListener('click', addProjectTeamPayment);
 
+    els.pmTeamList?.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.team-edit-btn');
+      const deleteBtn = e.target.closest('.team-delete-btn');
+      if (editBtn) openEditTeamMemberModal(Number(editBtn.dataset.index));
+      if (deleteBtn) deleteTeamMember(Number(deleteBtn.dataset.index));
+    });
+
+    els.pmTeamPaymentsList?.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.payment-edit-btn');
+      const deleteBtn = e.target.closest('.payment-delete-btn');
+      if (editBtn) openEditPaymentModal(Number(editBtn.dataset.member), Number(editBtn.dataset.payment));
+      if (deleteBtn) deletePayment(Number(deleteBtn.dataset.member), Number(deleteBtn.dataset.payment));
+    });
+
     els.pmNewExpenseBtn?.addEventListener('click', () => {
       if (!state.selectedId) return;
       openProjectExpenseModal(state.selectedId);
@@ -2488,12 +3004,73 @@ import { sb } from './supabase.js';
       openLinkExpenseModal(state.selectedId);
     });
 
+    els.pmLinkInvoiceBtn?.addEventListener('click', () => {
+      if (!state.selectedId) return;
+      openLinkInvoiceModal(state.selectedId);
+    });
+
     els.linkExpenseSaveBtn?.addEventListener('click', saveLinkedExpenseToProject);
     els.linkExpenseCancelBtn?.addEventListener('click', closeLinkExpenseModal);
     els.linkExpenseCloseBtn?.addEventListener('click', closeLinkExpenseModal);
 
     els.linkExpenseModal?.addEventListener('click', (e) => {
       if (e.target === els.linkExpenseModal) closeLinkExpenseModal();
+    });
+
+    els.linkInvoiceSaveBtn?.addEventListener('click', saveLinkedInvoice);
+    els.linkInvoiceCancelBtn?.addEventListener('click', closeLinkInvoiceModal);
+    els.linkInvoiceCloseBtn?.addEventListener('click', closeLinkInvoiceModal);
+
+    els.linkInvoiceModal?.addEventListener('click', (e) => {
+      if (e.target === els.linkInvoiceModal) closeLinkInvoiceModal();
+    });
+
+    // Invoice status pill — click to change inline
+    els.pmRevenueList?.addEventListener('click', (e) => {
+      const pill = e.target.closest('.inv-status-pill');
+      if (!pill) return;
+
+      const invoiceId = pill.dataset.invId;
+      const current = pill.textContent.trim();
+
+      const wrap = document.createElement('div');
+      wrap.className = 'select-wrap inline';
+      const sel = document.createElement('select');
+      sel.className = 'filter-select status-select';
+      sel.innerHTML = `
+        <option value="Paid">Paid</option>
+        <option value="Not Paid">Not Paid</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="Partial Payment">Partial Payment</option>
+      `;
+      sel.value = current;
+      wrap.appendChild(sel);
+      pill.replaceWith(wrap);
+      sel.focus();
+
+      const restore = (value) => {
+        const span = document.createElement('span');
+        span.className = `tag ${invoiceStatusClass(value)} inv-status-pill`;
+        span.dataset.invId = invoiceId;
+        span.style.cursor = 'pointer';
+        span.title = 'Click to change status';
+        span.textContent = value;
+        wrap.replaceWith(span);
+      };
+
+      sel.addEventListener('change', async () => {
+        const next = sel.value;
+        if (next === current) { restore(current); return; }
+        const res = await updateInvoiceStatus(invoiceId, next);
+        if (!res.ok) { alert(res.error?.message || 'Could not update status.'); restore(current); return; }
+        restore(res.value);
+      });
+
+      sel.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') restore(current); });
+
+      document.addEventListener('mousedown', function onOut(ev) {
+        if (!wrap.contains(ev.target)) { restore(current); document.removeEventListener('mousedown', onOut); }
+      });
     });
 
     els.saveExpenseBtn?.addEventListener('click', saveProjectExpenseBridge);

@@ -368,7 +368,17 @@
             <h4 style="margin:0 0 4px;">Revenue Lines</h4>
             <div class="muted">Project-linked invoices for this project</div>
           </div>
-          <button class="btn2" id="pmNewInvoiceBtn">+ New Invoice</button>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button
+              class="btn2"
+              id="pmLinkInvoiceBtn"
+              type="button"
+              style="background:#8b6df5;color:#fff;"
+            >
+              Link Existing Invoice
+            </button>
+            <button class="btn2" id="pmNewInvoiceBtn">+ New Invoice</button>
+          </div>
         </div>
         <div class="tab-card">
           <div id="pmRevenueList" class="data-list">
@@ -921,6 +931,39 @@
         Link Expense
       </button>
       <button class="btn2" id="linkExpenseCancelBtn" type="button" style="background:#394b6d;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Link Invoice Modal ===== -->
+<div id="linkInvoiceModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close" id="linkInvoiceCloseBtn" aria-label="Close">&times;</button>
+
+    <h3>Link Existing Invoice</h3>
+
+    <p class="muted">
+      Showing unlinked invoices for this client from the current year and the year before.
+    </p>
+
+    <input type="hidden" id="linkInvoiceProjectIdInput" />
+
+    <div class="form-field">
+      <div class="select-wrap">
+        <select id="linkInvoiceSelect" class="filter-select">
+          <option value="">Select an invoice</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions-bar">
+      <span class="modal-error" id="linkInvoiceError"></span>
+      <button class="btn2" id="linkInvoiceSaveBtn" type="button" style="background:#8b6df5;color:#fff;">
+        Link Invoice
+      </button>
+      <button class="btn2" id="linkInvoiceCancelBtn" type="button" style="background:#394b6d;">
         Cancel
       </button>
     </div>

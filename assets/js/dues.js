@@ -392,6 +392,7 @@ async function fetchActualAnnual6mWindow() {
         id, vendor, description, client_name, service,
         expense_date, amount, frequency, status
       `)
+      .neq("service", "subcontractor")
       .gte("expense_date", winStart.toISOString())
       .lte("expense_date", winEnd.toISOString())
       .order("expense_date", { ascending: true });
