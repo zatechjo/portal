@@ -71,6 +71,11 @@ onAuthStateChanged(auth, (user) => {
   }
   applyTopbarAccount(user);
   applyGreeting(user);
+
+  // Build sidebar account block on mobile — topbar.js exposes this global
+  const name   = resolveDisplayName(user) || user.email || '';
+  const avatar = resolveAvatar(user);
+  window.__buildSideAccount?.(name, avatar);
 });
 
 // --- Logout ---

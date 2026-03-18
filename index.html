@@ -103,22 +103,45 @@
 
     <!-- topbar -->
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title">
-          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-        </h1>
-        <p class="greet-sub">ZAtech CRM overview — invoices, expenses, pipeline & geography at a glance.</p>
-      </div>
 
-      <div class="hud">
-        <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
-        <div class="search-group sg-closed">
-          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-            <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
+      <!-- ROW 1 (mobile): date left | notify + search right
+           On desktop this whole row is hidden; hud handles it -->
+      <div class="topbar-row1">
+        <div class="date-badge" id="todayBadge" aria-label="Today's date">--/--/----</div>
+        <div class="topbar-row1-icons">
+          <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+          <div class="search-group sg-closed">
+            <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
+            <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+              <input id="searchInput" type="search" placeholder="Search…" />
+            </div>
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+      </div>
+
+      <!-- ROW 2 (mobile): hamburger | greeting -->
+      <div class="topbar-row2">
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="greeting">
+          <h1 class="greet-title">
+            <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+          </h1>
+          <p class="greet-sub">ZAtech CRM overview — invoices, expenses, pipeline & geography at a glance.</p>
+        </div>
+      </div>
+
+      <!-- HUD (desktop only — hidden on mobile) -->
+      <div class="hud">
+        <div class="date-badge" id="todayBadgeDesktop" aria-label="Today's date" aria-hidden="true">--/--/----</div>
+        <div class="search-group sg-closed">
+          <button class="icon-btn" id="searchToggleDesktop" aria-label="Open search" title="Search">🔎</button>
+          <div class="search-anim" id="searchWrapDesktop" role="search" aria-hidden="true">
+            <input id="searchInputDesktop" type="search" placeholder="Search clients, invoices, amounts…" />
+          </div>
+        </div>
+        <button class="icon-btn" id="notifyBtnDesktop" aria-label="Notifications" title="Notifications">🔔</button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
             <img class="avatar" src="./assets/img/user-icon.png" alt="" />
@@ -130,6 +153,7 @@
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- KPI ROW (your new 4 metrics) -->
@@ -228,9 +252,11 @@
             <span class="tag">By client</span>
           </div>
         </div>
-        <div class="chart-wrap" style="display:flex; gap:20px; --h:280px;">
-          <canvas id="expDonutChart" style="flex:1; max-width:50%;"></canvas>
-          <canvas id="expDonutByClientChart" style="flex:1; max-width:50%;"></canvas>
+        <div class="donut-scroll-wrap">
+          <div class="chart-wrap donut-pair" style="display:flex; gap:20px; --h:280px;">
+            <canvas id="expDonutChart" style="flex:1; max-width:50%;"></canvas>
+            <canvas id="expDonutByClientChart" style="flex:1; max-width:50%;"></canvas>
+          </div>
         </div>
       </div>  
       

@@ -1,13 +1,13 @@
 (() => {
   const ENDPOINT = "https://eymqvzjwbolgmywpwhgi.supabase.co/functions/v1/iris";
 
-  const fab = document.getElementById("aiFab");
-  const chat = document.getElementById("aiChat");
+  const fab      = document.getElementById("aiFab");
+  const chat     = document.getElementById("aiChat");
   const closeBtn = document.getElementById("aiCloseBtn");
-  const minBtn = document.getElementById("aiMinBtn");
-  const body = document.getElementById("aiBody");
-  const input = document.getElementById("aiInput");
-  const send = document.getElementById("aiSend");
+  const minBtn   = document.getElementById("aiMinBtn");
+  const body     = document.getElementById("aiBody");
+  const input    = document.getElementById("aiInput");
+  const send     = document.getElementById("aiSend");
 
   if (!fab || !chat || !body || !input || !send) {
     console.error("Iris widget: missing elements");
@@ -15,55 +15,93 @@
   }
 
   // ===== Memory (SESSION ONLY) =====
-  const KEY = "iris:history:v1";
+  const KEY      = "iris:history:v1";
   const MAX_TURNS = 16;
 
-  // ✅ one-time cleanup: remove any old persisted history
-  try {
-    localStorage.removeItem(KEY);
-  } catch {}
+  try { localStorage.removeItem(KEY); } catch {}
 
   function loadHistory() {
     try {
       const raw = sessionStorage.getItem(KEY);
       const arr = raw ? JSON.parse(raw) : [];
       return Array.isArray(arr) ? arr : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   }
 
-  function saveHistory(history) {
-    try {
-      sessionStorage.setItem(KEY, JSON.stringify(history));
-    } catch {}
+  function saveHistory(h) {
+    try { sessionStorage.setItem(KEY, JSON.stringify(h)); } catch {}
   }
 
-  function trimHistory(history) {
-    if (history.length <= MAX_TURNS) return history;
-    return history.slice(history.length - MAX_TURNS);
+  function trimHistory(h) {
+    return h.length <= MAX_TURNS ? h : h.slice(h.length - MAX_TURNS);
   }
 
-  let history = loadHistory(); // [{role:"user"/"assistant", content:"..."}]
+  let history = loadHistory();
 
-  // ===== UI =====
-  const open = () => {
+  // ===== Open / Close =====
+  const isMobile = () => window.innerWidth <= 768;
+
+  const openChat = () => {
     chat.classList.add("show");
     chat.setAttribute("aria-hidden", "false");
+    document.body.classList.add("iris-open");
+    // Prevent background scroll on mobile
+    if (isMobile()) document.body.style.overflow = "hidden";
     setTimeout(() => input.focus(), 60);
   };
 
-  const close = () => {
+  const closeChat = () => {
     chat.classList.remove("show");
     chat.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("iris-open");
+    document.body.style.overflow = "";
+    input.blur();
   };
 
-  fab.addEventListener("click", () => (chat.classList.contains("show") ? close() : open()));
-  closeBtn?.addEventListener("click", close);
-  minBtn?.addEventListener("click", close);
+  fab.addEventListener("click", () =>
+    chat.classList.contains("show") ? closeChat() : openChat()
+  );
+  closeBtn?.addEventListener("click", closeChat);
+  minBtn?.addEventListener("click", closeChat);
 
+  // Close on backdrop tap (mobile — tap above the sheet)
+  document.addEventListener("click", (e) => {
+    if (
+      isMobile() &&
+      chat.classList.contains("show") &&
+      !chat.contains(e.target) &&
+      e.target !== fab
+    ) closeChat();
+  });
+
+  // ===== Swipe down to dismiss (mobile) =====
+  let touchStartY = 0;
+  let touchStartScrollTop = 0;
+
+  chat.addEventListener("touchstart", (e) => {
+    touchStartY = e.touches[0].clientY;
+    touchStartScrollTop = body.scrollTop;
+  }, { passive: true });
+
+  chat.addEventListener("touchmove", (e) => {
+    if (!isMobile()) return;
+    const dy = e.touches[0].clientY - touchStartY;
+    // Only drag down if body is scrolled to top
+    if (dy > 0 && touchStartScrollTop === 0) {
+      chat.style.transform = `translateY(${dy}px)`;
+    }
+  }, { passive: true });
+
+  chat.addEventListener("touchend", (e) => {
+    if (!isMobile()) return;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    chat.style.transform = "";
+    if (dy > 120) closeChat(); // swiped down enough — dismiss
+  }, { passive: true });
+
+  // ===== Messages =====
   function addMsg(role, text) {
-    const wrap = document.createElement("div");
+    const wrap   = document.createElement("div");
     wrap.className = `ai-msg ${role}`;
     const bubble = document.createElement("div");
     bubble.className = "ai-bubble";
@@ -75,19 +113,16 @@
 
   function renderHistory() {
     body.innerHTML = "";
-    for (const m of history) {
-      addMsg(m.role === "assistant" ? "ai" : "user", m.content);
-    }
+    for (const m of history) addMsg(m.role === "assistant" ? "ai" : "user", m.content);
   }
   renderHistory();
 
-  // ✅ One-time intro (only if chat is empty in this session)
-    if (history.length === 0) {
-    const intro = "Hi 👋 I’m Iris — how can I help?";
+  if (history.length === 0) {
+    const intro = "Hi 👋 I'm Iris — how can I help?";
     addMsg("ai", intro);
     history.push({ role: "assistant", content: intro });
     saveHistory(history);
-    }
+  }
 
   // Debug reset
   window.IrisResetChat = () => {
@@ -96,6 +131,7 @@
     renderHistory();
   };
 
+  // ===== Send =====
   async function sendMsg() {
     const text = (input.value || "").trim();
     if (!text) return;
@@ -103,12 +139,10 @@
     addMsg("user", text);
     input.value = "";
 
-    // update memory
     history.push({ role: "user", content: text });
     history = trimHistory(history);
     saveHistory(history);
 
-    // thinking bubble
     const thinkingEl = document.createElement("div");
     thinkingEl.className = "ai-msg ai";
     thinkingEl.innerHTML = `<div class="ai-bubble">Thinking...</div>`;
@@ -116,28 +150,23 @@
     body.scrollTop = body.scrollHeight;
 
     try {
-      const res = await fetch(ENDPOINT, {
+      const res  = await fetch(ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history, maxTurns: MAX_TURNS }),
       });
-
       const data = await res.json().catch(() => ({}));
       thinkingEl.remove();
 
-      if (!res.ok) {
-        addMsg("ai", data?.error || "Server error.");
-        return;
-      }
+      if (!res.ok) { addMsg("ai", data?.error || "Server error."); return; }
 
       const reply = (data?.reply || "").trim() || "…";
       addMsg("ai", reply);
 
-      // update memory
       history.push({ role: "assistant", content: reply });
       history = trimHistory(history);
       saveHistory(history);
-    } catch (err) {
+    } catch {
       thinkingEl.remove();
       addMsg("ai", "Network error.");
     }
@@ -145,6 +174,6 @@
 
   send.addEventListener("click", sendMsg);
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendMsg();
+    if (e.key === "Enter" && !e.shiftKey) sendMsg();
   });
 })();

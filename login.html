@@ -5,29 +5,217 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login to ZAtech Portal</title>
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
-
-  <!-- Styles -->
   <link rel="stylesheet" href="./assets/css/styles.css" />
 
-  <!-- Scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/login.js"></script>
+
+  <style>
+    /* ── Password field wrapper ── */
+    .pw-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .pw-wrap input { width: 100%; padding-right: 46px; }
+    .pw-toggle {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #9ca3af;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      transition: color .15s;
+    }
+    .pw-toggle:hover { color: #374151; }
+    .pw-toggle svg { width: 18px; height: 18px; }
+
+    /* ── Login spinner ── */
+    .login-spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-primary.loading .login-spinner  { display: inline-block; }
+    .btn-primary.loading #loginBtnText,
+    .btn-primary.loading #loginBtnArrow  { display: none; }
+
+    /* ── Forgot link ── */
+    .forgot-link {
+      display: block;
+      margin-top: 14px;
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .forgot-link:hover { color: #374151; }
+
+    /* ================================================================
+       MOBILE  (≤768px) — full-page background image + glass card
+       Desktop keeps the original two-column layout untouched
+    ================================================================ */
+    @media (max-width: 768px) {
+
+      /* Hide the left hero panel — the bg image takes its place */
+      .login-left { display: none !important; }
+
+      /* Make the right section fill the whole screen over the image */
+      .login-wrap {
+        display: block;
+        min-height: 100dvh;
+        position: relative;
+      }
+
+      .login-right {
+        min-height: 100dvh;
+        background: none;           /* remove the gray gradient */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 20px;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Full-bleed background image on the body/page for mobile */
+      .login-landing {
+        background: url('./assets/img/login-background.jpg') center / cover no-repeat;
+        position: relative;
+      }
+
+      /* Dark blurred overlay — same feel as the original left panel */
+      .login-landing::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(3, 10, 28, 0.80) 0%,
+          rgba(8, 22, 52, 0.70) 50%,
+          rgba(5, 18, 44, 0.78) 100%
+        );
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        z-index: 0;
+      }
+
+      /* Glass card */
+      .form-wrap {
+        position: relative;
+        z-index: 2;
+        width: min(400px, 100%);
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 24px;
+        padding: 36px 28px 30px;
+        box-shadow:
+          0 24px 60px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(255,255,255,0.05) inset;
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+      }
+
+      /* Logo — invert to white so it reads on dark bg */
+      .brand-mark {
+        filter: brightness(0) invert(1);
+        opacity: 0.9;
+        width: 130px;
+        margin: 0 auto 24px;
+      }
+
+      /* Title + subtitle — switch to white */
+      .form-title {
+        color: #fff;
+        text-align: center;
+        font-size: 24px;
+      }
+
+      .form-sub {
+        color: rgba(255,255,255,0.5);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* Labels */
+      .login-form label {
+        color: rgba(255,255,255,0.7);
+      }
+
+      /* Inputs — glass style */
+      .login-form input[type="email"],
+      .login-form input[type="password"],
+      .login-form input[type="text"] {
+        background: rgba(255,255,255,0.09);
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 14px;
+        padding: 13px 14px;
+      }
+      .login-form input::placeholder { color: rgba(255,255,255,0.28); }
+      .login-form input:focus {
+        border-color: rgba(97,218,251,0.6);
+        background: rgba(255,255,255,0.13);
+        box-shadow: 0 0 0 3px rgba(97,218,251,0.12);
+      }
+
+      /* Password toggle icon color */
+      .pw-toggle { color: rgba(255,255,255,0.35); }
+      .pw-toggle:hover { color: rgba(255,255,255,0.8); }
+
+      /* Submit button */
+      .btn-primary {
+        background: linear-gradient(135deg, #2c8ecd, #1a6fa8);
+        box-shadow: 0 6px 20px rgba(44,142,205,0.4);
+      }
+
+      /* Error text */
+      #loginErr { color: #fca5a5; text-align: center; }
+
+      /* Forgot link */
+      .forgot-link { color: rgba(255,255,255,0.4); }
+      .forgot-link:hover { color: rgba(255,255,255,0.8); }
+    }
+
+    /* Tighten further on very small phones */
+    @media (max-width: 400px) {
+      .form-wrap { padding: 28px 18px 24px; border-radius: 18px; }
+      .form-title { font-size: 21px; }
+      .brand-mark { width: 110px; }
+    }
+  </style>
 </head>
 
 <body class="login-landing">
 
   <div class="login-wrap">
-    <!-- LEFT: hero -->
-    <section class="login-left" aria-hidden="false">
+
+    <!-- LEFT: hero — desktop only -->
+    <section class="login-left" aria-hidden="true">
       <div class="left-content">
         <div class="left-hero">
           <img src="./assets/img/logo-white-bulb.png" alt="ZAtech Logo" class="left-logo" />
           <h1 class="left-title">Let's get to work!!</h1>
-          <p class="left-sub"> <strong>Here we go again.</strong> Another day to track, plan, and knock things off the list — with just a little less stress than yesterday.</p>
+          <p class="left-sub">
+            <strong>Here we go again.</strong> Another day to track, plan, and knock
+            things off the list — with just a little less stress than yesterday.
+          </p>
         </div>
-        <small class="left-foot">© 2026 ZAtech. All Rights Reserved. Powered by <span>ZAtech</span></small>
+        <small class="left-foot">
+          © 2026 ZAtech. All Rights Reserved. Powered by <span>ZAtech</span>
+        </small>
       </div>
     </section>
 
@@ -39,21 +227,52 @@
         <h2 class="form-title">Welcome Back!</h2>
         <p class="form-sub">Enter your credentials to access the dashboard</p>
 
-        <form id="login-form" class="login-form">
+        <form id="login-form" class="login-form" novalidate>
+
           <label for="email">Email</label>
-          <input id="email" type="email" placeholder="email@zatechjo.com" required />
+          <input
+            id="email"
+            type="email"
+            placeholder="email@zatechjo.com"
+            autocomplete="email"
+            inputmode="email"
+            required
+          />
 
           <label for="password">Password</label>
-          <input id="password" type="password" placeholder="Enter your password" required />
+          <div class="pw-wrap">
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" class="pw-toggle" id="pwToggle"
+                    aria-label="Show password" tabindex="-1">
+              <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
 
-          <button type="submit" class="btn btn-primary">
-            <span>Login Now</span><span aria-hidden="true">➜</span>
+          <button type="submit" class="btn btn-primary" id="loginBtn">
+            <span id="loginBtnText">Login Now</span>
+            <span aria-hidden="true" id="loginBtnArrow">➜</span>
+            <span class="login-spinner" id="loginSpinner" aria-hidden="true"></span>
           </button>
 
-          <div id="loginErr" role="alert"></div>
+          <div id="loginErr" role="alert" aria-live="polite"></div>
+          <a href="#" id="forgotLink" class="forgot-link">Forgot your password?</a>
+
         </form>
       </div>
     </section>
+
   </div>
+
 </body>
 </html>
