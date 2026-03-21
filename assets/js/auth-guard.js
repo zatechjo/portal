@@ -76,6 +76,9 @@ onAuthStateChanged(auth, (user) => {
   const name   = resolveDisplayName(user) || user.email || '';
   const avatar = resolveAvatar(user);
   window.__buildSideAccount?.(name, avatar);
+
+  // Expose user identity for Iris — widget reads this on each send
+  window.__irisUser = { name, email: user.email || '' };
 });
 
 // --- Logout ---

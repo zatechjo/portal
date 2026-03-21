@@ -1,752 +1,519 @@
-// /assets/js/index.js
+// assets/js/index.js — Dashboard
 (() => {
-  // ===== Guards =====
-  if (!window.sb) {
-    console.error("[dashboard] Supabase client `sb` not found. Make sure supabase.js initializes it globally.");
-  }
+  const $ = id => document.getElementById(id);
 
-  // ===== DOM =====
-  const loader = document.querySelector("#contentLoader");
-
-  // KPIs
-  const elUnpaidTotal   = document.querySelector("#kpiUnpaidTotal");
-  const elUnpaidCount   = document.querySelector("#kpiUnpaidCount");
-  const elRev90         = document.querySelector("#kpiRev90");
-  const elRev90Delta    = document.querySelector("#kpiRev90Delta");
-  const elNextDueTotal  = document.querySelector("#kpiNextDueTotal");
-  const elNextDueCount  = document.querySelector("#kpiNextDueCount");
-  const elExp30         = document.querySelector("#kpiExp30");
-  const elExp30Count    = document.querySelector("#kpiExp30Count");
-
-  // Charts
-  let funnelChart, topClientsChart, expDonutChart; // keep legacy var
-  // new explicit refs for donuts (so we can destroy/re-render safely)
-  let donutVendorChart = null;
-  let donutClientChart = null;
-
-  // ---------- Generic helpers ----------
-  function groupSumBy(list, keyFn, amountFn){
-    const map = new Map();
-    for (const it of (list||[])) {
-      const k = keyFn(it);
-      const v = Number(amountFn(it) || 0);
-      if (!k || !Number.isFinite(v)) continue;
-      map.set(k, (map.get(k)||0) + v);
-    }
-    return map;
-  }
-
-  // Use the site’s font/colors inside Chart.js charts
-    function setChartDefaults() {
-    if (!window.Chart) return;
-    const fam = getComputedStyle(document.body).fontFamily || 'system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"';
-
-    // Text
-    Chart.defaults.font.family = fam;
-    Chart.defaults.font.size = 12;
-    Chart.defaults.color = 'rgba(255,255,255,0.85)'; // tweak if you’re not on dark mode
-
-    // Titles
-    Chart.defaults.plugins.title.display = true;        // we set titles per-chart; this is a sane default
-    Chart.defaults.plugins.title.font = { family: fam, size: 14, weight: '700' };
-
-    // Legend: compact with point-style markers
-    Chart.defaults.plugins.legend.position = 'bottom';
-    Chart.defaults.plugins.legend.labels.usePointStyle = true;
-    Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
-    Chart.defaults.plugins.legend.labels.padding = 12;
-    }
-
-
-  // (Unused here but kept for compatibility if something else calls it)
-  function renderDonut(el, labels, series, title){
-    const container = (typeof el === 'string') ? document.querySelector(el) : el;
-    if (!container) return;
-
-    if (window.ApexCharts) {
-      const chart = new ApexCharts(container, {
-        chart: { type: 'donut', height: 260 },
-        title: { text: title, style:{ fontWeight:600 } },
-        series,
-        labels,
-        legend: { position: 'bottom' },
-        dataLabels: { enabled: true, formatter: (v, opts) => {
-          const val = series[opts.seriesIndex];
-          return Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(val);
-        }}
-      });
-      chart.render();
-      return chart;
-    }
-
-    // fallback: simple table list
-    const rows = labels.map((l,i)=> `<tr><td>${l}</td><td style="text-align:right">${series[i].toFixed(0)}</td></tr>`).join("");
-    container.innerHTML = `
-      <div style="font-weight:600;margin:4px 0">${title}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:.9rem">
-        <tbody>${rows || `<tr><td colspan="2" style="opacity:.7">No data</td></tr>`}</tbody>
-      </table>`;
-  }
-
-  // ===== Utils =====
-  const fmt$ = (n) => {
+  const fmt$ = n => {
     const v = Number(n || 0);
-    return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
   };
-  const todayISO = () => new Date().toISOString().slice(0, 10);
-
-  const addDays = (d, n) => {
-    const t = new Date(d);
-    t.setDate(t.getDate() + n);
-    return t;
+  const fmt$d = n => {
+    const v = Number(n || 0);
+    return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
-  const addMonths = (d, n) => {
-    const t = new Date(d);
-    t.setMonth(t.getMonth() + n);
-    return t;
-  };
+  const today = new Date();
+  const toISO = d => d.toISOString().slice(0, 10);
+  const addDays = (d, n) => { const t = new Date(d); t.setDate(t.getDate() + n); return t; };
 
-  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const endOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-
-  const toISODate = (d) => d.toISOString().slice(0, 10);
-
-  const coerceDate = (v) => (v ? new Date(v) : null);
-
-  const CYCLE_TO_MONTHS = { monthly: 1, month: 1, m: 1, quarterly: 3, quarter: 3, q: 3, annual: 12, annually: 12, yearly: 12, year: 12, y: 12 };
-
-  // Try to read cycle from common columns; fallback to inference
-  function detectCycleMonths(row, recentDates) {
-    const raw = String(
-      row.frequency || row.billing_cycle || row.recurrence || row.period || ""
-    ).toLowerCase().trim();
-    if (CYCLE_TO_MONTHS[raw]) return CYCLE_TO_MONTHS[raw];
-
-    // crude inference: look at gaps between latest two issues in this group
-    if (recentDates && recentDates.length >= 2) {
-      const [d1, d0] = recentDates.slice(-2).map((d) => new Date(d)).sort((a,b)=>a-b);
-      const months = Math.max(1, Math.round((d1 - d0) / (1000*60*60*24*30)));
-      if (months >= 11) return 12;
-      if (months >= 2 && months <= 4) return 3;
-      return 1;
-    }
-    return null; // unknown
-  }
-
-  function addMonthsClamped(d, m) {
-    const dt = new Date(d);
-    const day = dt.getDate();
-    dt.setMonth(dt.getMonth() + m);
-    if (dt.getDate() < day) dt.setDate(0); // end-of-month clamp
-    return dt;
-  }
-
-  // Some dashboards store invoice totals in `subtotal`; that’s what your Revenue page uses.
-  // Use subtotal when available, fall back to total.
-  const getInvoiceAmount = (row) => {
-    if (row == null || typeof row !== "object") return 0;
-    let n = row.subtotal ?? row.total ?? 0;
-    return Number(n) || 0;
-  };
-
-  // Treat anything that is not 'Paid' as unpaid/open.
-  const isPaid = (status) => String(status || "").toLowerCase() === "paid";
-
-  const showLoader = (on) => {
-    if (!loader) return;
-    loader.style.display = on ? "block" : "none";
-  };
-
-  // ===== Date windows =====
-  const now = new Date();
-  const ninetyAgo = addDays(now, -90);
-  const next90 = addDays(now, 90);
-  const last12m = addMonths(now, -12);
-  const next30 = addDays(now, 30);
-
-  // ====== Data loads (Supabase) ======
+  // ── KPIs ────────────────────────────────────
   async function loadKPIs() {
-    // Unpaid total and count
-    const unpaidPromise = sb
-      .from("invoices")
-      .select("id, status, subtotal, total, due_date")
-      .neq("status", "Paid");
+    if (!window.sb) return;
+    const ninetyAgo = addDays(today, -90);
+    const prevStart = addDays(today, -180);
 
-    // Revenue last 90 days (Paid)
-    const rev90Promise = sb
-      .from("invoices")
-      .select("id, status, subtotal, total, issue_date")
-      .eq("status", "Paid")
-      .gte("issue_date", toISODate(ninetyAgo))
-      .lte("issue_date", toISODate(now));
+    // Unpaid = statuses that represent money actually owed
+    const OWED_STATUSES = ['Not Paid', 'Sent', 'Partial Payment', 'Unpaid', 'Overdue'];
 
-    // Next due within 90 days (unpaid)
-    const nextDuePromise = sb
-      .from("invoices")
-      .select("id, status, subtotal, total, due_date")
-      .neq("status", "Paid")
-      .gte("due_date", toISODate(now))
-      .lte("due_date", toISODate(next90));
-
-    // Expenses next 30 days
-    const expNext30Promise = sb
-      .from("expenses")
-      .select("id, amount, expense_date")
-      .gte("expense_date", toISODate(now))
-      .lte("expense_date", toISODate(next30));
-
-    const [unpaidRes, rev90Res, nextDueRes, exp30Res] = await Promise.allSettled([
-      unpaidPromise, rev90Promise, nextDuePromise, expNext30Promise
+    const [unpaidRes, rev90Res, prevRes] = await Promise.allSettled([
+      window.sb.from('invoices').select('id, subtotal, status')
+        .in('status', OWED_STATUSES),
+      window.sb.from('invoices').select('id, subtotal').eq('status', 'Paid')
+        .gte('issue_date', toISO(ninetyAgo)).lte('issue_date', toISO(today)),
+      window.sb.from('invoices').select('id, subtotal').eq('status', 'Paid')
+        .gte('issue_date', toISO(prevStart)).lte('issue_date', toISO(ninetyAgo)),
     ]);
 
-    // Unpaid
-    if (unpaidRes.status === "fulfilled" && !unpaidRes.value.error) {
+    if (unpaidRes.status === 'fulfilled' && !unpaidRes.value.error) {
       const rows = unpaidRes.value.data || [];
-      const total = rows.reduce((s, r) => s + getInvoiceAmount(r), 0);
-      elUnpaidTotal && (elUnpaidTotal.textContent = fmt$(total));
-      elUnpaidCount && (elUnpaidCount.textContent = rows.length);
-    } else {
-      console.warn("[dashboard] unpaid KPI error:", unpaidRes.value?.error || unpaidRes.reason);
+      const total = rows.reduce((s, r) => s + Number(r.subtotal || 0), 0);
+      const el = $('kpiUnpaidTotal');
+      if (el) el.textContent = fmt$(total);
+      const badge = $('kpiUnpaidCount');
+      if (badge) badge.textContent = `${rows.length} invoice${rows.length !== 1 ? 's' : ''}`;
     }
 
-    // Revenue 90d
     let rev90 = 0;
-    if (rev90Res.status === "fulfilled" && !rev90Res.value.error) {
+    if (rev90Res.status === 'fulfilled' && !rev90Res.value.error) {
       const rows = rev90Res.value.data || [];
-      rev90 = rows.reduce((s, r) => s + getInvoiceAmount(r), 0);
-      elRev90 && (elRev90.textContent = fmt$(rev90));
-    } else {
-      console.warn("[dashboard] rev90 KPI error:", rev90Res.value?.error || rev90Res.reason);
+      rev90 = rows.reduce((s, r) => s + Number(r.subtotal || 0), 0);
+      const el = $('kpiRev90');
+      if (el) el.textContent = fmt$(rev90);
     }
 
-    // Simple “delta” vs previous 90d window (optional)
-    try {
-      const prevStart = addDays(ninetyAgo, -90);
-      const prevEnd = addDays(ninetyAgo, 0);
-      const { data: prevRows, error: prevErr } = await sb
-        .from("invoices")
-        .select("id, status, subtotal, total, issue_date")
-        .eq("status", "Paid")
-        .gte("issue_date", toISODate(prevStart))
-        .lte("issue_date", toISODate(prevEnd));
-      if (!prevErr) {
-        const prev = (prevRows || []).reduce((s, r) => s + getInvoiceAmount(r), 0);
-        const deltaPct = prev > 0 ? ((rev90 - prev) / prev) * 100 : (rev90 > 0 ? 100 : 0);
-        if (elRev90Delta) {
-          elRev90Delta.textContent = (deltaPct >= 0 ? "+" : "") + deltaPct.toFixed(1) + "%";
-          elRev90Delta.classList.remove("ok", "warn", "bad");
-          elRev90Delta.classList.add(deltaPct >= 0 ? "ok" : "bad");
-        }
-      }
-    } catch (e) {
-      console.warn("[dashboard] rev90 delta error:", e);
-    }
-
-    // Next due 90d → from projection (not simply open invoices)
-    try {
-      const { sum, count } = await computeProjectedDuesNext90d();
-      elNextDueTotal && (elNextDueTotal.textContent = fmt$(sum));
-      elNextDueCount && (elNextDueCount.textContent = count);
-    } catch (e) {
-      console.warn("[dashboard] projected dues compute error:", e);
-    }
-
-    // Expenses next 30d
-    if (exp30Res.status === "fulfilled" && !exp30Res.value.error) {
-      const rows = exp30Res.value.data || [];
-      const total = rows.reduce((s, r) => s + (Number(r.amount || 0)), 0);
-      elExp30 && (elExp30.textContent = fmt$(total));
-      elExp30Count && (elExp30Count.textContent = rows.length);
-    } else {
-      console.warn("[dashboard] exp30 KPI error:", exp30Res.value?.error || exp30Res.reason);
+    if (prevRes.status === 'fulfilled' && !prevRes.value.error) {
+      const prevRows = prevRes.value.data || [];
+      const prev = prevRows.reduce((s, r) => s + Number(r.subtotal || 0), 0);
+      const pct = prev > 0 ? ((rev90 - prev) / prev * 100) : (rev90 > 0 ? 100 : 0);
+      const badge = $('kpiRevDelta');
+      if (badge) badge.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% vs prev 90d`;
     }
   }
 
-  // === Projected dues for the NEXT 90 DAYS only (Paid seeds only) ===
-  async function computeProjectedDuesNext90d() {
-    const today   = startOfDay(now);
-    const horizon = addDays(today, 90);
+  // ── Needs Attention ──────────────────────────
+  async function loadAttention() {
+    if (!window.sb) return;
+    const list = $('attentionList');
+    if (!list) return;
 
-    // Grab last 12m to infer cadence; schema-safe select
-    const { data, error } = await sb
-      .from("invoices")
-      .select("*")
-      .gte("issue_date", toISODate(last12m))
-      .lte("issue_date", toISODate(now));
+    const { data, error } = await window.sb
+      .from('invoices')
+      .select(`id, invoice_no, subtotal, status, due_date, clients!invoices_client_id_fkey ( name )`)
+      .neq('status', 'Paid')
+      .neq('status', 'Cancelled')
+      .order('due_date', { ascending: true })
+      .limit(6);
 
-    if (error) {
-      console.warn("[dashboard] projected dues error:", error);
-      return { sum: 0, count: 0 };
-    }
-
-    const norm = (v) => (v == null ? "" : String(v));
-    const isOneTime = (cp) => {
-      const s = norm(cp).toLowerCase();
-      return s === "one_time" || s === "one-time";
-    };
-    const looksRecurring = (cp) => {
-      const s = norm(cp).toLowerCase();
-      return s === "monthly" || s === "month" ||
-             s === "quarterly" || s === "quarter" ||
-             s === "annual" || s === "year" || s === "yearly";
-    };
-
-    // Seed ONLY from Paid invoices that are recurring (explicit or inferable)
-    const seeds = (data || []).filter(r => {
-      if (norm(r.status).toLowerCase() !== "paid") return false;
-      if (isOneTime(r.coverage_period)) return false;
-      const explicit = r?.is_recurring === true || norm(r?.is_recurring) === "true";
-      return explicit || looksRecurring(r.coverage_period);
-    });
-
-    // Group by client + service/title (fallback to client only)
-    const keyOf = (r) => {
-      const clientKey = norm(r.client_id || r.client_name || "unknown");
-      const svc = norm(r.service || r.title || "").toLowerCase().trim();
-      return svc ? `${clientKey}::${svc}` : clientKey;
-    };
-    const groups = new Map();
-    for (const r of seeds) {
-      const k = keyOf(r);
-      if (!groups.has(k)) groups.set(k, []);
-      groups.get(k).push(r);
-    }
-
-    let sum = 0, count = 0;
-
-    groups.forEach(rows => {
-      rows.sort((a,b) => {
-        const da = new Date(a.issue_date || a.due_date || 0);
-        const db = new Date(b.issue_date || b.due_date || 0);
-        return da - db;
-      });
-
-      const last = rows[rows.length - 1];
-      const recentDates = rows.map(r => r.issue_date || r.due_date).filter(Boolean);
-
-      // infer cadence from paid history; fallback to monthly if explicitly recurring
-      let cycleMonths = detectCycleMonths(last, recentDates);
-      const explicitRecurring =
-        last?.is_recurring === true || norm(last?.is_recurring) === "true";
-
-      if (!cycleMonths && !explicitRecurring) return; // not enough signal
-      const stepMonths = cycleMonths || 1;
-
-      const base = new Date(last.due_date || last.issue_date || today);
-      const amt  = getInvoiceAmount(last);
-
-      // roll forward to first >= today
-      let next = new Date(base);
-      let guard = 0;
-      while (next <= today && guard++ < 24) {
-        next = addMonthsClamped(next, stepMonths);
-      }
-
-      // only count inside [today, today+90d]
-      while (next >= today && next <= horizon && guard++ < 24) {
-        sum += amt;
-        count += 1;
-        next = addMonthsClamped(next, stepMonths);
-      }
-    });
-
-    return { sum, count };
-  }
-
-  async function loadOpportunitiesFunnel() {
-    const { data, error } = await sb
-      .from("opportunities")
-      .select("status, value");
-    if (error) {
-      console.error("[dashboard] opportunities error:", error);
+    if (error || !data || !data.length) {
+      list.innerHTML = `<div class="dash-att-empty">All clear — nothing overdue 🎉</div>`;
       return;
     }
-    const rows = data || [];
 
-    // Normalize
-    const norm = (s) => String(s || "").toLowerCase();
-    const buckets = {
-      "proposed": 0,
-      "in review": 0,
-      "won": 0,
-      "lost": 0,
+    const todayISO = toISO(today);
+    list.innerHTML = data.map(inv => {
+      const client = inv.clients?.name || 'Unknown';
+      const isOverdue = inv.due_date && inv.due_date < todayISO;
+      const statusLabel = isOverdue ? 'Overdue' : (inv.status || 'Open');
+      return `
+        <div class="dash-att-item">
+          <div style="min-width:0;flex:1;">
+            <div class="dash-att-client">${esc(client)}</div>
+            <div class="dash-att-meta">#${esc(inv.invoice_no || '—')} · ${esc(statusLabel)}</div>
+          </div>
+          <div class="dash-att-amount">${fmt$d(inv.subtotal)}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Recent Invoices ───────────────────────────
+  async function loadRecentInvoices() {
+    if (!window.sb) return;
+    const list = $('recentList');
+    if (!list) return;
+
+    const { data, error } = await window.sb
+      .from('invoices')
+      .select(`id, invoice_no, issue_date, subtotal, status, pdf_url, clients!invoices_client_id_fkey ( name )`)
+      .order('issue_date', { ascending: false })
+      .limit(6);
+
+    if (error || !data || !data.length) {
+      list.innerHTML = `<div style="padding:20px;text-align:center;color:rgba(200,217,238,.3);font-size:13px;">No invoices yet.</div>`;
+      return;
+    }
+
+    const statusClass = s => {
+      const v = (s || '').toLowerCase();
+      if (v === 'paid') return 'ok';
+      if (['not paid', 'unpaid'].includes(v)) return 'due';
+      if (v === 'partial payment') return 'partial';
+      if (v === 'sent') return 'sent';
+      return 'null';
     };
+    const fmtDate = iso => {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+    };
+
+    list.innerHTML = data.map(inv => {
+      // If PDF exists, open it directly; otherwise fall back to invoices page
+      const href = inv.pdf_url ? inv.pdf_url : './invoices.html';
+      const target = inv.pdf_url ? ' target="_blank" rel="noopener"' : '';
+      const title = inv.pdf_url ? 'title="Open PDF"' : 'title="View invoices"';
+
+      return `
+        <a href="${esc(href)}"${target} ${title} class="dash-inv-row">
+          <div class="dash-ir-client">
+            ${esc(inv.clients?.name || '—')}
+            <span>#${esc(inv.invoice_no || '—')}</span>
+          </div>
+          <div class="dash-ir-date">${fmtDate(inv.issue_date)}</div>
+          <div style="text-align:center;">
+            <span class="tag ${statusClass(inv.status)}" style="font-size:10px;">${esc(inv.status || '—')}</span>
+          </div>
+          <div class="dash-ir-amount">${fmt$d(inv.subtotal)}</div>
+        </a>`;
+    }).join('');
+  }
+
+  // ── Pipeline bars ─────────────────────────────
+  async function loadPipeline() {
+    if (!window.sb) return;
+    const { data, error } = await window.sb.from('opportunities').select('status, value');
+    if (error || !data) return;
+
+    const buckets = { proposed: 0, 'in review': 0, won: 0, lost: 0 };
     let totalValue = 0;
-    rows.forEach((r) => {
-      const st = norm(r.status);
-      const val = Number(r.value || 0);
-      totalValue += val;
-      if (st in buckets) buckets[st] += 1;
-      else buckets["proposed"] += 1; // default bucket
+    data.forEach(r => {
+      const s = (r.status || '').toLowerCase();
+      totalValue += Number(r.value || 0);
+      if (s in buckets) buckets[s]++;
+      else buckets.proposed++;
     });
 
-    // Build chart
-    const ctx = document.getElementById("oppFunnel");
-    if (!ctx) return;
+    const max = Math.max(...Object.values(buckets), 1);
+    const setBar = (barId, numId, count) => {
+      const num = $(numId);
+      if (num) num.textContent = count;
+      const bar = $(barId);
+      if (!bar) return;
+      requestAnimationFrame(() => setTimeout(() => { bar.style.width = `${(count / max) * 100}%`; }, 250));
+    };
+    setBar('pipeProposed', 'pipeNProposed', buckets.proposed);
+    setBar('pipeReview',   'pipeNReview',   buckets['in review']);
+    setBar('pipeWon',      'pipeNWon',      buckets.won);
+    setBar('pipeLost',     'pipeNLost',     buckets.lost);
 
-    if (funnelChart) funnelChart.destroy();
-    funnelChart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: ["Proposed", "In Review", "Won", "Lost"],
-        datasets: [{
-          label: "Opportunities",
-          data: [
-            buckets["proposed"], buckets["in review"], buckets["won"], buckets["lost"]
-          ]
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { mode: "nearest", intersect: false }
-        },
-        scales: {
-          x: { grid: { display: false } },
-          y: { beginAtZero: true, grid: { color: "rgba(255,255,255,0.08)" } }
-        }
-      }
-    });
-
-    const totalEl = document.querySelector("#oppTotalValue");
-    if (totalEl) totalEl.textContent = fmt$(totalValue);
+    const tv = $('pipeTotalValue');
+    if (tv) tv.textContent = fmt$(totalValue);
   }
 
-  async function loadTopClients12m() {
-    // Join invoices -> clients (you already do this on invoices page)
-    const { data, error } = await sb
-      .from("invoices")
-      .select(`
-        id, subtotal, total, status, issue_date,
-        clients!invoices_client_id_fkey ( name )
-      `)
-      .eq("status", "Paid")
-      .gte("issue_date", toISODate(last12m))
-      .lte("issue_date", toISODate(now));
+  // ── Upcoming Expenses (next 30 days) ─────────
+  async function loadUpcomingExpenses() {
+    if (!window.sb) return;
+    const list = $('upcomingExpList');
+    if (!list) return;
 
-    if (error) {
-      console.error("[dashboard] top clients error:", error);
+    const next30 = addDays(today, 30);
+
+    const { data, error } = await window.sb
+      .from('expenses')
+      .select('id, vendor, description, client_name, amount, expense_date, status')
+      .neq('service', 'subcontractor')
+      .gte('expense_date', toISO(today))
+      .lte('expense_date', toISO(next30))
+      .order('expense_date', { ascending: true })
+      .limit(5);
+
+    if (error || !data || !data.length) {
+      const { data: fallback } = await window.sb
+        .from('expenses')
+        .select('id, vendor, description, client_name, amount, expense_date, status')
+        .neq('service', 'subcontractor')
+        .in('status', ['Unpaid', 'Upcoming'])
+        .order('expense_date', { ascending: true })
+        .limit(5);
+
+      if (!fallback || !fallback.length) {
+        list.innerHTML = `<div style="padding:20px;text-align:center;color:rgba(200,217,238,.3);font-size:13px;">No upcoming expenses.</div>`;
+        return;
+      }
+      renderExpenses(list, fallback);
+      return;
+    }
+    renderExpenses(list, data);
+  }
+
+  function renderExpenses(container, data) {
+    const fmtDate = iso => {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+    const daysUntil = iso => {
+      if (!iso) return null;
+      const diff = Math.round((new Date(iso) - today) / 86400000);
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Tomorrow';
+      if (diff < 0) return `${Math.abs(diff)}d ago`;
+      return `in ${diff}d`;
+    };
+
+    container.innerHTML = data.map(exp => {
+      const vendor = exp.vendor || '—';
+      const label = exp.description || vendor;
+      const client = exp.client_name ? ` · ${exp.client_name}` : '';
+      const when = daysUntil(exp.expense_date);
+      const urgent = when && (when.includes('ago') || when === 'Today');
+      return `
+        <div class="dash-exp-row">
+          <div class="dash-exp-left">
+            <div class="dash-exp-vendor">${esc(vendor)}</div>
+            <div class="dash-exp-meta">${esc(label)}${esc(client)}</div>
+          </div>
+          <div class="dash-exp-right">
+            <div class="dash-exp-amount">${fmt$d(exp.amount)}</div>
+            <div class="dash-exp-when${urgent ? ' urgent' : ''}">${esc(when || fmtDate(exp.expense_date))}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Task Board (Supabase — shared & live) ─────
+  const TASK_KEY = 'zatech_tasks_v1'; // kept for migration only
+  let tasks = [];
+  let taskFilter = 'all';
+  let taskChannel = null; // realtime subscription
+
+  // ── Render (pure UI, no data fetching) ──
+  function renderTasks() {
+    const list = $('taskList');
+    if (!list) return;
+
+    const visible = tasks.filter(t => {
+      if (taskFilter === 'active') return !t.done;
+      if (taskFilter === 'done')   return  t.done;
+      return true;
+    });
+
+    const allCount    = tasks.length;
+    const activeCount = tasks.filter(t => !t.done).length;
+    const doneCount   = tasks.filter(t =>  t.done).length;
+    const cAll = $('taskCountAll'), cActive = $('taskCountActive'), cDone = $('taskCountDone');
+    if (cAll)    cAll.textContent    = allCount;
+    if (cActive) cActive.textContent = activeCount;
+    if (cDone)   cDone.textContent   = doneCount;
+
+    if (!visible.length) {
+      list.innerHTML = `<div class="task-empty" id="taskEmpty">
+        <span>&#x2713;</span>
+        ${taskFilter === 'done' ? 'No completed tasks yet.' : taskFilter === 'active' ? 'All done! Nothing active.' : 'Nothing here yet &mdash; add your first task above'}
+      </div>`;
       return;
     }
 
-    const agg = new Map(); // name -> sum
-    (data || []).forEach((row) => {
-      const name = row.clients?.name || "Unknown";
-      const amt = getInvoiceAmount(row);
-      agg.set(name, (agg.get(name) || 0) + amt);
-    });
-
-    // sort by amount desc
-    const sorted = Array.from(agg.entries()).sort((a, b) => b[1] - a[1]);
-    const top = sorted.slice(0, 7);
-    const labels = top.map(([name]) => name);
-    const values = top.map(([, sum]) => sum);
-
-    const ctx = document.getElementById("topClientsChart");
-    if (!ctx) return;
-
-    if (topClientsChart) topClientsChart.destroy();
-    topClientsChart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [{ label: "Revenue (Paid)", data: values }]
-      },
-      options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: { label: (c) => fmt$(c.parsed.x) }
-          }
-        },
-        scales: {
-          x: { grid: { color: "rgba(255,255,255,0.08)" } },
-          y: { grid: { display: false } }
-        }
+    list.innerHTML = visible.map(t => {
+      let dueDateChip = '';
+      if (t.due_date) {
+        const due = new Date(t.due_date + 'T00:00:00');
+        const diffDays = Math.round((due - today) / 86400000);
+        let chipClass = '', chipLabel = '';
+        if (diffDays < 0)       { chipClass = 'overdue';  chipLabel = `${Math.abs(diffDays)}d overdue`; }
+        else if (diffDays === 0) { chipClass = 'due-soon'; chipLabel = 'Due today'; }
+        else if (diffDays <= 3)  { chipClass = 'due-soon'; chipLabel = `Due in ${diffDays}d`; }
+        else { chipLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+        dueDateChip = `<span class="task-due-chip${chipClass ? ' ' + chipClass : ''}">&#x1F4C5; ${chipLabel}</span>`;
       }
+      const priorityBadge = t.priority && t.priority !== 'normal'
+        ? `<span class="task-priority-badge ${esc(t.priority)}">${t.priority === 'high' ? 'Urgent' : 'Low'}</span>`
+        : '';
+      return `
+      <div class="task-item${t.done ? ' done' : ''}" data-id="${esc(t.id)}" data-priority="${esc(t.priority || 'normal')}">
+        <button class="task-check" data-action="check" data-id="${esc(t.id)}" title="${t.done ? 'Mark active' : 'Mark done'}">
+          ${t.done ? '&#x2713;' : ''}
+        </button>
+        <div class="task-body">
+          <span class="task-text">${esc(t.text)}</span>
+          <div class="task-badges">${priorityBadge}${dueDateChip}</div>
+        </div>
+        <button class="task-del" data-action="delete" data-id="${esc(t.id)}" title="Delete task">&#x2715;</button>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Supabase helpers ──
+  async function fetchTasks() {
+    if (!window.sb) return;
+    const { data, error } = await window.sb
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[tasks] fetch error:', error); return; }
+    tasks = data || [];
+    renderTasks();
+  }
+
+  async function insertTask(text, priority, due_date) {
+    if (!window.sb || !text.trim()) return;
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const { error } = await window.sb.from('tasks').insert({
+      id,
+      text: text.trim(),
+      priority: priority || 'normal',
+      due_date: due_date || null,
+      done: false,
     });
+    if (error) console.error('[tasks] insert error:', error);
+    // realtime will update the list; no need to re-fetch manually
   }
 
-  // ===== Expenses: two donuts (vendor + client), last 90 days =====
-  // ===== Expenses: two donuts (vendor + client), last 90 days =====
-async function loadExpenseDonuts() {
-  const today = new Date();
-  const from = new Date(today);
-  from.setDate(from.getDate() - 90);
-
-  // Select only the columns you actually have
-  const { data, error } = await sb
-    .from('expenses')
-    .select('amount, vendor, client_name, expense_date')
-    .gte('expense_date', from.toISOString().slice(0,10))
-    .lte('expense_date', today.toISOString().slice(0,10));
-
-  if (error) {
-    console.error('[dashboard] expense donut error:', error);
-    return;
+  async function toggleTask(id) {
+    if (!window.sb) return;
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    const { error } = await window.sb
+      .from('tasks')
+      .update({ done: !t.done })
+      .eq('id', id);
+    if (error) console.error('[tasks] toggle error:', error);
   }
 
-  const rows = data || [];
-
-  // helpers
-  const getAmt = (r) => Number(r.amount) || 0;
-  const groupSum = (arr, keyFn) => {
-    const m = new Map();
-    for (const r of arr) {
-      const k = String(keyFn(r) || 'Unknown').trim() || 'Unknown';
-      const v = getAmt(r);
-      if (!Number.isFinite(v)) continue;
-      m.set(k, (m.get(k) || 0) + v);
-    }
-    return m;
-  };
-
-  // Build maps with your real fields
-  const byVendor = groupSum(rows, r => r.vendor);
-  const byClient = groupSum(rows, r => r.client_name);
-
-  // Render both donuts (side by side canvases must exist in HTML)
-  donutVendorChart = renderDoughnutChart(
-    'expDonutChart',
-    byVendor,
-    'Expenses by Vendor (Last 90d)',
-    donutVendorChart
-  );
-
-  donutClientChart = renderDoughnutChart(
-    'expDonutByClientChart',
-    byClient,
-    'Expenses by Client (Last 90d)',
-    donutClientChart
-  );
-
-  // Friendly placeholders if empty
-  if (byVendor.size === 0) {
-    const c = document.getElementById('expDonutChart')?.parentElement;
-    if (c) c.insertAdjacentHTML('beforeend',
-      '<div style="flex:1; text-align:center; opacity:.7; align-self:center;">No vendor data in last 90 days</div>');
-  }
-  if (byClient.size === 0) {
-    const c = document.getElementById('expDonutByClientChart')?.parentElement;
-    if (c) c.insertAdjacentHTML('beforeend',
-      '<div style="flex:1; text-align:center; opacity:.7; align-self:center;">No client data in last 90 days</div>');
-  }
-}
-
-
-  function renderDoughnutChart(canvasId, map, title, existingChart) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) {
-      console.warn(`[dashboard] canvas #${canvasId} not found`);
-      return null;
-    }
-    const ctx = canvas.getContext('2d');
-    const labels = [...map.keys()];
-    const values = [...map.values()];
-
-    // Kill previous instance to avoid overlay
-    if (existingChart) {
-      try { existingChart.destroy(); } catch {}
-      existingChart = null;
-    }
-
-    const chart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: labels.map((_, i) => `hsl(${(i*50)%360},70%,60%)`)
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false, // so height from CSS is honored
-        plugins: {
-          title: { display: true, text: title },
-          legend: { position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (tt) => {
-                const v = tt.raw || 0;
-                return `${tt.label}: ${Number(v).toLocaleString()}`;
-              }
-            }
-          }
-        }
-      }
-    });
-
-    return chart;
+  async function deleteTask(id) {
+    if (!window.sb) return;
+    const { error } = await window.sb.from('tasks').delete().eq('id', id);
+    if (error) console.error('[tasks] delete error:', error);
   }
 
-  // ===== Minor UI niceties for the topbar =====
-  function setTodayBadge() {
-    const el = document.querySelector("#todayBadge");
-    if (!el) return;
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    el.textContent = `${dd}/${mm}/${yyyy}`;
+  async function clearDoneTasks() {
+    if (!window.sb) return;
+    const { error } = await window.sb.from('tasks').delete().eq('done', true);
+    if (error) console.error('[tasks] clearDone error:', error);
   }
 
-  function setGreeting() {
-    const el = document.querySelector("#greetingWord");
-    if (!el) return;
-    const hr = new Date().getHours();
-    el.textContent = hr < 12 ? "Good morning"
-      : hr < 18 ? "Good afternoon"
-      : "Good evening";
+  // ── Realtime subscription ──
+  function subscribeToTasks() {
+    if (!window.sb || taskChannel) return;
+    taskChannel = window.sb
+      .channel('tasks-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        fetchTasks(); // any INSERT / UPDATE / DELETE → re-fetch
+      })
+      .subscribe();
   }
 
+  // ── Init ──
+  function initTaskBoard() {
+    fetchTasks();
+    subscribeToTasks();
 
-    let countriesChart = null;
+    const input       = $('taskInput');
+    const addBtn      = $('taskAddBtn');
+    const prioritySel = $('taskPriority');
+    const dueDateInput = $('taskDueDate');
+    const clearDoneBtn = $('taskClearDone');
+    const selectWrap  = prioritySel?.closest('.task-select-wrap');
 
-    async function loadClientCountriesWidget() {
-    const hostList   = document.getElementById('countryList');
-    const hostCount  = document.getElementById('countriesCount');
-    const hostTotal  = document.getElementById('countriesClients');
-    const chartEl    = document.getElementById('countriesChart');
+    const syncSelectColor = () => {
+      if (!selectWrap) return;
+      selectWrap.classList.remove('priority-high', 'priority-low', 'priority-normal');
+      selectWrap.classList.add(`priority-${prioritySel.value}`);
+    };
+    prioritySel?.addEventListener('change', syncSelectColor);
+    syncSelectColor();
 
-    if (!hostList || !chartEl) return;
-
-    // 1) Pull clients (schema-safe)
-    let rows = [];
-    {
-        const { data, error } = await sb.from('clients').select('*');
-        if (error) {
-        console.warn('[dashboard] countries widget (clients) error:', error);
-        } else {
-        rows = data || [];
-        }
-    }
-
-    // Fallback: if clients table is empty, estimate from invoices
-    if (rows.length === 0) {
-        const { data: invs, error: invErr } = await sb.from('invoices').select('*');
-        if (!invErr && Array.isArray(invs)) rows = invs;
-    }
-
-    if (rows.length === 0) {
-        hostList.innerHTML = `<div class="muted">No data</div>`;
-        return;
-    }
-
-    // 2) Normalize country (tolerant of various field names)
-    const countryOf = (r) => {
-        const cand = [
-        r.country_name, r.country, r.client_country, r.billing_country,
-        r.country_code, r.client_country_code, r.iso2, r.iso_a2
-        ].find(v => v && String(v).trim());
-        const v = String(cand || 'Unknown').trim();
-        return v.length <= 3 ? v.toUpperCase() : v; // code stays uppercase
+    const doAdd = async () => {
+      if (!input || !input.value.trim()) return;
+      const text = input.value;
+      const priority = prioritySel?.value || 'normal';
+      const dueDate = dueDateInput?.value || null;
+      input.value = '';
+      if (dueDateInput) dueDateInput.value = '';
+      prioritySel.value = 'normal';
+      syncSelectColor();
+      input.focus();
+      await insertTask(text, priority, dueDate);
     };
 
-    // 3) Count by country
-    const counts = new Map();
-    rows.forEach(r => {
-        const k = countryOf(r);
-        counts.set(k, (counts.get(k) || 0) + 1);
+    addBtn?.addEventListener('click', doAdd);
+    input?.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+
+    $('taskList')?.addEventListener('click', async e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const id     = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'check')  await toggleTask(id);
+      if (action === 'delete') await deleteTask(id);
     });
 
-    const entries = [...counts.entries()].sort((a,b)=> b[1]-a[1]);
-    const totalClients = entries.reduce((a,[,n])=> a+n, 0);
-    const uniqueCountries = entries.length;
+    clearDoneBtn?.addEventListener('click', () => clearDoneTasks());
 
-    hostCount.textContent = uniqueCountries;
-    hostTotal.textContent = totalClients;
-
-    // 4) Chart: top 8 countries (horizontal bar)
-    const top = entries.slice(0, 8);
-    const labels = top.map(([name]) => name);
-    const dataVals = top.map(([, n]) => n);
-
-    if (countriesChart) { try { countriesChart.destroy(); } catch {} }
-    countriesChart = new Chart(chartEl.getContext('2d'), {
-        type: 'bar',
-        data: {
-        labels,
-        datasets: [{
-            label: 'Clients',
-            data: dataVals
-        }]
-        },
-        options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            title: { display: true, text: 'Top Countries by Clients' },
-            tooltip: {
-            callbacks: { label: (c) => ` ${c.parsed.x} client${c.parsed.x===1?'':'s'}` }
-            }
-        },
-        scales: {
-            x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.08)' } },
-            y: { grid: { display: false } }
-        }
-        }
+    document.querySelectorAll('.task-pill[data-filter]').forEach(pill => {
+      pill.addEventListener('click', () => {
+        taskFilter = pill.dataset.filter;
+        document.querySelectorAll('.task-pill[data-filter]').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        renderTasks();
+      });
     });
+  }
 
-    // 5) Right-side ranked list (top 15 with little bars)
-    const max = entries[0]?.[1] || 1;
-    hostList.innerHTML = entries.slice(0, 15).map(([name, n]) => `
-        <div class="country-row">
-        <div class="name" title="${name}">${name}</div>
-        <div class="bar"><i style="--w:${(n / max) * 100}%"></i></div>
-        <div class="count">${n}</div>
-        </div>
-    `).join('');
+  // ── Project Snapshot ─────────────────────────
+  async function loadProjectSnapshot() {
+    const el = document.getElementById('projSnapList');
+    if (!el || !window.sb) return;
+
+    const { data, error } = await window.sb
+      .from('projects')
+      .select('id, project_code, project_name, client_name, status, contract_value, total_revenue, total_cost, total_profit, start_date, end_date, project_manager, is_archived, archived_at')
+      .order('updated_at', { ascending: false })
+      .limit(30);
+
+    if (error || !data?.length) {
+      el.innerHTML = `<div class="proj-snap-loading">${error ? 'Could not load projects.' : 'No projects yet.'}</div>`;
+      return;
     }
 
-  // ===== Init =====
+    const safeNum = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+    const statusCls = s => {
+      const v = String(s || '').toLowerCase();
+      if (v === 'active')    return 'ok';
+      if (v === 'on hold')   return 'warn';
+      if (v === 'completed') return 'sent';
+      if (v === 'cancelled') return 'due';
+      return 'null';
+    };
+    const barColor = s => {
+      if (s === 'Active')    return '#34d399';
+      if (s === 'On Hold')   return '#fbbf24';
+      if (s === 'Completed') return '#60a5fa';
+      return '#94a3b8';
+    };
+
+    // Filter out archived
+    const rows = data.filter(r => !r.archived_at && !r.is_archived);
+
+    el.innerHTML = rows.map(p => {
+      const revenue   = safeNum(p.total_revenue) || safeNum(p.contract_value);
+      const profit    = safeNum(p.total_profit);
+      const cost      = safeNum(p.total_cost);
+      const margin    = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+      const barW      = Math.max(0, Math.min(100, revenue > 0 ? (profit / revenue) * 100 : 0));
+      const profitCls = profit > 0 ? 'pos' : profit < 0 ? 'neg' : 'nil';
+      const profitTxt = profit === 0 ? '—' : fmt$(profit);
+      const manager   = p.project_manager && p.project_manager !== 'Unassigned' ? ` · ${esc(p.project_manager)}` : '';
+      const status    = p.status || 'Planned';
+      const code      = p.project_code && p.project_code !== 'Auto-generated' ? `${esc(p.project_code)} · ` : '';
+      const color     = barColor(status);
+
+      return `
+        <a class="proj-snap-item" href="./projects.html" data-status="${esc(status)}">
+          <div class="proj-snap-left">
+            <div class="proj-snap-name">${esc(p.project_name || 'Untitled')}</div>
+            <div class="proj-snap-meta">${code}${esc(p.client_name || '—')}${manager}</div>
+            <div class="proj-snap-bar-wrap">
+              <div class="proj-snap-bar" style="width:${barW}%;--bar-color:${color};"></div>
+            </div>
+          </div>
+          <div class="proj-snap-right">
+            <span class="proj-snap-status ${statusCls(status)}">${esc(status)}</span>
+            <span class="proj-snap-profit ${profitCls}" title="Profit · ${margin}% margin">${profitTxt}</span>
+          </div>
+        </a>`;
+    }).join('');
+  }
+
+  // ── Init ──────────────────────────────────────
   async function init() {
+    initTaskBoard();
     try {
-      showLoader(true);
-      setTodayBadge();
-      setGreeting();
-
-      setChartDefaults();
-
       await Promise.all([
         loadKPIs(),
-        loadOpportunitiesFunnel(),
-        loadTopClients12m(),
-        loadExpenseDonuts(),   // two donuts: vendor + client
-        loadClientCountriesWidget(),
+        loadAttention(),
+        loadRecentInvoices(),
+        loadPipeline(),
+        loadUpcomingExpenses(),
+        loadProjectSnapshot(),
       ]);
     } catch (e) {
-      console.error("[dashboard] init error:", e);
+      console.error('[dashboard] init error:', e);
     } finally {
-      showLoader(false);
+      const loader = $('contentLoader');
+      if (loader) { loader.classList.add('hidden'); setTimeout(() => loader.remove(), 400); }
     }
-
-    // Search box toggle behavior (same as other pages)
-    const searchToggle = document.getElementById("searchToggle");
-    const searchWrap = document.getElementById("searchWrap");
-    const searchGroup = searchToggle?.closest(".search-group");
-    searchToggle?.addEventListener("click", () => {
-      const open = searchWrap.classList.toggle("open");
-      if (searchGroup) {
-        searchGroup.classList.toggle("sg-open", open);
-        searchGroup.classList.toggle("sg-closed", !open);
-      }
-      if (open) {
-        setTimeout(() => document.getElementById("searchInput")?.focus(), 60);
-      }
-    });
   }
 
-  // Fire
-  document.readyState === "loading"
-    ? document.addEventListener("DOMContentLoaded", init)
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', init)
     : init();
 })();

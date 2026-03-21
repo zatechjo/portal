@@ -16,7 +16,7 @@
 
   // ===== Memory (SESSION ONLY) =====
   const KEY      = "iris:history:v1";
-  const MAX_TURNS = 16;
+  const MAX_TURNS = 8;
 
   try { localStorage.removeItem(KEY); } catch {}
 
@@ -42,16 +42,33 @@
   const isMobile = () => window.innerWidth <= 768;
 
   const openChat = () => {
-    chat.classList.add("show");
+    if (isMobile()) {
+      // Step 1: make it flex (display) so it's in the layout
+      chat.style.display = "flex";
+      // Step 2: force a reflow so the browser registers the display change
+      chat.offsetHeight;
+      // Step 3: now add .show which sets transform:translateY(0) — animates cleanly
+      chat.classList.add("show");
+    } else {
+      chat.classList.add("show");
+    }
     chat.setAttribute("aria-hidden", "false");
     document.body.classList.add("iris-open");
-    // Prevent background scroll on mobile
     if (isMobile()) document.body.style.overflow = "hidden";
     setTimeout(() => input.focus(), 60);
   };
 
   const closeChat = () => {
-    chat.classList.remove("show");
+    if (isMobile()) {
+      // Remove .show → transform slides back down
+      chat.classList.remove("show");
+      // After animation finishes, hide from layout
+      setTimeout(() => {
+        if (!chat.classList.contains("show")) chat.style.display = "";
+      }, 320);
+    } else {
+      chat.classList.remove("show");
+    }
     chat.setAttribute("aria-hidden", "true");
     document.body.classList.remove("iris-open");
     document.body.style.overflow = "";
@@ -117,12 +134,9 @@
   }
   renderHistory();
 
-  if (history.length === 0) {
-    const intro = "Hi 👋 I'm Iris — how can I help?";
-    addMsg("ai", intro);
-    history.push({ role: "assistant", content: intro });
-    saveHistory(history);
-  }
+  // Do NOT add a local intro message — #irisHero is the welcome state.
+  // An auto-intro here would immediately trigger the MutationObserver
+  // → activateChat() → hide the suggestion chips before the user types anything.
 
   // Debug reset
   window.IrisResetChat = () => {
@@ -153,7 +167,11 @@
       const res  = await fetch(ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, maxTurns: MAX_TURNS }),
+        body: JSON.stringify({
+          messages: history,
+          maxTurns: MAX_TURNS,
+          user: window.__irisUser || null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       thinkingEl.remove();

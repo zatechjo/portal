@@ -4,45 +4,23 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ZAtech CRM Portal</title>
-
 <link rel="icon" type="image/png" href="assets/img/favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./assets/css/styles.css" />
-
-<!-- Core app scripts (same order as other pages) -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/css/styles.css">
 <script type="module" src="./assets/js/firebase.js"></script>
 <script type="module" src="./assets/js/auth-guard.js"></script>
 <script type="module" src="./assets/js/idle.js"></script>
 <script defer src="./assets/js/app.js"></script>
 <script defer src="./assets/js/topbar.js"></script>
 <script type="module" src="./assets/js/supabase.js"></script>
-
-<!-- Charts (Chart.js) -->
-<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-
-
-<!-- Map (Leaflet) -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""
-/>
-<script
-  defer
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
-
-<!-- Page script -->
 <script defer src="./assets/js/index.js"></script>
 </head>
-
 <body>
 <div class="app">
-  <!-- SIDEBAR -->
+  <div class="dash-glow dash-glow-1"></div>
+  <div class="dash-glow dash-glow-2"></div>
+
   <aside class="side">
     <div class="brand">
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
@@ -60,7 +38,7 @@
         <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
         <span class="txt">Invoices</span>
       </a>
-      <a href="./projects.html" class="active">
+      <a href="./projects.html">
         <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
         <span class="txt">Projects</span>
       </a>
@@ -76,7 +54,7 @@
         <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
         <span class="txt">Expenses</span>
       </a>
-      <a href="./subcontractors.html" class="active">
+      <a href="./subcontractors.html">
         <img src="./assets/img/sub.png" alt="Subcontractors" class="nav-icon">
         <span class="txt">Subcontractors</span>
       </a>
@@ -91,9 +69,8 @@
     </nav>
   </aside>
 
-  <!-- MAIN -->
-  <main class="main" id="dashboard">
-    <!-- loader -->
+  <main class="main">
+
     <div id="contentLoader" aria-hidden="true">
       <div class="loader-wrap">
         <div class="loader-ring"></div>
@@ -101,51 +78,27 @@
       </div>
     </div>
 
-    <!-- topbar -->
+    <!-- ONE topbar — same structure as every other page -->
     <div class="topbar">
-
-      <!-- ROW 1 (mobile): date left | notify + search right
-           On desktop this whole row is hidden; hud handles it -->
-      <div class="topbar-row1">
-        <div class="date-badge" id="todayBadge" aria-label="Today's date">--/--/----</div>
-        <div class="topbar-row1-icons">
-          <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
-          <div class="search-group sg-closed">
-            <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">🔎</button>
-            <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
-              <input id="searchInput" type="search" placeholder="Search…" />
-            </div>
-          </div>
-        </div>
+      <div class="greeting">
+        <h1 class="greet-title">
+          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+        </h1>
+        <p class="greet-sub">Here's everything happening across your business today.</p>
       </div>
-
-      <!-- ROW 2 (mobile): hamburger | greeting -->
-      <div class="topbar-row2">
-        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
-          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-        <div class="greeting">
-          <h1 class="greet-title">
-            <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-          </h1>
-          <p class="greet-sub">ZAtech CRM overview — invoices, expenses, pipeline & geography at a glance.</p>
-        </div>
-      </div>
-
-      <!-- HUD (desktop only — hidden on mobile) -->
       <div class="hud">
-        <div class="date-badge" id="todayBadgeDesktop" aria-label="Today's date" aria-hidden="true">--/--/----</div>
+        <div class="date-badge" id="todayBadge" aria-label="Today's date">--/--/----</div>
         <div class="search-group sg-closed">
-          <button class="icon-btn" id="searchToggleDesktop" aria-label="Open search" title="Search">🔎</button>
-          <div class="search-anim" id="searchWrapDesktop" role="search" aria-hidden="true">
-            <input id="searchInputDesktop" type="search" placeholder="Search clients, invoices, amounts…" />
+          <button class="icon-btn" id="searchToggle" aria-label="Open search" title="Search">&#x1F50E;</button>
+          <div class="search-anim" id="searchWrap" role="search" aria-hidden="true">
+            <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtnDesktop" aria-label="Notifications" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">&#x1F514;</button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
             <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-            Ahmad <span class="caret">▾</span>
+            Ahmad <span class="caret">&#9662;</span>
           </button>
           <div class="account-menu" id="accountMenu" role="menu">
             <a href="#" role="menuitem">Profile</a>
@@ -153,182 +106,359 @@
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- KPI ROW (your new 4 metrics) -->
-    <section class="grid cols-4 kpi-grid">
-      <!-- Unpaid total -->
-      <div class="card kpi-card">
-        <div class="kpi">
-          <div>
-            <h4>Unpaid Total</h4>
-            <div class="muted">All open invoices</div>
-          </div>
-          <span class="chip bad" id="kpiUnpaidCount">0</span>
-        </div>
-        <h5 class="kpi-num" id="kpiUnpaidTotal">$0</h5>
+    <!-- DASHBOARD CONTENT -->
+    <div class="dash-main">
+
+      <!-- ROW 0: Quick Actions -->
+      <div class="dash-section-label">Quick Actions</div>
+      <div class="dash-shortcuts">
+        <a href="./invoices.html" class="dash-sc" style="--sc-accent:#2c8ecd;">
+          <div class="dash-sc-icon"><img src="./assets/img/file.png" alt=""></div>
+          <span class="dash-sc-label">Invoices</span>
+        </a>
+        <a href="./clients.html" class="dash-sc" style="--sc-accent:#34d399;">
+          <div class="dash-sc-icon"><img src="./assets/img/multiple-users-silhouette.png" alt=""></div>
+          <span class="dash-sc-label">Clients</span>
+        </a>
+        <a href="./projects.html" class="dash-sc" style="--sc-accent:#a78bfa;">
+          <div class="dash-sc-icon"><img src="./assets/img/projects.png" alt=""></div>
+          <span class="dash-sc-label">Projects</span>
+        </a>
+        <a href="./expenses.html" class="dash-sc" style="--sc-accent:#fbbf24;">
+          <div class="dash-sc-icon"><img src="./assets/img/credit-card.png" alt=""></div>
+          <span class="dash-sc-label">Expenses</span>
+        </a>
+        <a href="./revenue.html" class="dash-sc" style="--sc-accent:#4ade80;">
+          <div class="dash-sc-icon"><img src="./assets/img/increase.png" alt=""></div>
+          <span class="dash-sc-label">Revenue</span>
+        </a>
+        <a href="./dues.html" class="dash-sc" style="--sc-accent:#f87171;">
+          <div class="dash-sc-icon"><img src="./assets/img/deadline.png" alt=""></div>
+          <span class="dash-sc-label">Dues</span>
+        </a>
+        <a href="./opps.html" class="dash-sc" style="--sc-accent:#fb923c;">
+          <div class="dash-sc-icon"><img src="./assets/img/rocket.png" alt=""></div>
+          <span class="dash-sc-label">Opportunities</span>
+        </a>
+        <a href="./subcontractors.html" class="dash-sc" style="--sc-accent:#38bdf8;">
+          <div class="dash-sc-icon"><img src="./assets/img/sub.png" alt=""></div>
+          <span class="dash-sc-label">Subcontractors</span>
+        </a>
       </div>
 
-      <!-- Revenue last 90 days -->
-      <div class="card kpi-card">
-        <div class="kpi">
-          <div>
-            <h4>Revenue (Last 90d)</h4>
-            <div class="muted">Paid invoices</div>
-          </div>
-          <span class="chip ok" id="kpiRev90Delta">—</span>
-        </div>
-        <h5 class="kpi-num" id="kpiRev90">$0</h5>
-      </div>
+      <!-- ROW 1: At a Glance — unpaid | revenue | needs attention (wide) | pipeline -->
+      <div class="dash-section-label">At a Glance</div>
+      <div class="dash-glance">
 
-      <!-- Next due (next 90 days) -->
-      <div class="card kpi-card">
-        <div class="kpi">
-          <div>
-            <h4>Next Due (90d)</h4>
-            <div class="muted">Upcoming invoices</div>
-          </div>
-          <span class="chip" id="kpiNextDueCount">0</span>
+        <!-- Unpaid -->
+        <div class="dash-kpi" style="--kpi-accent:#ef4444;">
+          <span class="dash-kpi-badge dash-badge-red" id="kpiUnpaidCount">&#x2014;</span>
+          <div class="dash-kpi-label"><img src="./assets/img/deadline.png" alt="">Unpaid Total</div>
+          <div class="dash-kpi-value" id="kpiUnpaidTotal">$&#x2014;</div>
+          <div class="dash-kpi-sub">Unpaid &amp; sent invoices</div>
         </div>
-        <h5 class="kpi-num" id="kpiNextDueTotal">$0</h5>
-      </div>
 
-      <!-- Expenses (next 30 days) -->
-      <div class="card kpi-card">
-        <div class="kpi">
-          <div>
-            <h4>Expenses (Next 30d)</h4>
-            <div class="muted">Vendors & platforms</div>
-          </div>
-          <span class="chip warn" id="kpiExp30Count">0</span>
+        <!-- Revenue 90d -->
+        <div class="dash-kpi" style="--kpi-accent:#34d399;">
+          <span class="dash-kpi-badge dash-badge-grn" id="kpiRevDelta">&#x2014;</span>
+          <div class="dash-kpi-label"><img src="./assets/img/increase.png" alt="">Revenue &middot; 90d</div>
+          <div class="dash-kpi-value" id="kpiRev90">$&#x2014;</div>
+          <div class="dash-kpi-sub">Paid invoices, last 90 days</div>
         </div>
-        <h5 class="kpi-num" id="kpiExp30">$0</h5>
-      </div>
-    </section>
 
-    <!-- WIDGET ROW 1 -->
-    <section class="grid cols-2 dash-row">
-      <!-- Opportunities Funnel -->
-      <div class="card">
-        <div class="card-head">
-          <h4>Pipeline — Opportunities</h4>
-          <div class="mini-legend">
-            <span class="tag null">Proposed</span>
-            <span class="tag warn">In Review</span>
-            <span class="tag ok">Won</span>
-            <span class="tag due">Lost</span>
+        <!-- Needs Attention (double width) -->
+        <div class="dash-attention">
+          <div class="dash-att-head">
+            <span class="dash-pulse-dot"></span>
+            <h4>Needs Attention</h4>
           </div>
-        </div>
-        <div class="chart-wrap" style="--h:280px;">
-          <canvas id="oppFunnel"></canvas>
-        </div>
-        <div class="split-row">
-          <div class="muted">Total value</div>
-          <div id="oppTotalValue" class="strong">$0</div>
-        </div>
-      </div>
-
-      <!-- Top Clients by Revenue (12m) -->
-      <div class="card">
-        <div class="card-head">
-          <h4>Top Clients — Last 12 Months</h4>
-          <div class="mini-legend"><span class="tag sent">Paid</span></div>
-        </div>
-        <div class="chart-wrap" style="--h:280px;">
-          <canvas id="topClientsChart" aria-label="Top clients revenue" role="img"></canvas>
-        </div>
-      </div>
-    </section>
-
-   <!-- WIDGET ROW 2 -->
-    <section class="grid cols-2 dash-row">
-      <!-- Expenses Breakdown (two donuts side by side) -->
-      <div class="card">
-        <div class="card-head">
-          <h4>Expenses Breakdown</h4>
-          <div class="mini-legend">
-            <span class="tag">By vendor/service</span>
-            <span class="tag">By client</span>
-          </div>
-        </div>
-        <div class="donut-scroll-wrap">
-          <div class="chart-wrap donut-pair" style="display:flex; gap:20px; --h:280px;">
-            <canvas id="expDonutChart" style="flex:1; max-width:50%;"></canvas>
-            <canvas id="expDonutByClientChart" style="flex:1; max-width:50%;"></canvas>
-          </div>
-        </div>
-      </div>  
-      
-      <!-- Clients — Countries -->
-      <div class="card">
-        <div class="card-head">
-          <h4>Clients — Countries</h4>
-          <div class="mini-legend">
-            <span class="tag">Countries: <span id="countriesCount">0</span></span>
-            <span class="tag">Clients: <span id="countriesClients">0</span></span>
+          <div class="dash-att-list" id="attentionList">
+            <div class="dash-att-empty">Loading&hellip;</div>
           </div>
         </div>
 
-        <div class="grid cols-2" style="gap:16px;">
-          <!-- Left: Top countries (bar) -->
-          <div class="chart-wrap" style="--h:280px;">
-            <canvas id="countriesChart" aria-label="Top countries by client count" role="img"></canvas>
+        <!-- Pipeline (same size as KPI cards) -->
+        <div class="dash-kpi dash-pipe-kpi" style="--kpi-accent:#a78bfa;">
+          <div class="dash-kpi-label" style="margin-bottom:14px;"><img src="./assets/img/rocket.png" alt="">Pipeline</div>
+          <div class="dash-pipeline">
+            <div class="dash-pipe-row">
+              <span class="dash-pipe-lbl">Proposed</span>
+              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeProposed" style="--pipe-color:#94a3b8;"></div></div>
+              <span class="dash-pipe-num" id="pipeNProposed">0</span>
+            </div>
+            <div class="dash-pipe-row">
+              <span class="dash-pipe-lbl">In Review</span>
+              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeReview" style="--pipe-color:#fbbf24;"></div></div>
+              <span class="dash-pipe-num" id="pipeNReview">0</span>
+            </div>
+            <div class="dash-pipe-row">
+              <span class="dash-pipe-lbl">Won</span>
+              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeWon" style="--pipe-color:#34d399;"></div></div>
+              <span class="dash-pipe-num" id="pipeNWon">0</span>
+            </div>
+            <div class="dash-pipe-row">
+              <span class="dash-pipe-lbl">Lost</span>
+              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeLost" style="--pipe-color:#f87171;"></div></div>
+              <span class="dash-pipe-num" id="pipeNLost">0</span>
+            </div>
+          </div>
+          <div class="dash-pipe-footer" style="margin-top:auto;">
+            <span class="dpfl">Est. Value</span>
+            <span class="dpfv" id="pipeTotalValue">$&#x2014;</span>
+          </div>
+        </div>
+
+      </div><!-- /.dash-glance -->
+
+      <!-- ROW 2: What's Happening — recent invoices | upcoming expenses | Iris -->
+      <div class="dash-section-label">What's Happening</div>
+      <div class="dash-activity">
+
+        <!-- Recent Invoices -->
+        <div class="dash-tile">
+          <div class="dash-tile-head">
+            <h4>Recent Invoices</h4>
+            <a href="./invoices.html">View all &rarr;</a>
+          </div>
+          <div id="recentList">
+            <div style="padding:20px;text-align:center;color:rgba(200,217,238,.3);font-size:13px;">Loading&hellip;</div>
+          </div>
+        </div>
+
+        <!-- Upcoming Expenses -->
+        <div class="dash-tile">
+          <div class="dash-tile-head">
+            <h4>Upcoming Expenses</h4>
+            <a href="./expenses.html">View all &rarr;</a>
+          </div>
+          <div class="dash-exp-scroll" id="upcomingExpList">
+            <div style="padding:20px;text-align:center;color:rgba(200,217,238,.3);font-size:13px;">Loading&hellip;</div>
+          </div>
+        </div>
+
+        <!-- Iris inline -->
+        <div class="dash-iris-slot">
+        </div>
+
+      </div><!-- /.dash-activity -->
+
+      <!-- ROW 3: Task Board + Project Snapshot -->
+      <div class="dash-section-label">Task Board &amp; Projects</div>
+      <div class="dash-bottom-row">
+
+        <!-- LEFT: Task Board -->
+        <div class="dash-panel">
+          <div class="dash-panel-head">
+            <h4>Task Board</h4>
+            <span class="dash-panel-meta">Shared with the team</span>
           </div>
 
-          <!-- Right: Ranked list -->
-          <div id="countryList" class="country-list" style="max-height:280px; overflow:auto;"></div>
-        </div>
-      </div>
-    </section>
+          <!-- Task name -->
+          <div class="task-field-group" style="margin-bottom:10px;">
+            <span class="task-field-label">Task</span>
+            <input id="taskInput" class="task-input" type="text" placeholder="What needs to get done?" maxlength="120" />
+          </div>
+
+          <!-- Controls row: priority + due date + add btn -->
+          <div class="task-add-controls" style="margin-bottom:14px;">
+            <div class="task-field-group">
+              <span class="task-field-label">Priority</span>
+              <div class="task-select-wrap">
+                <select id="taskPriority" class="task-select">
+                  <option value="normal">Normal</option>
+                  <option value="high">Urgent</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+            </div>
+            <div class="task-field-group" style="flex:1;">
+              <span class="task-field-label">Due date <span style="opacity:.5;font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></span>
+              <input id="taskDueDate" class="task-due-input" type="date" />
+            </div>
+            <div class="task-field-group">
+              <span class="task-field-label" style="opacity:0;">&nbsp;</span>
+              <button id="taskAddBtn" class="task-add-btn" aria-label="Add task">+</button>
+            </div>
+          </div>
+
+          <!-- Filter pills -->
+          <div class="task-filters">
+            <button class="task-pill active" data-filter="all">All <span class="task-pill-count" id="taskCountAll">0</span></button>
+            <button class="task-pill" data-filter="active">Active <span class="task-pill-count" id="taskCountActive">0</span></button>
+            <button class="task-pill" data-filter="done">Done <span class="task-pill-count" id="taskCountDone">0</span></button>
+            <button class="task-pill task-pill-clear" id="taskClearDone">Clear done</button>
+          </div>
+
+          <!-- Scrollable task list -->
+          <div class="task-list" id="taskList">
+            <div class="task-empty" id="taskEmpty">
+              <span>&#x2713;</span> Nothing here yet &mdash; add your first task above
+            </div>
+          </div>
+        </div><!-- /.dash-panel tasks -->
+
+        <!-- RIGHT: Project Snapshot -->
+        <div class="dash-panel">
+          <div class="dash-panel-head">
+            <h4>Project Snapshot</h4>
+            <a href="./projects.html" class="dash-panel-link">View all &rarr;</a>
+          </div>
+          <!-- Scrollable project list -->
+          <div class="proj-snap-list" id="projSnapList">
+            <div class="proj-snap-loading">Loading projects&hellip;</div>
+          </div>
+        </div><!-- /.dash-panel projects -->
+
+      </div><!-- /.dash-bottom-row -->
+
+    </div><!-- /.dash-main -->
+
   </main>
 </div>
 
+<!-- Iris panel (embedded, always open) -->
+<section id="aiChat" class="ai-chat dash-iris-embed show" aria-hidden="false">
 
-<!-- ZAtech AI Assistant - Iris -->
-<button id="aiFab" class="ai-fab" aria-label="Open Iris" title="Ask Iris">
-  <img src="./assets/img/iris.png" alt="Iris" class="ai-fab-img" />
-</button>
-
-<section id="aiChat" class="ai-chat" aria-hidden="true">
-  <header class="ai-chat-head">
-    <div class="ai-chat-title">
-      <img src="./assets/img/iris.png" alt="Iris" class="ai-avatar" />
+  <!-- Permanent header — always visible, never wiped -->
+  <div class="iris-embed-header">
+    <div class="iris-embed-title">
+      <img src="./assets/img/iris.png" alt="Iris" class="iris-embed-avatar" />
       <div>
-        <div class="ai-name">Iris</div>
-        <div class="ai-sub">ZAtech AI Assistant</div>
-      </div>
-    </div>
-
-    <div class="ai-chat-actions">
-      <button id="aiMinBtn" class="ai-icon-btn" title="Minimize">—</button>
-      <button id="aiCloseBtn" class="ai-icon-btn danger" title="Close">✕</button>
-    </div>
-  </header>
-
-  <div class="ai-chat-body" id="aiBody">
-    <div class="ai-msg ai">
-      <div class="ai-bubble">
-        Hi there! 👋 I'm Iris.
-        <div class="ai-chips">
-          <button class="ai-chip" data-prompt="How much unpaid total do we have?">Unpaid total</button>
-          <button class="ai-chip" data-prompt="What invoices are due in the next 14 days?">Due next 14d</button>
-          <button class="ai-chip" data-prompt="Show revenue for last 90 days.">Revenue 90d</button>
-          <button class="ai-chip" data-prompt="Any expenses coming up soon?">Expenses soon</button>
-        </div>
+        <div class="iris-embed-name">Iris</div>
+        <div class="iris-embed-status"><span class="iris-online-dot"></span>Online · ZAtech AI</div>
       </div>
     </div>
   </div>
 
+  <!-- Hidden widget-compat header (widget checks for aiMinBtn / aiCloseBtn) -->
+  <header class="ai-chat-head" style="display:none;">
+    <div class="ai-chat-actions">
+      <button id="aiMinBtn" class="ai-icon-btn">&#x2014;</button>
+      <button id="aiCloseBtn" class="ai-icon-btn danger">&#x2715;</button>
+    </div>
+  </header>
+
+  <!--
+    Hero + suggestions live outside #aiBody so renderHistory() can't wipe them.
+    activateChat() hides this div when the first message is sent.
+  -->
+  <div id="irisHero">
+    <div class="iris-hero-greeting">
+      <div class="iris-hero-title">What can I help with today?</div>
+      <div class="iris-hero-sub">Ask me about invoices, clients, expenses, projects — anything ZAtech.</div>
+    </div>
+
+    <div class="iris-suggestions">
+      <button class="iris-sug-btn" data-prompt="How much unpaid total do we have?">
+        <span class="iris-sug-icon" style="background:rgba(239,68,68,.15);">
+          <img src="./assets/img/deadline.png" alt="">
+        </span>
+        <span class="iris-sug-text">Unpaid invoices total</span>
+      </button>
+      <button class="iris-sug-btn" data-prompt="What invoices are due in the next 14 days?">
+        <span class="iris-sug-icon" style="background:rgba(251,191,36,.15);">
+          <img src="./assets/img/file.png" alt="">
+        </span>
+        <span class="iris-sug-text">Due in next 14 days</span>
+      </button>
+      <button class="iris-sug-btn" data-prompt="Show revenue for last 90 days.">
+        <span class="iris-sug-icon" style="background:rgba(52,211,153,.15);">
+          <img src="./assets/img/increase.png" alt="">
+        </span>
+        <span class="iris-sug-text">Revenue last 90 days</span>
+      </button>
+      <button class="iris-sug-btn" data-prompt="Any expenses coming up soon?">
+        <span class="iris-sug-icon" style="background:rgba(168,85,247,.15);">
+          <img src="./assets/img/credit-card.png" alt="">
+        </span>
+        <span class="iris-sug-text">Upcoming expenses</span>
+      </button>
+      <button class="iris-sug-btn" data-prompt="Show me the active projects and their profit margins.">
+        <span class="iris-sug-icon" style="background:rgba(97,218,251,.15);">
+          <img src="./assets/img/projects.png" alt="">
+        </span>
+        <span class="iris-sug-text">Active projects & margins</span>
+      </button>
+      <button class="iris-sug-btn" data-prompt="List all subcontractors and how much we still owe them.">
+        <span class="iris-sug-icon" style="background:rgba(52,211,153,.12);">
+          <img src="./assets/img/sub.png" alt="">
+        </span>
+        <span class="iris-sug-text">Subcontractor balances</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Widget writes messages here. Hidden until first message arrives. -->
+  <div class="ai-chat-body" id="aiBody" style="display:none;"></div>
+
   <footer class="ai-chat-foot">
     <div class="ai-input-wrap">
       <input id="aiInput" class="ai-input" type="text" placeholder="Ask Iris anything…" />
-      <button id="aiSend" class="ai-send">↵</button>
+      <button id="aiSend" class="ai-send">&#x21B5;</button>
     </div>
   </footer>
 </section>
 
-<script defer src="./assets/js/ai-chat-widget.js"></script>
+<!-- aiFab must exist in the DOM — the widget checks for it on init.
+     CSS class dash-hide-fab keeps it invisible on this page. -->
+<button id="aiFab" class="ai-fab" aria-label="Open Iris" title="Ask Iris" style="display:none;">
+  <img src="./assets/img/iris.png" alt="Iris" class="ai-fab-img" />
+</button>
 
+<script defer src="./assets/js/ai-chat-widget.js"></script>
+<script>
+document.body.classList.add('dash-hide-fab');
+document.addEventListener('DOMContentLoaded', () => {
+  // Move the chat panel into the dashboard slot
+  const slot = document.querySelector('.dash-iris-slot');
+  const chat = document.getElementById('aiChat');
+  if (slot && chat) slot.appendChild(chat);
+
+  // Switch from hero view to live chat on first message
+  function activateChat() {
+    const hero = document.getElementById('irisHero');
+    const body = document.getElementById('aiBody');
+    if (hero) hero.style.display = 'none';
+    if (body) { body.style.display = ''; body.style.flex = '1'; body.style.minHeight = '0'; }
+  }
+
+  // Suggestion chips — safely outside #aiBody so widget can't wipe them
+  document.querySelectorAll('.iris-sug-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const inp = document.getElementById('aiInput');
+      if (!inp) return;
+      inp.value = btn.dataset.prompt;
+      activateChat();
+      document.getElementById('aiSend')?.click();
+    });
+  });
+
+  // For regular typing — activate BEFORE widget clears the input
+  document.getElementById('aiInput')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('aiInput')?.value?.trim()) activateChat();
+  });
+
+  // Watch #aiBody for the first USER message (has class 'user').
+  // We only activate on a user bubble — not any child — because the
+  // widget no longer adds a local intro, so any first child IS a user message.
+  const aiBody = document.getElementById('aiBody');
+  if (aiBody) {
+    const mo = new MutationObserver((mutations) => {
+      for (const mut of mutations) {
+        for (const node of mut.addedNodes) {
+          if (node.nodeType === 1) { // element node
+            activateChat();
+            mo.disconnect();
+            return;
+          }
+        }
+      }
+    });
+    mo.observe(aiBody, { childList: true });
+  }
+});
+</script>
 </body>
 </html>
