@@ -9,7 +9,7 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      { "source": "/dashboard", "destination": "/index.html" }
+      { "source": "/home", "destination": "/index.html" }
     ]
   }
 }

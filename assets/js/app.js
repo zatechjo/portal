@@ -1,10 +1,10 @@
 // assets/js/app.js
 document.addEventListener('DOMContentLoaded', () => {
   // Highlight active nav link
-  const pathname = window.location.pathname; // e.g. /clients, /dashboard, /
+  const pathname = window.location.pathname; // e.g. /clients, /home, /
   document.querySelectorAll('#nav a').forEach(a => {
-    const href = a.getAttribute('href'); // e.g. /clients, /dashboard
-    const isActive = href === pathname || (pathname === '/' && href === '/dashboard');
+    const href = a.getAttribute('href'); // e.g. /clients, /home
+    const isActive = href === pathname || (pathname === '/' && href === '/home');
     a.classList.toggle('active', isActive);
   });
 
