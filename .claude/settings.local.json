@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i 's|href=\"\"/home\"\"|href=\"\"/\"\"|g' \"$f\")",
+      "Bash(done)"
+    ]
+  }
+}
