@@ -81,40 +81,17 @@
   closeBtn?.addEventListener("click", closeChat);
   minBtn?.addEventListener("click", closeChat);
 
-  // Close on backdrop tap (mobile — tap above the sheet)
+  // Desktop only: close on backdrop click (not on mobile — panel is fixed)
   document.addEventListener("click", (e) => {
     if (
-      isMobile() &&
+      !isMobile() &&
       chat.classList.contains("show") &&
       !chat.contains(e.target) &&
       e.target !== fab
     ) closeChat();
   });
 
-  // ===== Swipe down to dismiss (mobile) =====
-  let touchStartY = 0;
-  let touchStartScrollTop = 0;
-
-  chat.addEventListener("touchstart", (e) => {
-    touchStartY = e.touches[0].clientY;
-    touchStartScrollTop = body.scrollTop;
-  }, { passive: true });
-
-  chat.addEventListener("touchmove", (e) => {
-    if (!isMobile()) return;
-    const dy = e.touches[0].clientY - touchStartY;
-    // Only drag down if body is scrolled to top
-    if (dy > 0 && touchStartScrollTop === 0) {
-      chat.style.transform = `translateY(${dy}px)`;
-    }
-  }, { passive: true });
-
-  chat.addEventListener("touchend", (e) => {
-    if (!isMobile()) return;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    chat.style.transform = "";
-    if (dy > 120) closeChat(); // swiped down enough — dismiss
-  }, { passive: true });
+  // Swipe-to-dismiss removed — mobile chat is a fixed panel, close via X button only
 
   // ===== Messages =====
   function addMsg(role, text) {

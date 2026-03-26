@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+  <meta name="theme-color" content="#0a0f1f" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ZAtech CRM Portal</title>
 <link rel="icon" type="image/png" href="assets/img/favicon.png" />
@@ -255,15 +256,13 @@
             <span class="dash-panel-meta">Shared with the team</span>
           </div>
 
-          <!-- Task name -->
-          <div class="task-field-group" style="margin-bottom:10px;">
-            <span class="task-field-label">Task</span>
-            <input id="taskInput" class="task-input" type="text" placeholder="What needs to get done?" maxlength="120" />
-          </div>
-
-          <!-- Controls row: priority + due date + add btn -->
-          <div class="task-add-controls" style="margin-bottom:14px;">
-            <div class="task-field-group">
+          <!-- Single row: task title + controls + add -->
+          <div class="task-add-controls" style="margin-bottom:14px;align-items:flex-end;">
+            <div class="task-field-group" style="flex:1;min-width:0;">
+              <span class="task-field-label">Task</span>
+              <textarea id="taskInput" class="task-input task-input-area" placeholder="What needs to get done?" maxlength="120" rows="1"></textarea>
+            </div>
+            <div class="task-field-group" style="width:110px;flex-shrink:0;">
               <span class="task-field-label">Priority</span>
               <div class="task-select-wrap">
                 <select id="taskPriority" class="task-select">
@@ -273,11 +272,22 @@
                 </select>
               </div>
             </div>
-            <div class="task-field-group" style="flex:1;">
-              <span class="task-field-label">Due date <span style="opacity:.5;font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></span>
+            <div class="task-field-group" style="width:120px;flex-shrink:0;">
+              <span class="task-field-label">Assign to</span>
+              <div class="task-select-wrap">
+                <select id="taskAssignee" class="task-select">
+                  <option value="" disabled selected hidden>Anyone</option>
+                  <option value="">None</option>
+                  <option value="Ahmad">Ahmad</option>
+                  <option value="Zuhri">Zuhri</option>
+                </select>
+              </div>
+            </div>
+            <div class="task-field-group" style="width:148px;flex-shrink:0;">
+              <span class="task-field-label">Due date</span>
               <input id="taskDueDate" class="task-due-input" type="date" />
             </div>
-            <div class="task-field-group">
+            <div class="task-field-group" style="flex-shrink:0;">
               <span class="task-field-label" style="opacity:0;">&nbsp;</span>
               <button id="taskAddBtn" class="task-add-btn" aria-label="Add task">+</button>
             </div>

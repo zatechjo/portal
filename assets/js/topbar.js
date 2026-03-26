@@ -15,24 +15,63 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (todayBadge) {
+    // Build the split clock structure once
+    todayBadge.innerHTML = `
+      <div class="clock-badge">
+        <svg class="clock-ring" viewBox="0 0 36 36" aria-hidden="true">
+          <circle class="clock-ring-track" cx="18" cy="18" r="15.9" />
+          <circle class="clock-ring-fill" id="clockSecArc" cx="18" cy="18" r="15.9" />
+        </svg>
+        <div class="clock-inner">
+          <div class="clock-time">
+            <span id="clockHr"></span><span class="clock-colon" id="clockColon">:</span><span id="clockMin"></span><span class="clock-ampm" id="clockAmpm"></span>
+          </div>
+          <div class="clock-separator"></div>
+          <div class="clock-date" id="clockDate"></div>
+        </div>
+      </div>
+    `;
+
+    const arcEl   = document.getElementById("clockSecArc");
+    const hrEl    = document.getElementById("clockHr");
+    const minEl   = document.getElementById("clockMin");
+    const ampmEl  = document.getElementById("clockAmpm");
+    const colonEl = document.getElementById("clockColon");
+    const dateEl  = document.getElementById("clockDate");
+    const CIRC    = 2 * Math.PI * 15.9; // circumference
+
     function updateDateTime() {
-      const now     = new Date();
+      const now  = new Date();
+      const sec  = now.getSeconds();
+      const h24  = now.getHours();
+      const min  = now.getMinutes();
+      const ampm = h24 >= 12 ? "PM" : "AM";
+      const h12  = String(h24 % 12 || 12).padStart(2, "0");
+      const mm   = String(min).padStart(2, "0");
+
+      hrEl.textContent   = h12;
+      minEl.textContent  = mm;
+      ampmEl.textContent = ampm;
+
+      // Blink colon every second
+      colonEl.style.opacity = sec % 2 === 0 ? "1" : "0.15";
+
+      // Seconds arc progress
+      const pct    = sec / 60;
+      const offset = CIRC * (1 - pct);
+      arcEl.style.strokeDasharray  = `${CIRC}`;
+      arcEl.style.strokeDashoffset = `${offset}`;
+
+      // Date line
       const weekday = now.toLocaleDateString("en-US", { weekday: "short" });
-      const rest    = now.toLocaleDateString("en-US", {
-        month: "long", day: "numeric", year: "numeric"
-      });
-      const time = now.toLocaleTimeString("en-US", {
-        hour: "2-digit", minute: "2-digit"
-      });
-      const formatted = `${weekday}, ${rest} — ${time}`;
-      todayBadge.textContent = formatted;
-      // Also update desktop badge if present
-      const desktopBadge = document.getElementById("todayBadgeDesktop");
-      if (desktopBadge) desktopBadge.textContent = formatted;
+      const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      dateEl.textContent = `${weekday}, ${dateStr}`;
+
       updateGreetingWord();
     }
+
     updateDateTime();
-    setInterval(updateDateTime, 60000);
+    setInterval(updateDateTime, 1000);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") updateDateTime();
     });
@@ -60,7 +99,21 @@ document.addEventListener("DOMContentLoaded", () => {
      HAMBURGER + SIDEBAR
   ───────────────────────────────────────── */
   const sidebar   = document.querySelector('.side');
-  const hamburger = document.getElementById('hamburger');
+  let hamburger   = document.getElementById('hamburger');
+
+  // Inject hamburger into topbar if it doesn't exist in HTML
+  if (!hamburger) {
+    const topbar = document.querySelector('.topbar');
+    if (topbar) {
+      hamburger = document.createElement('button');
+      hamburger.id = 'hamburger';
+      hamburger.className = 'hamburger';
+      hamburger.setAttribute('aria-label', 'Open menu');
+      hamburger.setAttribute('aria-expanded', 'false');
+      hamburger.innerHTML = '<svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+      topbar.insertBefore(hamburger, topbar.firstChild);
+    }
+  }
 
   if (sidebar && hamburger) {
 

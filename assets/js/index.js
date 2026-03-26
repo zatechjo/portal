@@ -139,8 +139,10 @@
             <span>#${esc(inv.invoice_no || '—')}</span>
           </div>
           <div class="dash-ir-date">${fmtDate(inv.issue_date)}</div>
-          <div style="text-align:center;">
-            <span class="tag ${statusClass(inv.status)}" style="font-size:10px;">${esc(inv.status || '—')}</span>
+          <div class="dash-ir-status">
+            <span class="tag ${statusClass(inv.status)}" style="font-size:10px;">
+              ${esc(inv.status || '—')}
+            </span>
           </div>
           <div class="dash-ir-amount">${fmt$d(inv.subtotal)}</div>
         </a>`;
@@ -282,33 +284,75 @@
       return;
     }
 
-    list.innerHTML = visible.map(t => {
-      let dueDateChip = '';
-      if (t.due_date) {
-        const due = new Date(t.due_date + 'T00:00:00');
-        const diffDays = Math.round((due - today) / 86400000);
-        let chipClass = '', chipLabel = '';
-        if (diffDays < 0)       { chipClass = 'overdue';  chipLabel = `${Math.abs(diffDays)}d overdue`; }
-        else if (diffDays === 0) { chipClass = 'due-soon'; chipLabel = 'Due today'; }
-        else if (diffDays <= 3)  { chipClass = 'due-soon'; chipLabel = `Due in ${diffDays}d`; }
-        else { chipLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-        dueDateChip = `<span class="task-due-chip${chipClass ? ' ' + chipClass : ''}">&#x1F4C5; ${chipLabel}</span>`;
-      }
+    // Helper: get due chip info
+    const getDueInfo = (due_date) => {
+      if (!due_date) return { chip: '', groupKey: 'no-due', groupLabel: 'No due date', chipClass: '' };
+      const due = new Date(due_date + 'T00:00:00');
+      const diffDays = Math.round((due - today) / 86400000);
+      let chipClass = '', chipLabel = '';
+      if (diffDays < 0)        { chipClass = 'overdue';  chipLabel = `Overdue · ${Math.abs(diffDays)}d`; }
+      else if (diffDays === 0) { chipClass = 'due-soon'; chipLabel = 'Due today'; }
+      else if (diffDays <= 3)  { chipClass = 'due-soon'; chipLabel = `Due in ${diffDays}d`; }
+      else { chipLabel = `Due ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`; }
+      const chip = `<span class="task-pill task-due-chip${chipClass ? ' ' + chipClass : ''}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${chipLabel}</span>`;
+      return { chip, groupKey: due_date, groupLabel: chipLabel, chipClass };
+    };
+
+    // Group by due_date
+    const groups = new Map();
+    visible.forEach(t => {
+      const key = t.due_date || 'no-due';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(t);
+    });
+
+    // Sort: overdue/soon first by date asc, no-due last
+    const sortedKeys = [...groups.keys()].sort((a, b) => {
+      if (a === 'no-due') return 1;
+      if (b === 'no-due') return -1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+
+    const renderItem = t => {
+      const { chip: dueDateChip } = getDueInfo(t.due_date);
       const priorityBadge = t.priority && t.priority !== 'normal'
-        ? `<span class="task-priority-badge ${esc(t.priority)}">${t.priority === 'high' ? 'Urgent' : 'Low'}</span>`
+        ? `<span class="task-priority-badge ${esc(t.priority)}">${t.priority === 'high' ? '&#x25CF; Urgent' : '&#x25CF; Low'}</span>`
+        : '';
+      const assigneeLower = t.assigned_to ? t.assigned_to.toLowerCase() : '';
+      const assigneeChip = t.assigned_to
+        ? `<span class="task-pill task-assignee-chip task-assignee-${esc(assigneeLower)}"><img class="task-assignee-avatar" src="./assets/img/${esc(assigneeLower)}.png" alt="${esc(t.assigned_to)}" onerror="this.style.display='none';this.nextSibling.style.display='inline-flex';" /><span class="task-assignee-init" style="display:none;">${t.assigned_to.charAt(0).toUpperCase()}</span>${esc(t.assigned_to)}</span>`
+        : '';
+      const hasMeta = dueDateChip || assigneeChip || priorityBadge;
+      const createdLabel = t.created_at
+        ? new Date(t.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
         : '';
       return `
       <div class="task-item${t.done ? ' done' : ''}" data-id="${esc(t.id)}" data-priority="${esc(t.priority || 'normal')}">
-        <button class="task-check" data-action="check" data-id="${esc(t.id)}" title="${t.done ? 'Mark active' : 'Mark done'}">
-          ${t.done ? '&#x2713;' : ''}
-        </button>
-        <div class="task-body">
-          <span class="task-text">${esc(t.text)}</span>
-          <div class="task-badges">${priorityBadge}${dueDateChip}</div>
-        </div>
         <button class="task-del" data-action="delete" data-id="${esc(t.id)}" title="Delete task">&#x2715;</button>
+        ${createdLabel ? `<div class="task-item-created">${createdLabel}</div>` : ''}
+        <div class="task-item-main">
+          <button class="task-check" data-action="check" data-id="${esc(t.id)}" title="${t.done ? 'Mark active' : 'Mark done'}">
+            ${t.done ? '&#x2713;' : ''}
+          </button>
+          <span class="task-text">${esc(t.text)}</span>
+        </div>
+        ${hasMeta ? `<div class="task-meta">${dueDateChip}${assigneeChip}${priorityBadge}</div>` : ''}
       </div>`;
-    }).join('');
+    };
+
+    let html = '';
+    sortedKeys.forEach((key, idx) => {
+      const groupTasks = groups.get(key);
+      if (key !== 'no-due') {
+        const { groupLabel: gl, chipClass } = getDueInfo(key);
+        const cls = chipClass === 'overdue' ? 'task-group-overdue' : chipClass === 'due-soon' ? 'task-group-soon' : '';
+        html += `<div class="task-group-divider${cls ? ' ' + cls : ''}"><span class="task-group-label">${gl}</span></div>`;
+      } else if (sortedKeys.length > 1) {
+        html += `<div class="task-group-divider task-group-nodue"><span class="task-group-label">No due date</span></div>`;
+      }
+      html += groupTasks.map(renderItem).join('');
+    });
+    list.innerHTML = html;
   }
 
   // ── Supabase helpers ──
@@ -323,7 +367,7 @@
     renderTasks();
   }
 
-  async function insertTask(text, priority, due_date) {
+  async function insertTask(text, priority, due_date, assigned_to) {
     if (!window.sb || !text.trim()) return;
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
     const { error } = await window.sb.from('tasks').insert({
@@ -331,6 +375,7 @@
       text: text.trim(),
       priority: priority || 'normal',
       due_date: due_date || null,
+      assigned_to: assigned_to || null,
       done: false,
     });
     if (error) console.error('[tasks] insert error:', error);
@@ -376,12 +421,13 @@
     fetchTasks();
     subscribeToTasks();
 
-    const input       = $('taskInput');
-    const addBtn      = $('taskAddBtn');
-    const prioritySel = $('taskPriority');
+    const input        = $('taskInput');
+    const addBtn       = $('taskAddBtn');
+    const prioritySel  = $('taskPriority');
+    const assigneeSel  = $('taskAssignee');
     const dueDateInput = $('taskDueDate');
     const clearDoneBtn = $('taskClearDone');
-    const selectWrap  = prioritySel?.closest('.task-select-wrap');
+    const selectWrap   = prioritySel?.closest('.task-select-wrap');
 
     const syncSelectColor = () => {
       if (!selectWrap) return;
@@ -391,21 +437,32 @@
     prioritySel?.addEventListener('change', syncSelectColor);
     syncSelectColor();
 
+    const syncAssigneePlaceholder = () => {
+      if (!assigneeSel) return;
+      assigneeSel.classList.toggle('placeholder-active', !assigneeSel.value);
+    };
+    assigneeSel?.addEventListener('change', syncAssigneePlaceholder);
+    syncAssigneePlaceholder();
+
     const doAdd = async () => {
       if (!input || !input.value.trim()) return;
       const text = input.value;
       const priority = prioritySel?.value || 'normal';
       const dueDate = dueDateInput?.value || null;
-      input.value = '';
+      const assignedTo = assigneeSel?.value || null;
+      input.value = ''; if (input.style) input.style.height = '40px';
       if (dueDateInput) dueDateInput.value = '';
+      if (assigneeSel) { assigneeSel.value = ''; syncAssigneePlaceholder(); }
       prioritySel.value = 'normal';
       syncSelectColor();
       input.focus();
-      await insertTask(text, priority, dueDate);
+      await insertTask(text, priority, dueDate, assignedTo);
     };
 
+    dueDateInput?.addEventListener('click', () => { try { dueDateInput.showPicker(); } catch(_){} });
+
     addBtn?.addEventListener('click', doAdd);
-    input?.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+    input?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doAdd(); } });
 
     $('taskList')?.addEventListener('click', async e => {
       const btn = e.target.closest('[data-action]');
