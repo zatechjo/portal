@@ -1,10 +1,11 @@
 // assets/js/app.js
 document.addEventListener('DOMContentLoaded', () => {
   // Highlight active nav link
-  const path = window.location.pathname.split('/').pop() || 'index.html';
+  const pathname = window.location.pathname; // e.g. /clients, /dashboard, /
   document.querySelectorAll('#nav a').forEach(a => {
-    const href = a.getAttribute('href').replace('./','');
-    a.classList.toggle('active', href === path);
+    const href = a.getAttribute('href'); // e.g. /clients, /dashboard
+    const isActive = href === pathname || (pathname === '/' && href === '/dashboard');
+    a.classList.toggle('active', isActive);
   });
 
   // Pill tabs active state

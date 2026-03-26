@@ -3204,6 +3204,10 @@ import { sb } from './supabase.js';
     populateClientFilter();
     renderAll();
     showLoader(false);
+
+    // Auto-open modal if navigated from dashboard with ?open=ID
+    const openId = new URLSearchParams(window.location.search).get('open');
+    if (openId) openModalView(openId);
   }
 
 

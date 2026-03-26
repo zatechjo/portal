@@ -108,7 +108,7 @@ form?.addEventListener('submit', async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = './index.html';
+    window.location.href = '/dashboard';
   } catch (error) {
     if (err) err.textContent = friendlyError(error.code);
     setLoading(false);

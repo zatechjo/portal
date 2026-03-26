@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
         <div class="side-account-actions">
-          <a href="./settings.html" class="side-account-link">Profile</a>
+          <a href="/settings" class="side-account-link">Profile</a>
           <button class="side-account-logout" id="sideLogoutBtn">Log out</button>
         </div>
       `;

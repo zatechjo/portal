@@ -66,7 +66,7 @@ function applyTopbarAccount(user) {
 // --- Guard + topbar wiring ---
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.href = './login.html';
+    window.location.href = '/login';
     return;
   }
   applyTopbarAccount(user);
@@ -86,6 +86,6 @@ logoutBtn?.addEventListener('click', async () => {
   try {
     await signOut(auth);
   } finally {
-    window.location.href = './login.html';
+    window.location.href = '/login';
   }
 });

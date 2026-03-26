@@ -73,7 +73,7 @@ if (!IS_LOGIN) {
       await signOut(auth);
     } catch (_) {}
     localStorage.setItem('idleLogout', '1'); // login page will show the top popup
-    window.location.href = './login.html';
+    window.location.href = '/login';
   }
 
   function scheduleTimers() {

@@ -534,7 +534,7 @@
       const color     = barColor(status);
 
       return `
-        <a class="proj-snap-item" href="./projects.html" data-status="${esc(status)}">
+        <a class="proj-snap-item" href="/projects" data-status="${esc(status)}">
           <div class="proj-snap-left">
             <div class="proj-snap-name">${esc(p.project_name || 'Untitled')}</div>
             <div class="proj-snap-meta">${code}${esc(p.client_name || '—')}${manager}</div>
@@ -550,6 +550,41 @@
     }).join('');
   }
 
+  // ── Dashboard Projects Table ───────────────────
+  async function loadDashProjectsTable() {
+    const tbody = document.getElementById('dashProjBody');
+    if (!tbody || !window.sb) return;
+
+    const { data, error } = await window.sb
+      .from('projects')
+      .select('id, project_code, project_name, client_name, status, contract_value, total_revenue, total_cost, start_date, end_date')
+      .eq('is_archived', false)
+      .order('updated_at', { ascending: false });
+
+    if (error || !data?.length) {
+      tbody.innerHTML = `<tr class="table-empty-row"><td colspan="10">${error ? 'Could not load projects.' : 'No projects yet.'}</td></tr>`;
+      return;
+    }
+
+    const fmt = v => { const n = Number(v); return isFinite(n) && n !== 0 ? '$' + n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—'; };
+    const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    const statusCls = s => { switch((s||'').toLowerCase()){case 'active':return 'ok';case 'completed':return 'sent';case 'on hold':return 'warn';case 'cancelled':return 'due';default:return 'null';} };
+
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td>${esc(p.project_code || '—')}</td>
+        <td><span class="dash-proj-name">${esc(p.project_name || '—')}</span></td>
+        <td>${esc(p.client_name || '—')}</td>
+        <td><span class="tag ${statusCls(p.status)}">${esc(p.status || '—')}</span></td>
+        <td>${fmt(p.contract_value)}</td>
+        <td>${fmt(p.total_revenue)}</td>
+        <td>${fmt(p.total_cost)}</td>
+        <td>${fmtDate(p.start_date)}</td>
+        <td>${fmtDate(p.end_date)}</td>
+        <td><a href="./projects.html?open=${encodeURIComponent(p.id)}" class="dash-proj-view">View</a></td>
+      </tr>`).join('');
+  }
+
   // ── Init ──────────────────────────────────────
   async function init() {
     initTaskBoard();
@@ -561,6 +596,7 @@
         loadPipeline(),
         loadUpcomingExpenses(),
         loadProjectSnapshot(),
+        loadDashProjectsTable(),
       ]);
     } catch (e) {
       console.error('[dashboard] init error:', e);
