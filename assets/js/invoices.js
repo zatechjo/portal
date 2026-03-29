@@ -783,7 +783,7 @@ async function saveInvoice(){
     const zip = new window.PizZip(ab);
 
     const Docx = window.docxtemplater || window.Docxtemplater;
-    const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
+    const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '[[', end: ']]' } });
     doc.setData(payload);
     doc.render();
 
