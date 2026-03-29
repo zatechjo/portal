@@ -180,35 +180,11 @@
           </div>
         </div>
 
-        <!-- Pipeline (same size as KPI cards) -->
-        <div class="dash-kpi dash-pipe-kpi" style="--kpi-accent:#a78bfa;">
-          <div class="dash-kpi-label" style="margin-bottom:14px;"><img src="./assets/img/rocket.png" alt="">Pipeline</div>
-          <div class="dash-pipeline">
-            <div class="dash-pipe-row">
-              <span class="dash-pipe-lbl">Proposed</span>
-              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeProposed" style="--pipe-color:#94a3b8;"></div></div>
-              <span class="dash-pipe-num" id="pipeNProposed">0</span>
-            </div>
-            <div class="dash-pipe-row">
-              <span class="dash-pipe-lbl">In Review</span>
-              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeReview" style="--pipe-color:#fbbf24;"></div></div>
-              <span class="dash-pipe-num" id="pipeNReview">0</span>
-            </div>
-            <div class="dash-pipe-row">
-              <span class="dash-pipe-lbl">Won</span>
-              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeWon" style="--pipe-color:#34d399;"></div></div>
-              <span class="dash-pipe-num" id="pipeNWon">0</span>
-            </div>
-            <div class="dash-pipe-row">
-              <span class="dash-pipe-lbl">Lost</span>
-              <div class="dash-pipe-track"><div class="dash-pipe-fill" id="pipeLost" style="--pipe-color:#f87171;"></div></div>
-              <span class="dash-pipe-num" id="pipeNLost">0</span>
-            </div>
-          </div>
-          <div class="dash-pipe-footer" style="margin-top:auto;">
-            <span class="dpfl">Est. Value</span>
-            <span class="dpfv" id="pipeTotalValue">$&#x2014;</span>
-          </div>
+        <!-- Generate Report card -->
+        <div class="dash-kpi dash-report-kpi" style="--kpi-accent:#a78bfa;">
+          <div class="dash-kpi-label" style="margin-bottom:10px;"><img src="./assets/img/file.png" alt="">Reports</div>
+          <p class="dash-report-desc">Export invoices, expenses, projects, or subcontractor data as an Excel spreadsheet or Word document in seconds.</p>
+          <button class="dash-report-btn" id="openReportWizard">Generate Report</button>
         </div>
 
       </div><!-- /.dash-glance -->
@@ -327,6 +303,7 @@
       <div class="dash-section-label">Projects</div>
       <div class="dash-proj-wrap">
         <div class="dash-proj-head">
+          <h4 style="margin:0;font-size:15px;font-weight:700;">Active Projects</h4>
           <a href="/projects" class="dash-panel-link">View all &rarr;</a>
         </div>
         <div class="table-scroll">
@@ -446,6 +423,60 @@
   <img src="./assets/img/iris.png" alt="Iris" class="ai-fab-img" />
 </button>
 
+<!-- ═══ Report Wizard Modal ═══ -->
+<div id="reportWizardModal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+
+    <!-- Header: title + subtitle inline with × -->
+    <div class="rw-modal-header">
+      <div class="rw-modal-titles">
+        <h3 class="rw-modal-title">Generate Report</h3>
+        <p class="rw-modal-sub">Build a custom export of your business data.</p>
+      </div>
+      <button class="close rw-close" id="rwCloseBtn" aria-label="Close">×</button>
+    </div>
+
+    <!-- Summary bar — shows what the user has picked -->
+    <div class="rw-summary" id="rwSummary" style="display:none;">
+      <div id="rwSummaryInner"></div>
+    </div>
+
+    <!-- Step indicator: Type → Options → Dates → Format -->
+    <div class="rw-steps">
+      <div class="rw-step active" data-step="1">
+        <span class="rw-step-num">1</span>
+        <span class="rw-step-lbl">Type</span>
+      </div>
+      <div class="rw-step-line"></div>
+      <div class="rw-step" data-step="2">
+        <span class="rw-step-num">2</span>
+        <span class="rw-step-lbl">Options</span>
+      </div>
+      <div class="rw-step-line"></div>
+      <div class="rw-step" data-step="3">
+        <span class="rw-step-num">3</span>
+        <span class="rw-step-lbl">Dates</span>
+      </div>
+      <div class="rw-step-line"></div>
+      <div class="rw-step" data-step="4">
+        <span class="rw-step-num">4</span>
+        <span class="rw-step-lbl">Format</span>
+      </div>
+    </div>
+
+    <!-- Step body — filled by JS -->
+    <div id="rwBody"></div>
+
+    <!-- Navigation -->
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn2" id="rwBackBtn" style="display:none;">← Back</button>
+      <div class="spacer"></div>
+      <button class="btn2 btn-success" id="rwNextBtn">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script defer src="./assets/js/report-wizard.js"></script>
 <script defer src="./assets/js/ai-chat-widget.js"></script>
 <script>
 document.body.classList.add('dash-hide-fab');
