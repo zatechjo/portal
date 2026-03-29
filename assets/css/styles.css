@@ -273,7 +273,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opaci
   flex-shrink: 0;
 }
 .clock-date {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: #d4e8ff;
   letter-spacing: .01em;
