@@ -750,157 +750,90 @@
 <!-- ===== Project Expense Bridge Modal ===== -->
 <div id="expense-modal" class="modal">
   <div class="modal-content">
-    <button class="close" id="expenseCloseBtn">&times;</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 24px;">
+      <h3 id="expense-title" style="margin:0;font-size:21px;font-weight:700;flex:1;min-width:0;">
+        <span id="expense-title-text">New Expense</span>
+      </h3>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button class="btn2" id="deleteExpenseBtn" style="background:#a5030e;display:none;" type="button">Delete</button>
+        <button class="btn2" id="editExpenseBtn" style="display:none;" type="button">Edit</button>
+        <button class="close" id="expenseCloseBtn">&times;</button>
+      </div>
+    </div>
 
-    <h3 id="expense-title" style="display:flex;align-items:center;gap:10px;">
-      <span id="expense-title-text">New Expense</span>
-      <button
-        class="btn2"
-        id="deleteExpenseBtn"
-        style="background:#a5030e;margin-top:13px;display:none;"
-        type="button"
-      >
-        Delete
-      </button>
-      <button
-        class="btn2"
-        id="editExpenseBtn"
-        style="display:none;"
-        type="button"
-      >
-        Edit
-      </button>
-    </h3>
-
-    <!-- hidden linked project id -->
     <input id="exp-project-id-input" type="hidden" />
 
-    <div class="client-details">
-      <div class="info-box">
-        <span class="label">Project</span>
-        <span id="exp-project" class="value-clip"></span>
-        <input
-          id="exp-project-input"
-          class="edit-field"
-          type="text"
-          readonly
-          placeholder="Linked project"
-        />
-      </div>
-
-      <div class="info-box">
-        <span class="label">Vendor</span>
-        <span id="exp-vendor" class="value-clip"></span>
-        <input
-          id="exp-vendor-input"
-          class="edit-field"
-          type="text"
-          placeholder="e.g., AWS, Namecheap, Freelancer"
-        />
-      </div>
-
-      <div class="info-box">
-        <span class="label">Description</span>
-        <span id="exp-desc" class="value-clip"></span>
-        <input
-          id="exp-desc-input"
-          class="edit-field"
-          type="text"
-          placeholder="e.g., Hosting renewal for ArLAR"
-        />
-      </div>
-
-      <div class="info-box">
-        <span class="label">Client</span>
-        <span id="exp-client" class="value-clip"></span>
-        <input
-          id="exp-client-input"
-          class="edit-field"
-          type="text"
-          readonly
-          placeholder="Auto-filled from project"
-        />
-      </div>
-
-      <div class="info-box">
-        <span class="label">Service</span>
-        <span id="exp-service" class="value-clip"></span>
-        <div class="select-wrap">
-          <select id="exp-service-input" class="filter-select">
-            <option value="email">Email</option>
-            <option value="hosting">Hosting</option>
-            <option value="domain">Domain</option>
-            <option value="cloud">Cloud</option>
-            <option value="design">Design</option>
-            <option value="automation">Automation</option>
-            <option value="cdn">CDN</option>
-            <option value="other">Other</option>
-          </select>
+    <div class="exp-edit-section">
+      <div class="exp-form-grid">
+        <div class="form-field">
+          <label class="label" for="exp-project-input">Project</label>
+          <input id="exp-project-input" class="pm-input" type="text" readonly placeholder="Linked project" />
         </div>
-      </div>
-
-      <div class="info-box">
-        <span class="label">Date</span>
-        <span id="exp-date"></span>
-        <input id="exp-date-input" class="edit-field" type="date" />
-      </div>
-
-      <div class="info-box">
-        <span class="label">Amount (USD)</span>
-        <span id="exp-amount"></span>
-        <input
-          id="exp-amount-input"
-          class="edit-field"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        />
-      </div>
-
-      <div class="info-box">
-        <span class="label">Frequency</span>
-        <span id="exp-frequency"></span>
-        <div class="select-wrap">
-          <select id="exp-frequency-input" class="filter-select">
-            <option value="Monthly">Monthly</option>
-            <option value="2 Years">2 Years</option>
-            <option value="Yearly">Yearly</option>
-            <option value="One time">One time</option>
-          </select>
+        <div class="form-field">
+          <label class="label" for="exp-vendor-input">Vendor</label>
+          <input id="exp-vendor-input" class="pm-input" type="text" placeholder="e.g., AWS, Namecheap" />
         </div>
-      </div>
-
-      <div class="info-box">
-        <span class="label">Status</span>
-        <span id="exp-status"></span>
-        <div class="select-wrap">
-          <select id="exp-status-input" class="filter-select">
-            <option value="Unpaid">Unpaid</option>
-            <option value="Paid">Paid</option>
-            <option value="Partial Payment">Partial Payment</option>
-            <option value="Upcoming">Upcoming</option>
-            <option value="Null">Null</option>
-          </select>
+        <div class="form-field">
+          <label class="label" for="exp-desc-input">Description</label>
+          <input id="exp-desc-input" class="pm-input" type="text" placeholder="e.g., Hosting renewal for ArLAR" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-client-input">Client</label>
+          <input id="exp-client-input" class="pm-input" type="text" readonly placeholder="Auto-filled from project" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-service-input">Service</label>
+          <div class="select-wrap">
+            <select id="exp-service-input" class="pm-input">
+              <option value="email">Email</option>
+              <option value="hosting">Hosting</option>
+              <option value="domain">Domain</option>
+              <option value="cloud">Cloud</option>
+              <option value="design">Design</option>
+              <option value="automation">Automation</option>
+              <option value="cdn">CDN</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-date-input">Date</label>
+          <input id="exp-date-input" class="pm-input" type="date" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-amount-input">Amount (USD)</label>
+          <input id="exp-amount-input" class="pm-input" type="number" step="0.01" min="0" placeholder="0.00" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-frequency-input">Frequency</label>
+          <div class="select-wrap">
+            <select id="exp-frequency-input" class="pm-input">
+              <option value="Monthly">Monthly</option>
+              <option value="2 Years">2 Years</option>
+              <option value="Yearly">Yearly</option>
+              <option value="One time">One time</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-status-input">Status</label>
+          <div class="select-wrap">
+            <select id="exp-status-input" class="pm-input">
+              <option value="Unpaid">Unpaid</option>
+              <option value="Paid">Paid</option>
+              <option value="Partial Payment">Partial Payment</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Null">Null</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
-    <div
-      id="expense-edit-actions"
-      class="section-divider"
-      style="display:none;justify-content:flex-end;gap:10px;"
-    >
+    <div id="expense-edit-actions" style="display:none;justify-content:flex-end;gap:10px;margin-top:18px;">
       <span id="expenseEditError" style="color:#ff8b8b;margin-right:auto;"></span>
       <button class="btn2" id="saveExpenseBtn" type="button">Save</button>
-      <button
-        class="btn2"
-        id="cancelExpenseBtn"
-        type="button"
-        style="background:#394b6d;"
-      >
-        Cancel
-      </button>
+      <button class="btn2" id="cancelExpenseBtn" type="button" style="background:#394b6d;">Cancel</button>
     </div>
   </div>
 </div>
