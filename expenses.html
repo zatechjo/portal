@@ -187,79 +187,124 @@
 <!-- ===== Expense Modal (same UX pattern as Clients) ===== -->
 <div id="expense-modal" class="modal">
   <div class="modal-content">
-    <button class="close" id="expenseCloseBtn">&times;</button>
-
-      <h3 id="expense-title" style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 24px;">
+      <h3 id="expense-title" style="margin:0;font-size:21px;font-weight:700;flex:1;min-width:0;">
         <span id="expense-title-text">Expense</span>
-        <button class="btn2" id="deleteExpenseBtn" style="background:#a5030e;margin-top:13px;">Delete</button>
-        <button class="btn2" id="editExpenseBtn">Edit</button>
       </h3>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button class="btn2" id="deleteExpenseBtn" style="background:#a5030e;">Delete</button>
+        <button class="btn2" id="editExpenseBtn">Edit</button>
+        <div class="client-modal-topbar-sep exp-view-sep"></div>
+        <button class="close" id="expenseCloseBtn">&times;</button>
+      </div>
+    </div>
 
-    <div class="client-details">
+    <!-- VIEW mode -->
+    <div class="client-details exp-view-section">
       <div class="info-box">
         <span class="label">Vendor</span>
         <span id="exp-vendor" class="value-clip"></span>
-        <input id="exp-vendor-input" class="edit-field" type="text" />
       </div>
       <div class="info-box">
         <span class="label">Description</span>
         <span id="exp-desc" class="value-clip"></span>
-        <input id="exp-desc-input" class="edit-field" type="text" placeholder="e.g., 6 Emails for ArLAR" />
       </div>
       <div class="info-box">
         <span class="label">Client</span>
         <span id="exp-client" class="value-clip"></span>
-        <input id="exp-client-input" class="edit-field" type="text" />
       </div>
       <div class="info-box">
         <span class="label">Service</span>
         <span id="exp-service" class="value-clip"></span>
-        <select id="exp-service-input" class="edit-field">
-          <option value="email">Email</option>
-          <option value="hosting">Hosting</option>
-          <option value="domain">Domain</option>
-          <option value="cloud">Cloud</option>
-          <option value="design">Design</option>
-          <option value="automation">Automation</option>
-          <option value="cdn">CDN</option>
-          <option value="other">Other</option>
-        </select>
       </div>
       <div class="info-box">
         <span class="label">Date</span>
         <span id="exp-date"></span>
-        <input id="exp-date-input" class="edit-field" type="date" />
       </div>
       <div class="info-box">
         <span class="label">Amount (USD)</span>
         <span id="exp-amount"></span>
-        <input id="exp-amount-input" class="edit-field" type="number" step="0.01" />
       </div>
       <div class="info-box">
         <span class="label">Frequency</span>
         <span id="exp-frequency"></span>
-        <select id="exp-frequency-input" class="edit-field">
-          <option>Monthly</option>
-          <option>2 Years</option>
-          <option>Yearly</option>
-          <option>One time</option>
-        </select>
       </div>
       <div class="info-box">
         <span class="label">Status</span>
         <span id="exp-status"></span>
-        <select id="exp-status-input" class="edit-field">
-          <option>Unpaid</option>
-          <option>Paid</option>
-          <option>Partial Payment</option>
-          <option>Upcoming</option>
-          <option>Null</option>
-        </select>
+      </div>
+    </div>
+
+    <!-- EDIT / CREATE mode -->
+    <div class="exp-edit-section">
+      <div class="exp-form-grid">
+        <div class="form-field">
+          <label class="label" for="exp-vendor-input">Vendor</label>
+          <input id="exp-vendor-input" class="pm-input" type="text" placeholder="e.g., Google" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-desc-input">Description</label>
+          <input id="exp-desc-input" class="pm-input" type="text" placeholder="e.g., 6 Emails for ArLAR" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-client-input">Client</label>
+          <div class="select-wrap">
+            <select id="exp-client-input" class="pm-input">
+              <option value="">— Select client —</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-service-input">Service</label>
+          <div class="select-wrap">
+            <select id="exp-service-input" class="pm-input">
+              <option value="email">Email</option>
+              <option value="hosting">Hosting</option>
+              <option value="domain">Domain</option>
+              <option value="cloud">Cloud</option>
+              <option value="design">Design</option>
+              <option value="automation">Automation</option>
+              <option value="cdn">CDN</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-date-input">Date</label>
+          <input id="exp-date-input" class="pm-input" type="date" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-amount-input">Amount (USD)</label>
+          <input id="exp-amount-input" class="pm-input" type="number" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-frequency-input">Frequency</label>
+          <div class="select-wrap">
+            <select id="exp-frequency-input" class="pm-input">
+              <option>Monthly</option>
+              <option>2 Years</option>
+              <option>Yearly</option>
+              <option>One time</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="label" for="exp-status-input">Status</label>
+          <div class="select-wrap">
+            <select id="exp-status-input" class="pm-input">
+              <option>Unpaid</option>
+              <option>Paid</option>
+              <option>Partial Payment</option>
+              <option>Upcoming</option>
+              <option>Null</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Actions (edit/create mode) -->
-    <div id="expense-edit-actions" class="section-divider" style="display:none;justify-content:flex-end;gap:10px;">
+    <div id="expense-edit-actions" style="display:none;justify-content:flex-end;gap:10px;margin-top:18px;">
       <span id="expenseEditError" style="color:#ff8b8b;margin-right:auto;"></span>
       <button class="btn2" id="saveExpenseBtn">Save</button>
       <button class="btn2" id="cancelExpenseBtn" style="background:#394b6d;">Cancel</button>

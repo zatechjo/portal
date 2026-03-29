@@ -111,15 +111,20 @@
 
     <section id="clients">
       <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <h4>Clients</h4>
-          <button class="btn2" id="newClientBtn">+ New Client</button>
-        </div>
-
-        <div class="pilltabs">
-          <button class="pill active">All</button>
-          <button class="pill">Active</button>
-          <button class="pill">Paused</button>
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
+          <div>
+            <h2 style="margin:0 0 4px;font-size:26px;font-weight:700;color:#f1f5f9;letter-spacing:-.01em;">Client Relationships</h2>
+            <p style="margin:0;font-size:13px;color:rgba(200,217,238,.42);">Manage and view all your active clients</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:0;">
+            <div class="pilltabs" style="margin-bottom:0;">
+              <button class="pill active">All</button>
+              <button class="pill">Active</button>
+              <button class="pill">Paused</button>
+            </div>
+            <div style="width:1px;height:26px;background:rgba(255,255,255,.1);margin:0 12px;flex-shrink:0;"></div>
+            <button class="btn2" id="newClientBtn">+ New Client</button>
+          </div>
         </div>
 
         <table>
@@ -145,14 +150,27 @@
 <!-- MODAL -->
 <div id="client-modal" class="modal">
   <div class="modal-content">
-    <button class="close">&times;</button>
 
-    <h3 id="client-name" style="display:flex;align-items:center;gap:10px;">
-      <span id="client-name-text"></span>
-      <input id="client-name-input" class="edit-field" type="text" placeholder="Client Name" style="max-width:320px;">
-      <button class="btn2" id="editClientBtn" style="margin-left:auto;">Edit</button>
-    </h3>
+    <!-- ── VIEW / EDIT header (name left · Edit | sep | ✕ right) ── -->
+    <div class="client-modal-topbar">
+      <h3 id="client-name">
+        <span id="client-name-text"></span>
+        <input id="client-name-input" class="edit-field" type="text" placeholder="Client Name" style="max-width:340px;">
+      </h3>
+      <div class="client-modal-topbar-right">
+        <button class="btn2" id="editClientBtn">Edit</button>
+        <div class="client-modal-topbar-sep"></div>
+        <button class="close">&times;</button>
+      </div>
+    </div>
 
+    <!-- ── CREATE header (title left · ✕ right, no buttons) ── -->
+    <div class="client-create-header">
+      <h3 style="margin:0;font-size:21px;font-weight:700;">Add a new client</h3>
+      <button class="close" id="createCloseBtn">&times;</button>
+    </div>
+
+    <!-- ── VIEW / EDIT fields ── -->
     <div class="client-details">
       <div class="info-box">
         <span class="label">Client ID</span>
@@ -205,18 +223,95 @@
       </div>
     </div>
 
-    <div id="client-edit-actions" style="display:none; gap:8px;">
+    <!-- ── CREATE form ── -->
+    <div class="client-create-section">
+      <div class="client-create-grid">
+        <div class="form-field full">
+          <label class="label" for="nc-name">Client Name</label>
+          <input id="nc-name" class="pm-input" type="text" placeholder="e.g., Acme Corporation" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-contact">Contact Name</label>
+          <input id="nc-contact" class="pm-input" type="text" placeholder="e.g., John Smith" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-phone">Phone</label>
+          <input id="nc-phone" class="pm-input" type="text" placeholder="+962…" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-email">Email</label>
+          <input id="nc-email" class="pm-input" type="email" placeholder="email@company.com" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-joined">Joined</label>
+          <input id="nc-joined" class="pm-input" type="date" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-status">Status</label>
+          <div class="select-wrap">
+            <select id="nc-status" class="pm-input">
+              <option>Active</option>
+              <option>Paused</option>
+              <option>Archived</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-address">Address</label>
+          <input id="nc-address" class="pm-input" type="text" placeholder="City, Country" />
+        </div>
+        <div class="form-field">
+          <label class="label" for="nc-sector">Sector</label>
+          <input id="nc-sector" class="pm-input" type="text" placeholder="e.g., Tech" />
+        </div>
+        <div class="form-field full">
+          <label class="label" for="nc-notes">Notes</label>
+          <textarea id="nc-notes" class="pm-input" rows="3" placeholder="Any notes about this client…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Save / Cancel (shared by edit + create modes) ── -->
+    <div id="client-edit-actions" style="display:none; gap:8px; margin-top:18px;">
       <button class="btn2" id="saveClientBtn">Save</button>
       <button class="btn2" id="cancelEditBtn" style="background:#0f2c4a;">Cancel</button>
       <span id="clientEditError" class="muted" style="color:#fecaca;margin-left:8px;"></span>
     </div>
 
-    <div class="section-divider">
-      <h4>Recent Invoices</h4>
-      <table id="client-invoices" style="margin-top:10px">
-        <thead><tr><th>#</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- ── Billing Activity (view mode only) ── -->
+    <div id="client-invoices-section">
+      <div class="client-inv-hdr">
+        <div class="client-inv-title">Billing Activity</div>
+        <div class="client-inv-sub">Recent invoices · revenue &amp; costs for the last 12 months</div>
+      </div>
+      <div class="client-inv-layout">
+
+        <!-- Left: invoice table -->
+        <div class="client-inv-left">
+          <div class="client-inv-scroll">
+            <table id="client-invoices">
+              <thead><tr><th>#</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div id="client-no-invoices" class="client-no-inv" style="display:none;">No recent invoices on record.</div>
+          </div>
+        </div>
+
+        <!-- Right: stats -->
+        <div class="client-inv-stats">
+          <div class="client-stat-card">
+            <div class="client-stat-label">Revenue</div>
+            <div class="client-stat-sub">Last 12 months</div>
+            <div class="client-stat-val" id="statRevenue">—</div>
+          </div>
+          <div class="client-stat-card">
+            <div class="client-stat-label">Costs</div>
+            <div class="client-stat-sub">Last 12 months</div>
+            <div class="client-stat-val" id="statCosts">—</div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>

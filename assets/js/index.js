@@ -238,7 +238,7 @@
       const when = daysUntil(exp.expense_date);
       const urgent = when && (when.includes('ago') || when === 'Today');
       return `
-        <div class="dash-exp-row">
+        <div class="dash-exp-row" data-id="${exp.id}" style="cursor:pointer;">
           <div class="dash-exp-left">
             <div class="dash-exp-vendor">${esc(vendor)}</div>
             <div class="dash-exp-meta">${esc(label)}${esc(client)}</div>
@@ -249,6 +249,7 @@
           </div>
         </div>`;
     }).join('');
+
   }
 
   // ── Task Board (Supabase — shared & live) ─────
@@ -571,7 +572,7 @@
     const statusCls = s => { switch((s||'').toLowerCase()){case 'active':return 'ok';case 'completed':return 'sent';case 'on hold':return 'warn';case 'cancelled':return 'due';default:return 'null';} };
 
     tbody.innerHTML = data.map(p => `
-      <tr>
+      <tr data-id="${encodeURIComponent(p.id)}" style="cursor:pointer;">
         <td>${esc(p.project_code || '—')}</td>
         <td><span class="dash-proj-name">${esc(p.project_name || '—')}</span></td>
         <td>${esc(p.client_name || '—')}</td>
@@ -583,11 +584,27 @@
         <td>${fmtDate(p.end_date)}</td>
         <td><a href="./projects.html?open=${encodeURIComponent(p.id)}" class="dash-proj-view">View</a></td>
       </tr>`).join('');
+
+    tbody.addEventListener('click', (e) => {
+      if (e.target.closest('a, button')) return;
+      const tr = e.target.closest('tr[data-id]');
+      if (tr) window.location.href = `./projects.html?open=${tr.dataset.id}`;
+    });
   }
 
   // ── Init ──────────────────────────────────────
   async function init() {
     initTaskBoard();
+
+    // Expense row click → open view modal on expenses page
+    const expList = $('upcomingExpList');
+    if (expList) {
+      expList.addEventListener('click', e => {
+        const row = e.target.closest('.dash-exp-row[data-id]');
+        if (row) window.location.href = `/expenses?open=${encodeURIComponent(row.dataset.id)}`;
+      });
+    }
+
     try {
       await Promise.all([
         loadKPIs(),

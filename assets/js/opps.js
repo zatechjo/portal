@@ -56,7 +56,7 @@
   const editBtn     = document.querySelector("#editOppBtn");
   const saveBtn     = document.querySelector("#saveOppBtn");
   const cancelBtn   = document.querySelector("#cancelOppBtn");
-  const closeBtns   = [ "#oppCloseBtn", "#closeOppBtn", "#oppCloseBtn" ]
+  const closeBtns   = [ "#oppCloseBtn", "#closeOppBtn", "#oppCreateCloseBtn" ]
     .map(sel => document.querySelector(sel)).filter(Boolean);
   const err         = document.querySelector("#oppModalError");
 
@@ -220,7 +220,7 @@
   function openModalView(rec) {
     mode = "view";
     currentId = rec.id;
-    titleSpan.textContent = rec.name || "Client";
+    titleSpan.textContent = rec.name || "Opportunity";
 
     v.id.textContent     = rec.opp_no || ('ZAOPP-' + String(rec.id).padStart(3,'0'));
     v.name.textContent   = rec.opportunity || "—";
@@ -230,7 +230,6 @@
     v.last.textContent   = rec.last_contact || "—";
     v.notes.value        = rec.notes || "";
     v.notes.readOnly     = true;
-    v.notes.style.display = "block";
 
     viewWrap.style.display = "";
     viewActions.style.display = "flex";
@@ -238,7 +237,7 @@
     editActions.style.display = "none";
     editBtn.style.display = "inline-flex";
 
-    modal.classList.remove("editing");
+    modal.classList.remove("editing", "creating");
     modal.classList.add("show");
   }
 
@@ -253,8 +252,7 @@
     e.value.value  = rec.value ?? "";
     e.last.value   = rec.last_contact || "";
     v.notes.value  = rec.notes || "";
-    v.notes.readOnly = false;     // editable in edit mode
-    v.notes.style.display = "block";
+    v.notes.readOnly = false;
 
     viewWrap.style.display = "none";
     viewActions.style.display = "none";
@@ -263,13 +261,13 @@
     editBtn.style.display = "none";
 
     modal.classList.add("editing");
+    modal.classList.remove("creating");
     modal.classList.add("show");
   }
 
   function openModalCreate() {
     mode = "create";
     currentId = null;
-    titleSpan.textContent = "New Opportunity";
 
     e.name.value   = "";
     e.client.value = "";
@@ -277,6 +275,7 @@
     e.value.value  = "";
     e.last.value   = "";
     v.notes.value  = "";
+    v.notes.readOnly = false;
 
     viewWrap.style.display = "none";
     viewActions.style.display = "none";
@@ -284,12 +283,12 @@
     editActions.style.display = "flex";
     editBtn.style.display = "none";
 
-    modal.classList.add("editing");
+    modal.classList.add("editing", "creating");
     modal.classList.add("show");
   }
 
   function closeModal() {
-    modal.classList.remove("show", "editing");
+    modal.classList.remove("show", "editing", "creating");
     err.textContent = "";
   }
 
@@ -419,9 +418,11 @@
 
     // View only
     tbody.addEventListener("click", (evt) => {
+      if (evt.target.closest(".delete-opp, .status-pill, select, input")) return;
       const btn = evt.target.closest("button.view-opp");
-      if (!btn) return;
-      const id = btn.getAttribute("data-id");
+      const tr  = btn ? null : evt.target.closest("tr[data-id]");
+      const id  = btn ? btn.getAttribute("data-id") : tr?.getAttribute("data-id");
+      if (!id) return;
       const rec = rows.find(r => String(r.id) === String(id));
       if (!rec) return;
       openModalView(rec);

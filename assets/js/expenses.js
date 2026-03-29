@@ -634,6 +634,16 @@ tbody.innerHTML =
 
     inputs.vendor.value = exp.vendor || "";
     inputs.desc.value = exp.description || "";
+    // If the saved client name isn't in the dropdown, add it temporarily
+    if (exp.client) {
+      const exists = [...inputs.client.options].some(o => o.value === exp.client);
+      if (!exists) {
+        const opt = document.createElement("option");
+        opt.value = exp.client;
+        opt.textContent = exp.client;
+        inputs.client.appendChild(opt);
+      }
+    }
     inputs.client.value = exp.client || "";
     inputs.service.value = exp.serviceType || (inputs.service.querySelector("option")?.value || "other");
     inputs.date.value = exp.date || "";
@@ -706,17 +716,43 @@ tbody.innerHTML =
     init().catch((e) => console.error("[expenses:init] fatal error", e));
   });
 
+  async function populateClientDropdown() {
+    const sel = $("#exp-client-input");
+    if (!sel) return;
+    try {
+      const { data, error } = await sb
+        .from("clients")
+        .select("name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      const names = (data || []).map(r => r.name).filter(Boolean);
+      sel.innerHTML =
+        `<option value="">Select client</option>` +
+        names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`).join("");
+    } catch (e) {
+      console.error("[expenses:clients] failed to load clients", e);
+    }
+  }
+
   async function init() {
     // 1) Load from Supabase
     await refreshData();
 
-    
+
     await debugSupabaseSmokeTest();  // ← add this line
 
 
-    // 2) Populate filter dropdowns and modal service options from live data
+    // 2) Populate filter dropdowns, modal service options, and client dropdown
     repopulateFilterDropdownsFromItems();
     populateModalServiceOptionsFromItems();
+    await populateClientDropdown();
+
+    // 2b) Deep-link: /expenses?open=<id>
+    const openId = new URLSearchParams(window.location.search).get("open");
+    if (openId) {
+      const exp = items.find(x => String(x.id) === String(decodeURIComponent(openId)));
+      if (exp) { currentId = exp.id; openModalView(exp); }
+    }
 
     // 3) Filters
     $("#expDateFilter")?.addEventListener("change", (e) => {
@@ -811,9 +847,11 @@ tbody.innerHTML =
 
     // 6) Row → open modal (view)
     $("#expensesBody")?.addEventListener("click", (e) => {
+      if (e.target.closest(".exp-mini-btn, .status-pill, .status-select")) return;
       const btn = e.target.closest("button.view-expense");
-      if (!btn) return;
-      const id = btn.getAttribute("data-id");
+      const tr  = btn ? null : e.target.closest("tr[data-id]:not(.exp-details)");
+      const id  = btn ? btn.getAttribute("data-id") : tr?.getAttribute("data-id");
+      if (!id) return;
       const exp = items.find((x) => x.id === id);
       if (!exp) return;
       currentId = id;

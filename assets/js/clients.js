@@ -81,11 +81,11 @@ function renderTable() {
   tbody.innerHTML = list.map(c => {
     const invCount = invoiceCounts.get(c.id) ?? 0;
     return `
-      <tr>
+      <tr data-id="${c.id}" style="cursor:pointer;">
         <td>${escapeHTML(c.client_no || '—')}</td>
         <td>${escapeHTML(c.name)}</td>
         <td>${escapeHTML(c.contact_name || '—')}</td>
-        <td><span class="value-clip">${escapeHTML(c.phone || '—')}</span></td>
+        <td>${escapeHTML(c.phone || '—')}</td>
         <td>${c.joined || '—'}</td>
         <td>${escapeHTML(c.address || '—')}</td>
         <td>${invCount}</td>
@@ -174,7 +174,7 @@ const disp = {
   notes:    $('#client-notes', modal),
 };
 
-// edit inputs
+// edit inputs (view/edit mode)
 const nameInput = $('#client-name-input', modal);
 const inputs = {
   client_no: $('#client-no-input', modal),
@@ -188,6 +188,19 @@ const inputs = {
   notes:     $('#client-notes-input', modal),
 };
 
+// create-mode inputs (nc- prefix)
+const ncInputs = {
+  name:    $('#nc-name', modal),
+  contact: $('#nc-contact', modal),
+  email:   $('#nc-email', modal),
+  phone:   $('#nc-phone', modal),
+  joined:  $('#nc-joined', modal),
+  status:  $('#nc-status', modal),
+  address: $('#nc-address', modal),
+  sector:  $('#nc-sector', modal),
+  notes:   $('#nc-notes', modal),
+};
+
 const editBtn   = $('#editClientBtn');
 const saveBtn   = $('#saveClientBtn');
 const cancelBtn = $('#cancelEditBtn');
@@ -197,18 +210,46 @@ const newBtn    = $('#newClientBtn');
 
 // ---------- Open rows / modal ----------
 tbody?.addEventListener('click', (e) => {
-  const btn = e.target.closest('button.more-info');
-  if (!btn) return;
-  const id = btn.dataset.id;
+  const id = e.target.closest('button.more-info')?.dataset.id
+    ?? e.target.closest('tr[data-id]')?.dataset.id;
+  if (!id) return;
   current = rows.find(r => r.id === id);
   if (current) openView(current);
 });
 
-async function loadClientInvoices(clientId) {
-  // Last 12 months window
+const noInvoicesEl = document.getElementById('client-no-invoices');
+const invSection   = document.getElementById('client-invoices-section');
+const statRevenue  = document.getElementById('statRevenue');
+const statCosts    = document.getElementById('statCosts');
+
+async function loadClientStats(clientName, invoices) {
+  // Revenue = sum of paid invoice subtotals (already fetched)
+  const revenue = (invoices || [])
+    .filter(i => (i.status || '').toLowerCase() === 'paid')
+    .reduce((sum, i) => sum + Number(i.subtotal || 0), 0);
+  if (statRevenue) statRevenue.textContent = formatMoneyUSD(revenue);
+
+  // Costs = sum of expenses matching client name
   const now = new Date();
   const cutoff = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
-  invoicesTbody.innerHTML = `<tr><td colspan="5" class="muted">Loading…</td></tr>`;
+  const { data: expData } = await sb
+    .from('expenses')
+    .select('amount')
+    .eq('client_name', clientName)
+    .gte('expense_date', cutoff.toISOString().slice(0, 10));
+  const costs = (expData || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  if (statCosts) statCosts.textContent = formatMoneyUSD(costs);
+}
+
+async function loadClientInvoices(clientId, clientName) {
+  invoicesTbody.innerHTML = '';
+  if (noInvoicesEl) noInvoicesEl.style.display = 'none';
+  invSection?.classList.remove('no-inv');
+  if (statRevenue) statRevenue.textContent = '—';
+  if (statCosts) statCosts.textContent = '—';
+
+  const now = new Date();
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
 
   const { data, error } = await sb
     .from('invoices')
@@ -217,25 +258,22 @@ async function loadClientInvoices(clientId) {
     .gte('issue_date', cutoff.toISOString())
     .order('issue_date', { ascending: false });
 
-  if (error) {
-    console.error('[clients] loadClientInvoices error:', error);
-    invoicesTbody.innerHTML = `<tr><td colspan="5" class="muted">Couldn’t load invoices.</td></tr>`;
-    return;
-  }
+  // Load stats in parallel regardless of invoice count
+  loadClientStats(clientName, data || []);
 
-  if (!data || data.length === 0) {
-    invoicesTbody.innerHTML = `<tr><td colspan="5" class="muted">No invoices in the last 12 months.</td></tr>`;
+  if (error || !data || data.length === 0) {
+    invSection?.classList.add('no-inv');
+    if (noInvoicesEl) noInvoicesEl.style.display = 'block';
     return;
   }
 
   invoicesTbody.innerHTML = data.map(inv => {
-    const dateTxt = formatDateLong(inv.issue_date);               // e.g., September 16, 2024
-    const totalTxt = formatMoneyUSD(inv.subtotal);                 // $X,XXX.XX
-    const statusEl = duesStatusPill(inv.status);                   // Dues-style pill
+    const dateTxt = formatDateLong(inv.issue_date);
+    const totalTxt = formatMoneyUSD(inv.subtotal);
+    const statusEl = duesStatusPill(inv.status);
     const pdf = inv.pdf_url
       ? `<a class="mini" href="${inv.pdf_url}" target="_blank" rel="noopener">View</a>`
       : `<button class="mini" disabled style="opacity:.55;cursor:default;">No PDF</button>`;
-
     return `
       <tr>
         <td>${escapeHTML(inv.invoice_no || '—')}</td>
@@ -261,8 +299,7 @@ function openView(c) {
   disp.sector.textContent   = c.sector || '—';
   disp.notes.textContent    = c.notes || '—';
 
-  invoicesTbody.innerHTML = ''; // (future: show latest invoices)
-  loadClientInvoices(c.id);
+  loadClientInvoices(c.id, c.name);
 
   editBtn.style.display = 'inline-flex';
   actionsBar.style.display = 'none';
@@ -296,28 +333,18 @@ function openEdit(c) {
 
 function openCreate() {
   current = null;
-  modal.classList.add('editing'); err.textContent = '';
-  nameInput.value = '';
-  Object.values(inputs).forEach(i => i.value = '');
-  inputs.status.value = 'Active';
-
-  // DISABLE client_no in Create (will be auto-generated on Save)
-  if (inputs.client_no) {
-    inputs.client_no.disabled = true;
-    inputs.client_no.readOnly = true;
-    // Optional: hide the field's row if you prefer
-    // inputs.client_no.closest('.form-row')?.style.setProperty('display','none');
-  }
+  modal.classList.add('editing', 'creating'); err.textContent = '';
+  Object.values(ncInputs).forEach(i => { if (i) i.value = ''; });
+  if (ncInputs.status) ncInputs.status.value = 'Active';
 
   editBtn.style.display = 'none';
   actionsBar.style.display = 'flex';
-  disp.nameText.textContent = 'New Client';
   invoicesTbody.innerHTML = '';
   modal.classList.add('show');
 }
 
 function closeModal() {
-  modal.classList.remove('show', 'editing');
+  modal.classList.remove('show', 'editing', 'creating');
   err.textContent = '';
 }
 
@@ -326,6 +353,7 @@ editBtn?.addEventListener('click', () => { if (current) openEdit(current); });
 newBtn?.addEventListener('click', openCreate);
 cancelBtn?.addEventListener('click', () => current ? openView(current) : closeModal());
 closeX?.addEventListener('click', closeModal);
+$('#createCloseBtn', modal)?.addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
@@ -333,17 +361,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 saveBtn?.addEventListener('click', async () => {
   err.textContent = '';
 
-  // Base payload — no client_no here (we auto-generate on insert)
+  // Base payload — read from create form (ncInputs) or edit form (inputs)
+  const src = current ? inputs : ncInputs;
+  const srcName = current ? nameInput.value.trim() : (ncInputs.name?.value.trim() || '');
   const basePayload = {
-    name:         nameInput.value.trim(),
-    contact_name: inputs.contact.value.trim(),
-    email:        inputs.email.value.trim(),
-    phone:        inputs.phone.value.trim(),
-    joined:       inputs.joined.value || null,
-    status:       inputs.status.value || 'Active',
-    address:      inputs.address.value.trim(),
-    sector:       inputs.sector.value.trim(),
-    notes:        inputs.notes.value.trim(),
+    name:         srcName,
+    contact_name: src.contact.value.trim(),
+    email:        src.email.value.trim(),
+    phone:        src.phone.value.trim(),
+    joined:       src.joined.value || null,
+    status:       src.status.value || 'Active',
+    address:      src.address.value.trim(),
+    sector:       src.sector.value.trim(),
+    notes:        src.notes.value.trim(),
   };
 
   if (!basePayload.name || !basePayload.email.includes('@')) {

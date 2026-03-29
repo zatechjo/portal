@@ -551,9 +551,11 @@
     });
 
     els.body?.addEventListener("click", (e) => {
+      if (e.target.closest("button:not(.sub-view-btn), a, select, input")) return;
       const btn = e.target.closest(".sub-view-btn");
-      if (!btn) return;
-      openView(btn.dataset.id);
+      const id  = btn ? btn.dataset.id : e.target.closest("tr[data-id]")?.dataset.id;
+      if (!id) return;
+      openView(id);
     });
 
     els.modal?.addEventListener("click", (e) => {

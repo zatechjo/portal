@@ -778,9 +778,10 @@ async function fetchActualAnnual6mWindow() {
   // Toggle the per-row details (accordion style: only one open at a time)
   els.expMonthBody?.addEventListener("click", (e) => {
     const btn = e.target.closest(".exp-toggle, .exp-mini-btn");
-    if (!btn) return;
+    const tr  = btn ? null : e.target.closest("tr.exp-row");
+    if (!btn && !tr) return;
 
-    const id = btn.getAttribute("data-id");
+    const id = (btn || tr).getAttribute("data-id");
     const detailsRow = els.expMonthBody.querySelector(`tr.exp-details[data-id="${id}"]`);
     if (!detailsRow) return;
 
