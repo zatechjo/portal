@@ -1701,7 +1701,7 @@ import { sb } from './supabase.js';
         total_due: `${total.toFixed(2)} ${currencyDoc}`,
         invoice_no,
         today: fmtLongDate(issue_date),
-        services: lines.map(l => ({
+        lines: lines.map(l => ({
           service_desc: l.desc,
           service_price: `${Number(l.price || 0).toFixed(2)} ${currencyDoc}`
         })),
