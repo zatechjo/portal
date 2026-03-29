@@ -1709,12 +1709,9 @@ import { sb } from './supabase.js';
       const ab = await fetch(templateUrl).then(r => r.arrayBuffer());
 
       const zip = new window.PizZip(ab);
-      const docXml = zip.file('word/document.xml').asText();
-      const fixedXml = docXml.replace(/{{/g, '[[').replace(/}}/g, ']]');
-      zip.file('word/document.xml', fixedXml);
 
       const Docx = window.docxtemplater || window.Docxtemplater;
-      const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '[[', end: ']]' } });
+      const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
       doc.setData(payload);
       doc.render();
 
@@ -3121,9 +3118,12 @@ import { sb } from './supabase.js';
       if (editBtn) return openModalEdit(editBtn.dataset.id);
 
       const pill = e.target.closest('[data-status-pill]');
-      if (pill) {
-        const id = pill.getAttribute('data-status-pill');
-        openModalView(id);
+      if (pill) return openModalView(pill.getAttribute('data-status-pill'));
+
+      // Row click → view (skip other buttons/links)
+      if (!e.target.closest('button, a, select, input')) {
+        const tr = e.target.closest('tr[data-id]');
+        if (tr) openModalView(tr.dataset.id);
       }
     });
 
