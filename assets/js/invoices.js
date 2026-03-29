@@ -776,12 +776,9 @@ async function saveInvoice(){
     const ab = await fetch(templateUrl).then(r => r.arrayBuffer());
 
     const zip = new window.PizZip(ab);
-    const docXml = zip.file('word/document.xml').asText();
-    const fixedXml = docXml.replace(/{{/g, '[[').replace(/}}/g, ']]');
-    zip.file('word/document.xml', fixedXml);
 
     const Docx = window.docxtemplater || window.Docxtemplater;
-    const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '[[', end: ']]' } });
+    const doc = new Docx(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
     doc.setData(payload);
     doc.render();
 
@@ -999,6 +996,17 @@ document.addEventListener('click', (e) => {
   const inv = invoices.find(x => String(x.id) === String(id));
   if (!inv?.pdf_url) { alert('No PDF linked to this invoice yet.'); return; }
   window.open(inv.pdf_url, '_blank');
+});
+
+// Row click → open PDF (or DOCX if no PDF yet)
+document.addEventListener('click', (e) => {
+  if (e.target.closest('button, a, select, input, .status-pill')) return;
+  const tr = e.target.closest('tr.inv-row');
+  if (!tr) return;
+  const inv = invoices.find(x => String(x.id) === String(tr.dataset.id));
+  if (!inv) return;
+  if (inv.pdf_url) window.open(inv.pdf_url, '_blank');
+  else if (inv.docx_url) window.open(inv.docx_url, '_blank');
 });
 
 successClose?.addEventListener("click", () => hide(successModal));
