@@ -1654,25 +1654,30 @@ import { sb } from './supabase.js';
       const subtotalUSD = projectInvoiceToUSD(subtotal, currencyDoc);
       const totalUSD = projectInvoiceToUSD(total, currencyDoc);
 
-      if (els.projectInvoiceProgressMsg) els.projectInvoiceProgressMsg.textContent = 'Saving to database…';
+      const isTestMode = document.getElementById('projTestModeCheck')?.checked;
 
-      const ins = await sb.from('invoices')
-        .insert([{
-          client_id,
-          project_id: project.id,
-          issue_date,
-          due_date,
-          currency: 'USD',
-          subtotal: subtotalUSD,
-          tax,
-          status: 'Sent',
-          coverage_period
-        }])
-        .select('id, invoice_no')
-        .single();
+      let id = null, invoice_no = 'TEST';
+      if (!isTestMode) {
+        if (els.projectInvoiceProgressMsg) els.projectInvoiceProgressMsg.textContent = 'Saving to database…';
 
-      if (ins.error) throw ins.error;
-      const { id, invoice_no } = ins.data;
+        const ins = await sb.from('invoices')
+          .insert([{
+            client_id,
+            project_id: project.id,
+            issue_date,
+            due_date,
+            currency: 'USD',
+            subtotal: subtotalUSD,
+            tax,
+            status: 'Sent',
+            coverage_period
+          }])
+          .select('id, invoice_no')
+          .single();
+
+        if (ins.error) throw ins.error;
+        ({ id, invoice_no } = ins.data);
+      }
 
       if (els.projectInvoiceProgressMsg) els.projectInvoiceProgressMsg.textContent = 'Fetching client info…';
 
@@ -1720,10 +1725,22 @@ import { sb } from './supabase.js';
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
 
-      if (els.projectInvoiceProgressMsg) els.projectInvoiceProgressMsg.textContent = 'Uploading Word file…';
-
       const safeClient = (payload.client_name || 'Client').replace(/[^a-z0-9\- ]/gi, '').trim();
       const baseFileName = `Invoice No.${invoice_no} - ${safeClient}`;
+
+      if (isTestMode) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(docxBlob);
+        a.download = `${baseFileName} [TEST].docx`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+        hideModalEl(els.projectInvoiceProgressModal);
+        closeProjectInvoiceModal();
+        return;
+      }
+
+      if (els.projectInvoiceProgressMsg) els.projectInvoiceProgressMsg.textContent = 'Uploading Word file…';
+
       const docxPath = `generated/Doc Version/${baseFileName}.docx`;
 
       const upDocx = await sb.storage.from('Invoices').upload(docxPath, docxBlob, {
