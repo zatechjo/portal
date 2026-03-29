@@ -1546,7 +1546,7 @@ select.pm-input option { background: #0f1b31; color: #f3f7ff; }
 .iris-embed-status { font-size: 11px; color: rgba(200,217,238,.45); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
 .iris-online-dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; flex-shrink: 0; }
 /* Hero area — fills available space, centers content vertically */
-#irisHero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 16px 14px 20px; min-height: 0; }
+#irisHero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 16px 14px 60px; min-height: 0; }
 .iris-hero-greeting { text-align: center; }
 .iris-hero-title { font-size: 15px; font-weight: 700; color: #eef5ff; margin: 0 0 5px; }
 .iris-hero-sub { font-size: 11px; color: rgba(200,217,238,.4); line-height: 1.4; margin: 0; }
