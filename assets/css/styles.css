@@ -701,7 +701,7 @@ th[data-sort="doc"], th[data-sort="pdf"] { text-align: center; }
 .service-row .svc-desc, .service-row .svc-price { height: 38px; border-radius: 10px; background: #0f1b31; border: 1px solid rgba(255,255,255,.12); color: var(--text); padding: 8px 10px; outline: none; }
 .service-row .remove-btn { width: 40px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: var(--text); cursor: pointer; }
 .service-row .remove-btn:hover { background: rgba(255,255,255,.12); }
-.totals { margin-top: 36px; margin-bottom: 20px; display: flex; gap: 18px; justify-content: flex-end; align-items: center; font-size: 20px; }
+.totals { margin-top: 36px; margin-bottom: 32px; display: flex; gap: 18px; justify-content: flex-end; align-items: center; font-size: 20px; }
 
 /* Shared .pm-input — used in projectsModal, subcontractorModal, inline edit modals */
 .pm-input {
