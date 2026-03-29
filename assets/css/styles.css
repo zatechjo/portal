@@ -181,7 +181,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opaci
 .topbar > .greeting { flex: 1 1 0; min-width: 0; overflow: hidden; }
 .topbar > .hud { flex-shrink: 0; margin-left: auto; }
 .topbar.scrolled {
-  background: rgba(12,25,55,.88);
+  background: linear-gradient(90deg, #0a1220, #0c1a30);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 2px 10px rgba(0,0,0,.3);
