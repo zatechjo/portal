@@ -122,21 +122,23 @@
           <button class="btn2 btn-important" id="newClientBtn"><span>New Client +</span></button>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Client</th>
-              <th>Contact Name</th>
-              <th>Phone</th>
-              <th>Joined</th>
-              <th>Address</th>
-              <th>Invoices</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="clients-tbody"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Contact Name</th>
+                <th>Phone</th>
+                <th>Joined</th>
+                <th>Address</th>
+                <th>Invoices</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="clients-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
@@ -195,11 +197,13 @@
       <div class="info-box">
         <span class="label">Status</span>
         <span id="client-status"></span>
-        <select id="client-status-input" class="edit-field">
-          <option>Active</option>
-          <option>Paused</option>
-          <option>Archived</option>
-        </select>
+        <div class="select-wrap edit-field-wrap">
+          <select id="client-status-input" class="edit-field" style="display:block;">
+            <option>Active</option>
+            <option>Paused</option>
+            <option>Archived</option>
+          </select>
+        </div>
       </div>
       <div class="info-box">
         <span class="label">Address</span>

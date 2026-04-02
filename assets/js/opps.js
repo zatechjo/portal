@@ -88,6 +88,7 @@
 
   // ===== State =====
   let rows = [];
+  let currentFilter = "All";
   let mode = "view";      // view | edit | create
   let currentId = null;   // numeric Supabase id
   let pendingDeleteId = null;
@@ -186,11 +187,12 @@
   // ===== Render =====
   function render() {
     if (!tbody) return;
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="7">No opportunities yet.</td></tr>`;
+    const filtered = currentFilter === "All" ? rows : rows.filter(r => r.status === currentFilter);
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="7">No opportunities${currentFilter !== "All" ? ' with status "' + currentFilter + '"' : ''} yet.</td></tr>`;
       return;
     }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = filtered.map(r => `
       <tr data-id="${r.id}">
         <td>${r.opp_no || ('ZAOPP-' + String(r.id).padStart(3,'0'))}</td>
         <td>${escapeHTML(r.name || "")}</td>
@@ -436,6 +438,16 @@
       const rec = rows.find(r => String(r.id) === String(id));
       if (!rec) return;
       openDeleteModal(rec);
+    });
+
+    // Pilltab filters
+    document.querySelectorAll("#oppPilltabs .pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#oppPilltabs .pill").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.getAttribute("data-filter");
+        render();
+      });
     });
 
     // Header: new

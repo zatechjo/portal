@@ -370,7 +370,7 @@ tbody.innerHTML =
 
           <!-- Note toggle cell -->
           <td class="note-toggle-cell" style="text-align:center;">
-            <button type="button" class="inv-mini-btn exp-mini-btn" data-id="${r.id}" aria-expanded="false">+</button>
+            <button type="button" class="inv-mini-btn exp-mini-btn" data-id="${r.id}" aria-expanded="false"><span>+</span></button>
           </td>
         </tr>
 
@@ -508,7 +508,7 @@ tbody.innerHTML =
     // close all
     expTbody.querySelectorAll("tr.exp-details").forEach(r => r.style.display = "none");
     expTbody.querySelectorAll(".exp-mini-btn").forEach(b => {
-      b.textContent = "+";
+      b.innerHTML = "<span>+</span>";
       b.classList.remove("inv-open");
       b.setAttribute("aria-expanded","false");
     });
@@ -516,7 +516,7 @@ tbody.innerHTML =
     // open current
     if (!isOpen) {
       detailsRow.style.display = "";
-      btn.textContent = "−";
+      btn.innerHTML = "<span>−</span>";
       btn.classList.add("inv-open");
       btn.setAttribute("aria-expanded","true");
     }

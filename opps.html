@@ -117,8 +117,14 @@
     <section id="opps">
       <div class="card">
         <div class="card-head">
-          <div></div>
-          <button class="btn2" id="newOppBtn">+ New Opportunity</button>
+          <div class="pilltabs" id="oppPilltabs" style="margin-bottom:0;">
+            <button class="pill active" data-filter="All">All</button>
+            <button class="pill" data-filter="Proposed">Proposed</button>
+            <button class="pill" data-filter="In Review">In Review</button>
+            <button class="pill" data-filter="Won">Won</button>
+            <button class="pill" data-filter="Lost">Lost</button>
+          </div>
+          <button class="btn2 btn-important" id="newOppBtn"><span>New Opportunity +</span></button>
         </div>
 
         <div class="table-scroll">

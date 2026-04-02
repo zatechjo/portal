@@ -143,26 +143,19 @@
   }
 
   function renderTables(incomeRows, costRows) {
-    if (els.incomeTable) {
-      els.incomeTable.innerHTML = incomeRows
-        .map(
-          (r) =>
-            `<tr><td>${escapeHtml(r.client)}</td><td>${fmt$(r.usd)}</td><td>${fmt$(
-              r.jod
-            ).replace("$", "")} JOD</td></tr>`
-        )
-        .join("");
-    }
-    if (els.costTable) {
-      els.costTable.innerHTML = costRows
-        .map(
-          (r) =>
-            `<tr><td>${escapeHtml(r.client)}</td><td>${fmt$(r.usd)}</td><td>${fmt$(
-              r.jod
-            ).replace("$", "")} JOD</td></tr>`
-        )
-        .join("");
-    }
+    const rowsHTML = (rows) => rows.length
+      ? rows.map((r, i) =>
+          `<tr>
+            <td class="rev-rank">${i + 1}</td>
+            <td>${escapeHtml(r.client)}</td>
+            <td class="rev-amt">${fmt$(r.usd)}</td>
+            <td class="rev-amt-jod">${fmt$(r.jod).replace("$", "")} <span class="rev-ccy">JOD</span></td>
+          </tr>`
+        ).join("")
+      : `<tr><td colspan="4" style="text-align:center;opacity:.5;padding:24px 0;">No data for this period</td></tr>`;
+
+    if (els.incomeTable) els.incomeTable.innerHTML = rowsHTML(incomeRows);
+    if (els.costTable)   els.costTable.innerHTML   = rowsHTML(costRows);
   }
 
   function escapeHtml(s) {

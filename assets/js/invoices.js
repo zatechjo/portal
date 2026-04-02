@@ -63,19 +63,10 @@ function cleanId(v){
 
 
 
-// --- FX: convert to USD for DB only (update rates as needed) ---
-const FX_USD_PER = {
-  USD: 1,
-  CAD: 0.74,
-  EUR: 1.09,
-  GBP: 1.28,
-  JOD: 1.41,
-  AED: 0.2723,
-  SAR: 0.2667
-};
-
+// --- FX: convert to USD for DB — uses shared topbar rates (window.PORTAL_FX_TO_USD) ---
 function toUSD(amount, from = 'USD') {
-  const rate = FX_USD_PER[(from || 'USD').toUpperCase()] ?? 1;
+  const rates = window.PORTAL_FX_TO_USD || { USD: 1, JOD: 1.41, EUR: 1.087, GBP: 1.333, SAR: 0.267, AED: 0.272 };
+  const rate = rates[(from || 'USD').toUpperCase()] ?? 1;
   return Number(amount || 0) * rate;
 }
 

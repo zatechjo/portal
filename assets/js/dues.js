@@ -650,7 +650,7 @@ async function fetchActualAnnual6mWindow() {
                 >${esc(st)}</span>
               </td>
               <td>
-                <button type="button" class="exp-mini-btn" data-id="${esc(r.id)}" aria-expanded="false">+</button>
+                <button type="button" class="exp-mini-btn" data-id="${esc(r.id)}" aria-expanded="false"><span>+</span></button>
               </td>
             </tr>
 
@@ -777,6 +777,7 @@ async function fetchActualAnnual6mWindow() {
 
   // Toggle the per-row details (accordion style: only one open at a time)
   els.expMonthBody?.addEventListener("click", (e) => {
+    if (e.target.closest(".exp-status-pill")) return; // status pill has its own handler
     const btn = e.target.closest(".exp-toggle, .exp-mini-btn");
     const tr  = btn ? null : e.target.closest("tr.exp-row");
     if (!btn && !tr) return;
@@ -792,7 +793,7 @@ async function fetchActualAnnual6mWindow() {
       row.style.display = "none";
     });
     els.expMonthBody.querySelectorAll(".exp-toggle, .exp-mini-btn").forEach(b => {
-      b.textContent = "+";
+      b.innerHTML = "<span>+</span>";
       b.classList.remove("exp-open");
       b.setAttribute("aria-expanded", "false");
     });
@@ -800,7 +801,7 @@ async function fetchActualAnnual6mWindow() {
     // 2) If the clicked one was not already open, open it
     if (!isOpen) {
       detailsRow.style.display = "";
-      btn.textContent = "−";
+      btn.innerHTML = "<span>−</span>";
       btn.classList.add("exp-open");
       btn.setAttribute("aria-expanded", "true");
     }
@@ -948,63 +949,62 @@ async function fetchActualAnnual6mWindow() {
       });
 
       // Inline status editor for Expenses — Card 1 ONLY
+      // Uses an invisible overlay <select> so the pill is never replaced / no visual flash.
       els.expMonthBody?.addEventListener('click', (e) => {
         const pill = e.target.closest('.exp-status-pill');
         if (!pill) return;
+        e.stopPropagation(); // prevent row-expand handler from firing
 
         const id = pill.dataset.id;
         const current = (pill.dataset.status || pill.textContent || '').trim().toLowerCase();
 
-        const { wrap, sel } = buildExpStatusSelect(current);
-        pill.replaceWith(wrap);
+        // Build an invisible native <select> positioned over the pill.
+        const sel = document.createElement('select');
+        const rect = pill.getBoundingClientRect();
+        Object.assign(sel.style, {
+          position: 'fixed',
+          left: rect.left + 'px',
+          top:  rect.top  + 'px',
+          width:  Math.max(rect.width,  100) + 'px',
+          height: Math.max(rect.height,  28) + 'px',
+          opacity: '0',
+          zIndex:  '9999',
+          cursor:  'pointer',
+        });
+        sel.innerHTML = `
+          <option value="paid">Paid</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="partial payment">Partial Payment</option>
+          <option value="upcoming">Upcoming</option>
+        `;
+        const normalised = String(current).toLowerCase();
+        sel.value = ['paid','unpaid','partial payment','upcoming'].includes(normalised) ? normalised : 'unpaid';
+        document.body.appendChild(sel);
 
-        const restore = (newVal) => {
-          // newVal can be null → restore to current pill unchanged
-          const value = (newVal ?? current).toLowerCase();
-          const span = document.createElement('span');
-          span.className = `${expStatusToTagClass(value)} exp-status-pill`;
-          span.dataset.id = id;
-          span.dataset.status = value;
-          span.title = 'Click to change';
-          span.textContent = value;
-          wrap.replaceWith(span);
-
-          // also update in-memory array so next render stays in sync
-          const idx = expensesAll.findIndex(x => String(x.id) === String(id));
-          if (idx !== -1) expensesAll[idx].status = value;
-        };
+        const removeSel = () => { if (sel.isConnected) sel.remove(); };
 
         const onChange = async () => {
-          const next = sel.value; // 'paid' | 'unpaid' | 'upcoming'
-          if (next === current) { restore(null); return; }
-          try{
+          const next = sel.value;
+          removeSel();
+          if (next === current) return;
+          try {
             const res = await persistExpenseStatusToDb(id, next);
             if (!res.ok) throw res.error;
-            restore(next); // success
-          } catch(err){
+            // Update the pill in-place — no replace, no flash
+            pill.className = `${expStatusToTagClass(next)} exp-status-pill`;
+            pill.dataset.status = next;
+            pill.textContent = next;
+            const idx = expensesAll.findIndex(x => String(x.id) === String(id));
+            if (idx !== -1) expensesAll[idx].status = next;
+          } catch(err) {
             console.error('[dues] expense status update failed', err);
             alert(err?.message || 'Could not update expense status.');
-            restore(null); // back to previous
           }
         };
 
-        const onKey = (ev) => { if (ev.key === 'Escape') restore(null); };
-        const onDocDown = (ev) => { if (!wrap.contains(ev.target)) restore(null); };
-        const cleanup = () => {
-          sel.removeEventListener('change', onChange);
-          sel.removeEventListener('keydown', onKey);
-          document.removeEventListener('pointerdown', onDocDown, true);
-        };
+        sel.addEventListener('change', onChange, { once: true });
+        sel.addEventListener('blur',   removeSel, { once: true });
 
-        sel.addEventListener('change', onChange);
-        sel.addEventListener('keydown', onKey);
-        document.addEventListener('pointerdown', onDocDown, true);
-
-        // When we replace the wrap with the span, remove listeners
-        const mo = new MutationObserver(() => { cleanup(); mo.disconnect(); });
-        mo.observe(wrap.parentElement || document.body, { childList: true, subtree: true });
-
-        // open native dropdown
         openSelectDropdown(sel);
       });
 

@@ -117,109 +117,157 @@
     <!-- DUES -->
     <section id="dues">
 
-      <!-- Row 1: two main cards, side-by-side -->
-      <div class="grid cols-2">
-        <!-- Card A: Dues (Expenses) – Month view  ✅ NOW FIRST -->
-        <div class="card">
-          <div class="card-head">
-            <h4>Dues — Expenses (Month)</h4>
-            <div class="filters">
-              <button id="expPrev" class="month-btn prev" aria-label="Previous month">‹ Prev</button>
-              <select id="expMonth" class="filter-select" aria-label="Select month"></select>
-              <button id="expNext" class="month-btn next" aria-label="Next month">Next ›</button>
+      <!-- Row 1: Expenses + Income month cards -->
+      <div class="dues-row">
+
+        <!-- Card A: Expenses Month -->
+        <div class="dues-card dues-card-exp">
+          <div class="dues-card-accent"></div>
+
+          <div class="dues-card-top">
+            <div class="dues-card-title-group">
+              <div class="dues-card-dot dues-dot-exp"></div>
+              <div>
+                <div class="dues-card-title">Monthly Expenses</div>
+                <div class="dues-card-subtitle">Costs due this period</div>
+              </div>
+            </div>
+            <div class="dues-nav">
+              <button id="expPrev" class="dues-nav-btn" aria-label="Previous month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="select-wrap dues-month-wrap">
+                <select id="expMonth" class="filter-select dues-month-select" aria-label="Select month"></select>
+              </div>
+              <button id="expNext" class="dues-nav-btn" aria-label="Next month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
             </div>
           </div>
 
-          <!-- NEW: total block BELOW header/controls, ABOVE table -->
-          <div class="month-total">
-            <div class="label">Total expenses this month</div>
-            <div class="amount-box exp"><span id="expMonthTotal">$0</span> USD </div>
+          <div class="dues-total-strip dues-total-exp">
+            <div class="dues-total-label">Total this month</div>
+            <div class="dues-total-value" id="expMonthTotal">$0</div>
+            <div class="dues-total-ccy">USD</div>
+            <div class="dues-total-glow"></div>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Vendor</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="expMonthBody"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="dues-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Vendor</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="expMonthBody"></tbody>
+            </table>
+          </div>
         </div>
 
+        <!-- Card B: Income Month -->
+        <div class="dues-card dues-card-inc">
+          <div class="dues-card-accent"></div>
 
-        <!-- Card B: Income (Invoices) – Month view -->
-        <div class="card">
-          <div class="card-head">
-            <h4>Income — Invoices (Month)</h4>
-            <div class="filters">
-              <button id="incomePrev" class="month-btn prev" aria-label="Previous month">‹ Prev</button>
-              <select id="incomeMonth" class="filter-select" aria-label="Select month"></select>
-              <button id="incomeNext" class="month-btn next" aria-label="Next month">Next ›</button>
+          <div class="dues-card-top">
+            <div class="dues-card-title-group">
+              <div class="dues-card-dot dues-dot-inc"></div>
+              <div>
+                <div class="dues-card-title">Monthly Income</div>
+                <div class="dues-card-subtitle">Invoices received this period</div>
+              </div>
+            </div>
+            <div class="dues-nav">
+              <button id="incomePrev" class="dues-nav-btn" aria-label="Previous month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="select-wrap dues-month-wrap">
+                <select id="incomeMonth" class="filter-select dues-month-select" aria-label="Select month"></select>
+              </div>
+              <button id="incomeNext" class="dues-nav-btn" aria-label="Next month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
             </div>
           </div>
 
-          <!-- NEW: total block BELOW header/controls, ABOVE table -->
-          <div class="month-total">
-            <div class="label">Total income this month</div>
-            <div class="amount-box inc"><span id="incomeMonthTotal">$0</span> USD </div>
+          <div class="dues-total-strip dues-total-inc">
+            <div class="dues-total-label">Total this month</div>
+            <div class="dues-total-value" id="incomeMonthTotal">$0</div>
+            <div class="dues-total-ccy">USD</div>
+            <div class="dues-total-glow"></div>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Amount (USD)</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="incomeMonthBody"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="dues-table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Date</th>
+                  <th>Client</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="incomeMonthBody"></tbody>
+            </table>
+          </div>
         </div>
+
       </div>
 
+      <!-- Row 2: 5-month rolling summaries -->
+      <div class="dues-row dues-row-rolling">
 
-      <!-- Row 2: two compact summary tables (columns are months) -->
-      <div class="grid cols-2 gap">
-        <!-- Card 3: Expenses — 5 months by Platform (ROWS = platforms, COLS = months) -->
-        <div class="card">
-          <div class="card-head">
-            <h4>Expenses — 5 Months by Platform</h4>
-            <!-- NEW: independent month for this card -->
-            <div class="filters">
-              <select id="exp5Month" class="filter-select" aria-label="Select month (expenses 5-month window)"></select>
+        <!-- Card 3: Expenses 5-month -->
+        <div class="dues-card dues-card-rolling dues-card-exp">
+          <div class="dues-card-accent"></div>
+          <div class="dues-card-top">
+            <div class="dues-card-title-group">
+              <div class="dues-card-dot dues-dot-exp"></div>
+              <div>
+                <div class="dues-card-title">Expenses — 5 Month View</div>
+                <div class="dues-card-subtitle">Cost by platform across rolling window</div>
+              </div>
+            </div>
+            <div class="select-wrap dues-month-wrap">
+              <select id="exp5Month" class="filter-select dues-month-select" aria-label="Select month"></select>
             </div>
           </div>
           <div class="table-scroll">
-            <table>
+            <table class="dues-table dues-table-rolling">
               <thead id="exp5Head"></thead>
               <tbody id="exp5Body"></tbody>
             </table>
           </div>
         </div>
 
-
-        <!-- Card 4: Income — 5 months by Client (ROWS = clients, COLS = months) -->
-        <div class="card">
-          <div class="card-head">
-            <h4>Income — 5 Months by Client</h4>
-            <!-- NEW: independent month for this card -->
-            <div class="filters">
-              <select id="inc5Month" class="filter-select" aria-label="Select month (income 5-month window)"></select>
+        <!-- Card 4: Income 5-month -->
+        <div class="dues-card dues-card-rolling dues-card-inc">
+          <div class="dues-card-accent"></div>
+          <div class="dues-card-top">
+            <div class="dues-card-title-group">
+              <div class="dues-card-dot dues-dot-inc"></div>
+              <div>
+                <div class="dues-card-title">Income — 5 Month View</div>
+                <div class="dues-card-subtitle">Revenue by client across rolling window</div>
+              </div>
+            </div>
+            <div class="select-wrap dues-month-wrap">
+              <select id="inc5Month" class="filter-select dues-month-select" aria-label="Select month"></select>
             </div>
           </div>
           <div class="table-scroll">
-            <table>
+            <table class="dues-table dues-table-rolling">
               <thead id="inc5Head"></thead>
               <tbody id="inc5Body"></tbody>
             </table>
           </div>
         </div>
+
       </div>
     </section>
   </main>

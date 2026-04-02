@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateGreetingWord() {
     if (!greetingWordEl) return;
-    greetingWordEl.textContent = "Welcome back";
+    greetingWordEl.textContent = "Welcome back,";
   }
 
 

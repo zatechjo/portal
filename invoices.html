@@ -149,23 +149,25 @@
           <button id="newInvoiceBtn" class="btn2 btn-important"><span>New Invoice +</span></button>
         </div>
 
-        <table id="invoiceTable">
-          <thead>
-            <tr>
-              <th data-sort="clientId">Client ID</th>
-              <th data-sort="clientName">Client Name</th>
-              <th data-sort="invoiceNo">Invoice #</th>
-              <th data-sort="date">Date of Invoice</th>
-              <th data-sort="amount">Total Invoiced Amount</th>
-              <th data-sort="status">Status</th>
-              <th data-sort="coverage">Coverage Period</th>
-              <th data-sort="doc">Doc</th>
-              <th data-sort="pdf">PDF</th>
-              <th data-sort="note" style="width:64px;">Note</th>
-            </tr>
-          </thead>
-          <tbody id="invoices-tbody"></tbody>
-        </table>  
+        <div class="table-scroll">
+          <table id="invoiceTable">
+            <thead>
+              <tr>
+                <th data-sort="clientId">Client ID</th>
+                <th data-sort="clientName">Client Name</th>
+                <th data-sort="invoiceNo">Invoice #</th>
+                <th data-sort="date">Date of Invoice</th>
+                <th data-sort="amount">Total Invoiced Amount</th>
+                <th data-sort="status">Status</th>
+                <th data-sort="coverage">Coverage Period</th>
+                <th data-sort="doc">Doc</th>
+                <th data-sort="pdf">PDF</th>
+                <th data-sort="note" style="width:64px;">Note</th>
+              </tr>
+            </thead>
+            <tbody id="invoices-tbody"></tbody>
+          </table>
+        </div>  
       </div>
     </section>
   </main>

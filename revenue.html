@@ -111,77 +111,111 @@
 
     <!-- REVENUE -->
     <section id="revenue">
-      <!-- Filter -->
-      <div class="filters">
-        <span class="filter-label">Date:</span>
-        <div class="select-wrap">
-          <select id="revYear" class="filter-select">
-            <option value="all">All (since opening)</option>
-            <option value="2026" selected>2026</option>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-          </select>
+
+      <!-- Toolbar -->
+      <div class="rev-toolbar">
+        <div class="rev-toolbar-left">
+          <span class="rev-scope-label">Period</span>
+          <div class="select-wrap">
+            <select id="revYear" class="filter-select">
+              <option value="all">All time</option>
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- Top: 3 stats -->
-      <div class="top-row">
-        <div class="stat" id="stat-cost">
-          <h5>Total Cost</h5>
-          <div class="value" id="costUSD">$—</div>
-          <div class="sub" id="costSub">By year / all-time</div>
+      <!-- KPI strip -->
+      <div class="rev-kpi-strip">
+
+        <div class="rev-kpi rev-kpi-income">
+          <div class="rev-kpi-accent"></div>
+          <div class="rev-kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="rev-kpi-body">
+            <div class="rev-kpi-label">Total Income</div>
+            <div class="rev-kpi-value" id="incomeUSD">$—</div>
+            <div class="rev-kpi-sub" id="incomeSub">Loading…</div>
+          </div>
+          <div class="rev-kpi-glow rev-kpi-glow-income"></div>
         </div>
 
-        <div class="stat" id="stat-pl">
-          <h5>Total P&amp;L</h5>
-          <div class="value" id="plUSD">$—</div>
-          <div class="sub" id="plSub">Also shown in JOD</div>
+        <div class="rev-kpi rev-kpi-pl">
+          <div class="rev-kpi-accent"></div>
+          <div class="rev-kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </div>
+          <div class="rev-kpi-body">
+            <div class="rev-kpi-label">Net P&amp;L</div>
+            <div class="rev-kpi-value" id="plUSD">$—</div>
+            <div class="rev-kpi-sub" id="plSub">Loading…</div>
+          </div>
+          <div class="rev-kpi-glow rev-kpi-glow-pl"></div>
         </div>
 
-        <div class="stat" id="stat-income">
-          <h5>Total Income</h5>
-          <div class="value" id="incomeUSD">$—</div>
-          <div class="sub" id="incomeSub">By year / all-time</div>
+        <div class="rev-kpi rev-kpi-cost">
+          <div class="rev-kpi-accent"></div>
+          <div class="rev-kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+          <div class="rev-kpi-body">
+            <div class="rev-kpi-label">Total Cost</div>
+            <div class="rev-kpi-value" id="costUSD">$—</div>
+            <div class="rev-kpi-sub" id="costSub">Loading…</div>
+          </div>
+          <div class="rev-kpi-glow rev-kpi-glow-cost"></div>
         </div>
+
       </div>
 
-      <!-- Bottom: two big cards -->
-      <div class="grid cols-2">
-        <!-- Income by Client -->
-        <div class="card">
-          <div class="card-head">
-            <h4>Income Breakdown (by Client)</h4>
+      <!-- Breakdown tables -->
+      <div class="rev-tables-row">
+
+        <div class="rev-table-card">
+          <div class="rev-table-header">
+            <div class="rev-table-dot rev-dot-income"></div>
+            <h4>Income by Client</h4>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Amount (USD)</th>
-                <th>Amount (JOD)</th>
-              </tr>
-            </thead>
-            <tbody id="incomeTable"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="rev-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Client</th>
+                  <th>USD</th>
+                  <th>JOD</th>
+                </tr>
+              </thead>
+              <tbody id="incomeTable"></tbody>
+            </table>
+          </div>
         </div>
 
-        <!-- Cost by Client -->
-        <div class="card">
-          <div class="card-head">
-            <h4>Cost Breakdown (by Client)</h4>
+        <div class="rev-table-card">
+          <div class="rev-table-header">
+            <div class="rev-table-dot rev-dot-cost"></div>
+            <h4>Costs by Client</h4>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Amount (USD)</th>
-                <th>Amount (JOD)</th>
-              </tr>
-            </thead>
-            <tbody id="costTable"></tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="rev-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Client</th>
+                  <th>USD</th>
+                  <th>JOD</th>
+                </tr>
+              </thead>
+              <tbody id="costTable"></tbody>
+            </table>
+          </div>
         </div>
+
       </div>
     </section>
   </main>

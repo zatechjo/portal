@@ -41,8 +41,8 @@ function applyGreeting(user) {
   const wordEl = document.getElementById('greetingWord');
   const nameEl = document.querySelector('.greet-name');
   if (!wordEl || !nameEl) return; // not all pages have the greeting
-  wordEl.textContent = 'Welcome back';
-  nameEl.textContent = resolveDisplayName(user) + '!';
+  wordEl.textContent = 'Welcome back,';
+  nameEl.textContent = ' ' + resolveDisplayName(user) + '!';
 }
 
 function applyTopbarAccount(user) {
