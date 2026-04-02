@@ -321,7 +321,7 @@ function renderTable(){
         <td class="doc-actions">${docCellHtml}</td>
         <td class="pdf-actions">${pdfCellHtml}</td>
         <td style="text-align:center;">
-          <button type="button" class="inv-mini-btn" data-id="${inv.id}" aria-expanded="false">+</button>
+          <button type="button" class="inv-mini-btn" data-id="${inv.id}" aria-expanded="false"><span>+</span></button>
         </td>
       </tr>
 
@@ -514,7 +514,7 @@ tbody?.addEventListener("click", (e) => {
   // 1) Close all open rows
   tbody.querySelectorAll("tr.inv-details").forEach(row => row.style.display = "none");
   tbody.querySelectorAll(".inv-mini-btn").forEach(b => {
-    b.textContent = "+";
+    b.innerHTML = "<span>+</span>";
     b.classList.remove("inv-open");
     b.setAttribute("aria-expanded", "false");
   });
@@ -522,7 +522,7 @@ tbody?.addEventListener("click", (e) => {
   // 2) Open this one if it was closed
   if (!isOpen) {
     detailsRow.style.display = "";
-    btn.textContent = "−";
+    btn.innerHTML = "<span>−</span>";
     btn.classList.add("inv-open");
     btn.setAttribute("aria-expanded", "true");
   }
