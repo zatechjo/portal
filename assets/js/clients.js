@@ -90,7 +90,7 @@ function renderTable() {
         <td>${escapeHTML(c.address || '—')}</td>
         <td>${invCount}</td>
         <td class="row-actions">
-          <button class="mini more-info" data-id="${c.id}">More Info →</button>
+          <button class="mini more-info" data-id="${c.id}">More Info <span class="row-arrow">></span></button>
         </td>
       </tr>
     `;

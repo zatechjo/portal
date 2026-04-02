@@ -4,7 +4,18 @@
       "Bash(for f:*)",
       "Bash(do)",
       "Bash(sed -i 's|href=\"\"/home\"\"|href=\"\"/\"\"|g' \"$f\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(grep -l \"ai-chat-widget\\\\|aiFab\\\\|aiChat\" c:/Users/USER/Desktop/portal/*.html)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/USER/Desktop/portal/**)",
+      "Bash(grep -r \"styles.css\" c:/Users/USER/Desktop/portal/*.html)",
+      "Bash(grep -n \"topbar.js\" c:/Users/USER/Desktop/portal/*.html)",
+      "Bash(grep -rl \"styles\\\\.css?v=3\" c:/Users/USER/Desktop/portal/*.html)",
+      "Bash(sed -i 's/styles\\\\.css?v=3/styles.css?v=4/g' c:/Users/USER/Desktop/portal/*.html)",
+      "Bash(sed -i 's/topbar\\\\.js?v=2/topbar.js?v=3/g' c:/Users/USER/Desktop/portal/*.html)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\USER\\Desktop\\portal"
     ]
   }
 }

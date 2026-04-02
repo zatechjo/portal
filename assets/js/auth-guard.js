@@ -37,19 +37,12 @@ function resolveAvatar(user) {
   return './assets/img/user-icon.png';
 }
 
-function resolveGreetingWord(date = new Date()) {
-  const h = date.getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 function applyGreeting(user) {
   const wordEl = document.getElementById('greetingWord');
   const nameEl = document.querySelector('.greet-name');
   if (!wordEl || !nameEl) return; // not all pages have the greeting
-  wordEl.textContent = resolveGreetingWord();
-  nameEl.textContent = resolveDisplayName(user);
+  wordEl.textContent = 'Welcome back';
+  nameEl.textContent = resolveDisplayName(user) + '!';
 }
 
 function applyTopbarAccount(user) {
@@ -57,7 +50,7 @@ function applyTopbarAccount(user) {
   if (!accountBtn) return;
   const name = resolveDisplayName(user) || user.email || '';
   const avatar = resolveAvatar(user);
-  accountBtn.innerHTML = `<img class="avatar" src="${avatar}" alt="" /> ${name} <span class="caret">▾</span>`;
+  accountBtn.innerHTML = `<img class="avatar" src="${avatar}" alt="" /> ${name} <span class="caret">▼</span>`;
   // Optional: if you also have a separate topbar avatar element
   const topAvatar = document.querySelector('.top-avatar');
   if (topAvatar) topAvatar.setAttribute('src', avatar);

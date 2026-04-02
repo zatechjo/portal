@@ -93,6 +93,10 @@ import { sb } from './supabase.js';
     pmActivityList: byId('pmActivityList'),
     pmTeamList: byId('pmTeamList'),
     pmTeamPaymentsList: byId('pmTeamPaymentsList'),
+    pmTrackPaymentCard: byId('pmTrackPaymentCard'),
+    pmTeamSummaryCard: byId('pmTeamSummaryCard'),
+    pmPaymentHistoryCard: byId('pmPaymentHistoryCard'),
+    pmTeamBottomGrid: byId('pmTeamBottomGrid'),
 
     // modal edit fields
     projectCodeInput: byId('projectCodeInput'),
@@ -227,12 +231,19 @@ import { sb } from './supabase.js';
 
   const PROJECT_FX_USD_PER = {
     USD: 1,
-    JOD: 1.41,
-    EUR: 1.09,
-    GBP: 1.28,
+    JOD: 1.410,
+    EUR: 1.087,
+    GBP: 1.333,
     SAR: 0.2667,
-    AED: 0.2723
+    AED: 0.2724
   };
+
+  // Display/view rates: 1 USD = X [currency]
+  const VIEW_FX = { USD: 1, JOD: 0.709, EUR: 0.92, GBP: 0.75, SAR: 3.75, AED: 3.67 };
+  const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', JOD: 'JOD ', SAR: 'SAR ', AED: 'AED ' };
+  let viewCurrency = window.getPortalCurrency?.() ?? 'USD';
+  let _cachedInvoiceRows = [];
+  let _cachedExpenseRows = [];
 
   function convertToUSD(amount, currency = 'USD') {
     const rate = PROJECT_FX_USD_PER[String(currency || 'USD').toUpperCase()] ?? 1;
@@ -240,8 +251,10 @@ import { sb } from './supabase.js';
   }
 
   function fmtMoney(value) {
-    const n = Number(value || 0);
-    return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString(undefined, {
+    const rate = VIEW_FX[viewCurrency] ?? 1;
+    const n = Number(value || 0) * rate;
+    const sym = CURRENCY_SYMBOLS[viewCurrency] || (viewCurrency + ' ');
+    return (n < 0 ? '-' + sym : sym) + Math.abs(n).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     });
@@ -508,7 +521,7 @@ import { sb } from './supabase.js';
   async function fetchExpenseTotalsByProject() {
     const { data, error } = await sb
       .from('expenses')
-      .select('project_id, amount')
+      .select('project_id, amount, service')
       .not('project_id', 'is', null);
 
     if (error) throw error;
@@ -518,6 +531,8 @@ import { sb } from './supabase.js';
     for (const row of data || []) {
       const key = String(row.project_id || '');
       if (!key) continue;
+      // Exclude subcontractor payment records — already counted in agreed_amount (subcontractor_cost)
+      if (String(row.service || '').toLowerCase().trim() === 'subcontractor') continue;
       totals.set(key, (totals.get(key) || 0) + safeNum(row.amount));
     }
 
@@ -737,7 +752,9 @@ import { sb } from './supabase.js';
           <td>
             <div class="row-actions">
               <button class="mini project-view-btn" data-id="${project.id}">View</button>
-              <button class="mini ghost project-edit-btn" data-id="${project.id}">Edit</button>
+              <button class="proj-edit-icon-btn project-edit-btn" data-id="${project.id}" title="Edit project" aria-label="Edit project">
+                <img src="./assets/img/edit.png" alt="Edit" />
+              </button>
             </div>
           </td>
         </tr>
@@ -752,11 +769,19 @@ import { sb } from './supabase.js';
     const revenue = rows.reduce((sum, item) => sum + projectRevenue(item), 0);
     const cost = rows.reduce((sum, item) => sum + projectCost(item), 0);
     const profit = rows.reduce((sum, item) => sum + projectProfit(item), 0);
+    const subCount = new Set(
+      rows.flatMap(p => coerceArray(p.team_allocation, []).map(m => m.name || m.subcontractor_name).filter(Boolean))
+    ).size;
+    const healthyCount = rows.filter(p => !isArchived(p) && projectMargin(p) >= 20).length;
 
     if (els.visibleProjectsCount) els.visibleProjectsCount.textContent = String(rows.length);
     if (els.visibleRevenue) els.visibleRevenue.textContent = fmtMoney(revenue);
     if (els.visibleCost) els.visibleCost.textContent = fmtMoney(cost);
     if (els.visibleProfit) els.visibleProfit.textContent = fmtMoney(profit);
+    const subEl = document.getElementById('visibleSubcontractors');
+    if (subEl) subEl.textContent = String(subCount);
+    const healthEl = document.getElementById('visibleHealthy');
+    if (healthEl) healthEl.textContent = `${healthyCount} of ${rows.filter(p => !isArchived(p)).length}`;
   }
 
   function updateSortIndicators() {
@@ -838,7 +863,7 @@ import { sb } from './supabase.js';
           <div class="health-top">
             <div>
               <div class="health-name">${escapeHTML(project.project_name)}</div>
-              <div class="health-sub">${escapeHTML(project.client_name)} · ${escapeHTML(project.project_manager || 'Unassigned')}</div>
+              <div class="health-sub">${escapeHTML(project.client_name)}</div>
             </div>
             <span class="tag ${statusClass(project.status)}">${escapeHTML(normalizeStatus(project.status))}</span>
           </div>
@@ -873,6 +898,19 @@ import { sb } from './supabase.js';
     return rows.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
   }
 
+  function activityTypeClass(type) {
+    const t = String(type || '').toLowerCase().trim();
+    if (['expense added', 'expense', 'expenses', 'expense add', 'cost added'].includes(t)) return 'act-expense';
+    if (['payment tracked', 'track payment', 'payment received', 'payment'].includes(t)) return 'act-payment';
+    if (['paid', 'invoice paid', 'fully paid'].includes(t)) return 'act-paid';
+    if (['blocked', 'on hold'].includes(t)) return 'act-blocked';
+    if (['delivery', 'support', 'launch', 'reporting', 'live'].includes(t)) return 'act-delivery';
+    if (['planning', 'discovery', 'qa', 'review'].includes(t)) return 'act-planning';
+    if (['design', 'building', 'development', 'build'].includes(t)) return 'act-dev';
+    if (['subcontractor costs', 'subcontractor cost', 'freelancer'].includes(t)) return 'act-sub';
+    return 'act-default';
+  }
+
   function renderRecentActivity() {
     if (!els.recentActivityList) return;
 
@@ -884,19 +922,13 @@ import { sb } from './supabase.js';
 
     els.recentActivityList.innerHTML = items.map((item) => `
       <div class="activity-item">
-        <div class="activity-top">
-          <div>
-            <div class="activity-title">${escapeHTML(item.title)}</div>
-            <div class="activity-sub">${escapeHTML(item.project_name)} · ${escapeHTML(item.client_name)}</div>
-          </div>
-          <span class="tag ${statusClass(item.status)}">${escapeHTML(normalizeStatus(item.status))}</span>
+        <div class="act-header">
+          <span class="act-date-pill">${fmtDate(item.date)}</span>
+          <span class="act-type-badge ${activityTypeClass(item.type)}">${escapeHTML(item.type)}</span>
         </div>
-        <div class="activity-meta">
-          <span>${fmtDate(item.date)}</span>
-          <span>•</span>
-          <span>${escapeHTML(item.type)}</span>
-        </div>
-        <div class="muted" style="font-size:13px;line-height:1.55;">${escapeHTML(item.note || 'No extra note.')}</div>
+        <div class="act-title">${escapeHTML(item.title)}</div>
+        <div class="act-project">${escapeHTML(item.project_name)}</div>
+        ${item.note ? `<div class="act-note">${escapeHTML(item.note)}</div>` : ''}
       </div>
     `).join('');
   }
@@ -1851,6 +1883,17 @@ import { sb } from './supabase.js';
     `).join('');
   }
 
+  function updateTeamSectionVisibility(project) {
+    const members = coerceArray(project.team_allocation, []);
+    const hasMembers = members.length > 0;
+    const hasPayments = members.some(m => coerceArray(m.payments, []).length > 0);
+
+    if (els.pmTrackPaymentCard)  els.pmTrackPaymentCard.style.display  = hasMembers ? '' : 'none';
+    if (els.pmTeamSummaryCard)   els.pmTeamSummaryCard.style.display   = hasMembers ? '' : 'none';
+    if (els.pmPaymentHistoryCard) els.pmPaymentHistoryCard.style.display = hasPayments ? '' : 'none';
+    if (els.pmTeamBottomGrid)    els.pmTeamBottomGrid.style.display     = hasMembers ? '' : 'none';
+  }
+
   function renderProjectTeam(project) {
     const members = project.team_allocation || [];
     if (!els.pmTeamList) return;
@@ -1886,8 +1929,8 @@ import { sb } from './supabase.js';
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <span class="tag sent">${planCount || 0} payments plan</span>
-              <button class="icon-btn team-edit-btn" data-index="${index}" title="Edit member" style="font-size:13px;">✏️</button>
-              <button class="icon-btn team-delete-btn" data-index="${index}" title="Remove member" style="font-size:13px;">🗑️</button>
+              <button class="pm-icon-btn pm-edit-btn team-edit-btn" data-index="${index}" title="Edit member"><img src="./assets/img/edit.png" alt="Edit" /></button>
+              <button class="pm-icon-btn pm-del-btn team-delete-btn" data-index="${index}" title="Remove member"><img src="./assets/img/bin.png" alt="Remove" /></button>
             </div>
           </div>
 
@@ -1954,6 +1997,7 @@ import { sb } from './supabase.js';
       renderProjectTeam(project);
       renderProjectPaymentHistory(project);
       syncProjectMemberDropdowns(project);
+      updateTeamSectionVisibility(project);
 
       await logProjectActivity(project.id, {
         title: 'Team member removed',
@@ -2127,6 +2171,7 @@ import { sb } from './supabase.js';
       renderProjectTeam(project);
       renderProjectPaymentHistory(project);
       syncProjectMemberDropdowns(project);
+      updateTeamSectionVisibility(project);
 
       await logProjectActivity(project.id, {
         title: 'Team payment deleted',
@@ -2304,8 +2349,8 @@ import { sb } from './supabase.js';
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
           <div style="display:flex;gap:6px;">
-            <button class="icon-btn payment-edit-btn" data-member="${row.memberIndex}" data-payment="${row.paymentIndex}" title="Edit payment" style="font-size:13px;width:32px;height:32px;">✏️</button>
-            <button class="icon-btn payment-delete-btn" data-member="${row.memberIndex}" data-payment="${row.paymentIndex}" title="Delete payment" style="font-size:13px;width:32px;height:32px;">🗑️</button>
+            <button class="pm-icon-btn pm-edit-btn payment-edit-btn" data-member="${row.memberIndex}" data-payment="${row.paymentIndex}" title="Edit payment"><img src="./assets/img/edit.png" alt="Edit" /></button>
+            <button class="pm-icon-btn pm-del-btn payment-delete-btn" data-member="${row.memberIndex}" data-payment="${row.paymentIndex}" title="Delete payment"><img src="./assets/img/bin.png" alt="Delete" /></button>
           </div>
           <div class="payment-history-amount">${fmtMoney(row.amount)}</div>
         </div>
@@ -2372,6 +2417,7 @@ import { sb } from './supabase.js';
     renderProjectTeam(project);
     renderProjectPaymentHistory(project);
     syncProjectMemberDropdowns(project);
+    updateTeamSectionVisibility(project);
   }
 
   function fillModalForm(project) {
@@ -2480,6 +2526,8 @@ import { sb } from './supabase.js';
       fetchProjectInvoices(project.id),
       fetchProjectExpenses(project.id)
     ]).then(([invoiceRows, expenseRows]) => {
+      _cachedInvoiceRows = invoiceRows;
+      _cachedExpenseRows = expenseRows;
       renderProjectInvoices(invoiceRows);
       renderProjectExpenses(expenseRows);
       applyLiveFinancialSummary(project, invoiceRows, expenseRows);
@@ -2781,6 +2829,7 @@ import { sb } from './supabase.js';
       renderProjectTeam(project);
       renderProjectPaymentHistory(project);
       syncProjectMemberDropdowns(project);
+      updateTeamSectionVisibility(project);
 
       if (els.pmTeamMemberSelect) els.pmTeamMemberSelect.value = '';
       if (els.pmTeamRoleInput) els.pmTeamRoleInput.value = '';
@@ -2919,6 +2968,7 @@ import { sb } from './supabase.js';
       renderProjectTeam(project);
       renderProjectPaymentHistory(project);
       syncProjectMemberDropdowns(project);
+      updateTeamSectionVisibility(project);
 
       if (els.pmPaymentMemberSelect) els.pmPaymentMemberSelect.value = '';
       if (els.pmPaymentDateInput) els.pmPaymentDateInput.value = '';
@@ -3164,6 +3214,7 @@ import { sb } from './supabase.js';
       if (!btn) return;
       setActiveModalTab(btn.dataset.tab);
     });
+
 
     els.modal?.addEventListener('click', (e) => {
       if (e.target === els.modal) closeModal();

@@ -7,7 +7,7 @@
 
   // ===== Helpers =====
   const STATUS_OPTIONS = ["Proposed", "In Review", "Won", "Lost"];
-  const fmt$ = (n) => "$" + Number(n || 0).toLocaleString();
+  const fmt$ = (n) => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ("$" + Number(n || 0).toLocaleString());
 
   const statusClass = (val) => {
     const t = String(val || "").toLowerCase();
@@ -465,5 +465,6 @@
       closeDeleteModal();
     });
     delModal.addEventListener("click", (e) => { if (e.target === delModal) closeDeleteModal(); });
+
   });
 })();

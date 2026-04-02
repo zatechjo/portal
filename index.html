@@ -8,12 +8,13 @@
 <link rel="icon" type="image/png" href="assets/img/favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./assets/css/styles.css">
+<link rel="stylesheet" href="./assets/css/styles.css?v=18">
 <script type="module" src="./assets/js/firebase.js"></script>
 <script type="module" src="./assets/js/auth-guard.js"></script>
 <script type="module" src="./assets/js/idle.js"></script>
 <script defer src="./assets/js/app.js"></script>
-<script defer src="./assets/js/topbar.js"></script>
+<script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 <script type="module" src="./assets/js/supabase.js"></script>
 <script defer src="./assets/js/index.js"></script>
 </head>
@@ -83,9 +84,8 @@
     <div class="topbar">
       <div class="greeting">
         <h1 class="greet-title">
-          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
+          <span id="greetingWord">Welcome back</span>, <span class="greet-name">Ahmad</span>
         </h1>
-        <p class="greet-sub">Here's everything happening across your business today.</p>
       </div>
       <div class="hud">
         <div class="date-badge" id="todayBadge" aria-label="Today's date">--/--/----</div>
@@ -95,11 +95,11 @@
             <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">&#x1F514;</button>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
             <img class="avatar" src="./assets/img/user-icon.png" alt="" />
-            Ahmad <span class="caret">&#9662;</span>
+            Ahmad <span class="caret">&#9660;</span>
           </button>
           <div class="account-menu" id="accountMenu" role="menu">
             <a href="#" role="menuitem">Profile</a>

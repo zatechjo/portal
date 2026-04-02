@@ -9,14 +9,15 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=18">
 
   <!-- core app scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
-  <script defer src="./assets/js/topbar.js"></script>
+  <script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 
   <!-- charts -->
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -90,11 +91,8 @@
     </div>
 
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title">
-          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-        </h1>
-        <p class="greet-sub">Projects dashboard — profitability, delivery status, and project-linked performance in one place.</p>
+      <div class="page-heading">
+        <h1>Projects</h1>
       </div>
 
       <div class="hud">
@@ -105,7 +103,7 @@
             <input id="searchInput" type="search" placeholder="Search projects, clients, managers…" />
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
             <img class="avatar" src="./assets/img/user-icon.png" alt="" />
@@ -121,69 +119,6 @@
 
     <section id="projects">
       <div class="projects-stack">
-        <div class="grid cols-4 kpi-grid">
-          <div class="card kpi-card">
-            <div class="kpi">
-              <div>
-                <h4>Total Active Projects</h4>
-                <div class="muted">Currently in delivery or running live</div>
-              </div>
-              <span class="chip ok" id="kpiActiveProjectsCount">0</span>
-            </div>
-            <h5 class="kpi-num" id="kpiActiveProjects">0</h5>
-            <div class="kpi-foot">
-              <span id="kpiOpenVsTotal">0 of 0 open</span>
-              <span class="muted-inline" id="kpiArchivedCount">0 archived</span>
-            </div>
-          </div>
-
-          <div class="card kpi-card">
-            <div class="kpi">
-              <div>
-                <h4>Total Project Revenue</h4>
-                <div class="muted">Recognized project-linked revenue</div>
-              </div>
-              <span class="chip money good" id="kpiRevenueMargin">0%</span>
-            </div>
-            <h5 class="kpi-num" id="kpiProjectRevenue">$0</h5>
-            <div class="kpi-foot">
-              <span id="kpiAvgRevenue">Avg $0 per project</span>
-              <span class="muted-inline" id="kpiRevenueSubtitle">Across visible projects</span>
-            </div>
-          </div>
-
-          <div class="card kpi-card">
-            <div class="kpi">
-              <div>
-                <h4>Total Project Cost</h4>
-                <div class="muted">Expenses and subcontractor costs</div>
-              </div>
-              <span class="chip money mid" id="kpiCostShare">0%</span>
-            </div>
-            <h5 class="kpi-num" id="kpiProjectCost">$0</h5>
-            <div class="kpi-foot">
-              <span id="kpiAvgCost">Avg $0 per project</span>
-              <span class="muted-inline" id="kpiCostSubtitle">Across visible projects</span>
-            </div>
-          </div>
-
-          <div class="card kpi-card">
-            <div class="kpi">
-              <div>
-                <h4>Total Project Profit</h4>
-                <div class="muted">Revenue minus all allocated project costs</div>
-              </div>
-              <span class="chip money good" id="kpiProfitMargin">0%</span>
-            </div>
-            <h5 class="kpi-num" id="kpiProjectProfit">$0</h5>
-            <div class="kpi-foot">
-              <span id="kpiHealthyProjects">0 healthy projects</span>
-              <span class="muted-inline" id="kpiProfitSubtitle">Margin-based view</span>
-            </div>
-          </div>
-        </div>
-
-        
 
         <div class="insights-grid">
           <div class="card">
@@ -249,27 +184,34 @@
             </div>
 
             <div class="toolbar-right">
-              <button class="btn2" id="resetProjectFiltersBtn">Reset Filters</button>
-              <button class="btn2" id="newProjectBtn">+ New Project</button>
+              <button class="btn2 btn-important" id="newProjectBtn"><span>New Project +</span></button>
             </div>
           </div>
 
           <div class="summary-strip" id="tableSummaryStrip">
-            <div class="summary-box">
-              <span class="label">Visible Projects</span>
+            <div class="summary-box sbox-sm">
+              <span class="label">Projects</span>
               <strong id="visibleProjectsCount">0</strong>
             </div>
-            <div class="summary-box">
-              <span class="label">Visible Revenue</span>
+            <div class="summary-box sbox-lg">
+              <span class="label">Revenue</span>
               <strong id="visibleRevenue">$0</strong>
             </div>
-            <div class="summary-box">
-              <span class="label">Visible Cost</span>
+            <div class="summary-box sbox-md">
+              <span class="label">Cost</span>
               <strong id="visibleCost">$0</strong>
             </div>
-            <div class="summary-box">
-              <span class="label">Visible Profit</span>
+            <div class="summary-box sbox-lg">
+              <span class="label">Profit</span>
               <strong id="visibleProfit">$0</strong>
+            </div>
+            <div class="summary-box sbox-sm">
+              <span class="label">Subcontractors</span>
+              <strong id="visibleSubcontractors">0</strong>
+            </div>
+            <div class="summary-box sbox-md">
+              <span class="label">Healthy Projects</span>
+              <strong id="visibleHealthy">0</strong>
             </div>
           </div>
 
@@ -543,7 +485,7 @@
             </div>
 
             <!-- RIGHT -->
-            <div class="project-entry-card">
+            <div class="project-entry-card" id="pmTrackPaymentCard">
               <div class="card-head project-entry-head">
                 <div>
                   <h4 style="margin:0 0 4px;">Track Payment</h4>
@@ -603,8 +545,8 @@
             </div>
           </div>
 
-          <div class="detail-grid project-team-grid" style="margin-top:14px;">
-            <div class="tab-card project-list-card">
+          <div class="detail-grid project-team-grid" id="pmTeamBottomGrid" style="margin-top:14px;">
+            <div class="tab-card project-list-card" id="pmTeamSummaryCard">
               <div class="card-head" style="margin-bottom:12px;">
                 <div>
                   <h4 style="margin-bottom:4px;">Team Summary</h4>
@@ -621,7 +563,7 @@
               </div>
             </div>
 
-            <div class="tab-card project-list-card">
+            <div class="tab-card project-list-card" id="pmPaymentHistoryCard">
               <div class="card-head" style="margin-bottom:12px;">
                 <div>
                   <h4 style="margin:0 0 4px;">Payment History</h4>

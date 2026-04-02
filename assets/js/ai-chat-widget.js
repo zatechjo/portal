@@ -171,4 +171,14 @@
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) sendMsg();
   });
+
+  // Chip quick-prompts (delegated so they work after renderHistory clears body)
+  body.addEventListener("click", (e) => {
+    const chip = e.target.closest(".ai-chip");
+    if (!chip) return;
+    const prompt = chip.dataset.prompt;
+    if (!prompt) return;
+    input.value = prompt;
+    sendMsg();
+  });
 })();

@@ -33,7 +33,7 @@
   const toUSD = (amount, ccy) => Number(amount || 0) * (FX_TO_USD[ccy] ?? 1);
   const toJOD = (usd) => Number(usd || 0) * USD_TO_JOD;
   const fmt$ = (n) =>
-    "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    window.fmtPortalMoney ? window.fmtPortalMoney(n) : ("$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }));
 
   // ---------- Date helpers ----------
   const yearRange = (yr) => {
@@ -173,6 +173,8 @@
   }
 
   // ---------- Flow ----------
+  let _revCache = null;
+
   async function refresh(scopeYear) {
     setLoader(true);
     try {
@@ -187,6 +189,7 @@
       const totalIncomeUSD = income.reduce((a, r) => a + r.usd, 0);
       const totalCostUSD = costs.reduce((a, r) => a + r.usd, 0);
 
+      _revCache = { scopeYear, income, costs, totalIncomeUSD, totalCostUSD };
       renderTotals(scopeYear, totalIncomeUSD, totalCostUSD);
       renderTables(income, costs);
     } catch (e) {
@@ -203,4 +206,5 @@
     refresh(initial);
     els.year?.addEventListener("change", () => refresh(els.year.value));
   });
+
 })();

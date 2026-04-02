@@ -9,14 +9,15 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=18">
 
   <!-- core app scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
-  <script defer src="./assets/js/topbar.js"></script>
+  <script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 
   <!-- page script -->
    <script type="module" src="./assets/js/supabase.js"></script>
@@ -86,11 +87,8 @@
 
     <!-- topbar -->
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title">
-          <span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span>
-        </h1>
-        <p class="greet-sub">Simple pipeline — add, view, edit; update statuses inline.</p>
+      <div class="page-heading">
+        <h1>Opportunities</h1>
       </div>
 
       <div class="hud">
@@ -101,7 +99,7 @@
             <input id="searchInput" type="search" placeholder="Search…" />
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
             <img class="avatar" src="./assets/img/user-icon.png" alt="" />
@@ -118,8 +116,8 @@
     <!-- OPPORTUNITIES -->
     <section id="opps">
       <div class="card">
-        <div class="card-head" style="display:flex;align-items:center;gap:10px;">
-          <h4 style="margin-right:auto;">Opportunities</h4>
+        <div class="card-head">
+          <div></div>
           <button class="btn2" id="newOppBtn">+ New Opportunity</button>
         </div>
 

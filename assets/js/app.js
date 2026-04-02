@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pathname = window.location.pathname;
   document.querySelectorAll('#nav a').forEach(a => {
     const href = a.getAttribute('href');
-    a.classList.toggle('active', href === pathname);
+    a.classList.toggle('active', href === pathname && href !== '/');
   });
 
   // Pill tabs active state

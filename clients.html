@@ -8,14 +8,15 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=18">
 
   <!-- existing app scripts -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
-  <script defer src="./assets/js/topbar.js"></script>
+  <script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 
   <!-- supabase + page logic -->
   <script type="module" src="./assets/js/supabase.js"></script>
@@ -83,9 +84,8 @@
     </div>
 
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title"><span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span></h1>
-        <p class="greet-sub">Welcome back to your ZAtech portal — everything you need in one place.</p>
+      <div class="page-heading">
+        <h1>Clients</h1>
       </div>
       <div class="hud">
         <div class="date-badge" id="todayBadge" aria-label="Today’s date">--/--/----</div>
@@ -95,7 +95,7 @@
             <input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…" />
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false" aria-haspopup="true">
             <img class="avatar" src="./assets/img/user-icon.png" alt="" />
@@ -111,20 +111,15 @@
 
     <section id="clients">
       <div class="card">
-        <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
-          <div>
-            <h2 style="margin:0 0 4px;font-size:26px;font-weight:700;color:#f1f5f9;letter-spacing:-.01em;">Client Relationships</h2>
-            <p style="margin:0;font-size:13px;color:rgba(200,217,238,.42);">Manage and view all your active clients</p>
-          </div>
-          <div style="display:flex;align-items:center;gap:0;">
+        <div class="card-head">
+          <div class="filters">
             <div class="pilltabs" style="margin-bottom:0;">
               <button class="pill active">All</button>
               <button class="pill">Active</button>
               <button class="pill">Paused</button>
             </div>
-            <div style="width:1px;height:26px;background:rgba(255,255,255,.1);margin:0 12px;flex-shrink:0;"></div>
-            <button class="btn2" id="newClientBtn">+ New Client</button>
           </div>
+          <button class="btn2 btn-important" id="newClientBtn"><span>New Client +</span></button>
         </div>
 
         <table>

@@ -52,7 +52,7 @@
   const monthKey   = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
   const monthLabel = (d) => d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
   const toISODate  = (dt) => { const d = new Date(dt); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
-  const fmt$       = (n) => "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const fmt$       = (n) => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ("$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }));
   const esc        = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   const setLoader  = (on) => { if (!els.loader) return; els.loader.style.display = on ? "block" : "none"; els.loader.setAttribute("aria-hidden", on ? "false" : "true"); };
 
@@ -1032,4 +1032,5 @@ async function fetchActualAnnual6mWindow() {
   }
 
   document.addEventListener("DOMContentLoaded", init);
+
 })();

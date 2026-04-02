@@ -2,14 +2,8 @@
 (() => {
   const $ = id => document.getElementById(id);
 
-  const fmt$ = n => {
-    const v = Number(n || 0);
-    return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
-  };
-  const fmt$d = n => {
-    const v = Number(n || 0);
-    return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
+  const fmt$ = n => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ((Number(n||0) < 0 ? '-$' : '$') + Math.abs(Number(n||0)).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+  const fmt$d = n => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ((Number(n||0) < 0 ? '-$' : '$') + Math.abs(Number(n||0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
@@ -626,4 +620,5 @@
   document.readyState === 'loading'
     ? document.addEventListener('DOMContentLoaded', init)
     : init();
+
 })();

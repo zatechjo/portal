@@ -141,7 +141,11 @@ function updateSortIndicators(){
 
 // ====== Utils ======
 function escapeHTML(s){ return (s ?? '').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function fmtMoney(n, locale='en-US', cur='JOD'){
+function fmtMoney(n, locale='en-US', cur='USD'){
+  if (window.fmtPortalMoney && window.PORTAL_FX_TO_USD) {
+    const usd = Number(n || 0) * (window.PORTAL_FX_TO_USD[String(cur || 'USD').toUpperCase()] ?? 1);
+    return window.fmtPortalMoney(usd);
+  }
   return new Intl.NumberFormat(locale, { style:'currency', currency:cur, minimumFractionDigits:2, maximumFractionDigits:2 })
     .format(Number(n||0));
 }
@@ -1145,5 +1149,6 @@ addServiceBtn?.addEventListener('click', (e) => {
 // Init
 loadClientsForSelect();
 loadInvoices();
+
 
 

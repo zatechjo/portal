@@ -5,7 +5,7 @@
 
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
-  const fmt$ = (n) => "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const fmt$ = (n) => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ("$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }));
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({
     "&": "&amp;",
     "<": "&lt;",

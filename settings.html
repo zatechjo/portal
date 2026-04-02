@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- Global styles -->
-<link rel="stylesheet" href="./assets/css/styles.css">
+<link rel="stylesheet" href="./assets/css/styles.css?v=18">
 <!-- Page-specific styles -->
 <link rel="stylesheet" href="./assets/css/settings.css">
 
@@ -22,7 +22,8 @@
 
 <!-- App scaffolding -->
 <script defer src="./assets/js/app.js"></script>
-<script defer src="./assets/js/topbar.js"></script>
+<script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 
 <!-- Page-specific logic -->
 <script defer src="./assets/js/settings.js"></script>
@@ -91,9 +92,8 @@
 
     <!-- Topbar -->
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title"><span id="greetingWord">Good afternoon</span>, <span class="greet-name">Ahmad</span></h1>
-        <p class="greet-sub">Manage your company details and template space.</p>
+      <div class="page-heading">
+        <h1>Settings</h1>
       </div>
 
       <div class="hud">
@@ -102,7 +102,7 @@
           <button class="icon-btn" id="searchToggle" title="Search">🔎</button>
           <div class="search-anim" id="searchWrap" aria-hidden="true"><input id="searchInput" type="search" placeholder="Search settings…"/></div>
         </div>
-        <button class="icon-btn" id="notifyBtn" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false"><img class="avatar" src="./assets/img/user-icon.png" alt=""> Ahmad <span class="caret">▾</span></button>
           <div class="account-menu" id="accountMenu" role="menu">

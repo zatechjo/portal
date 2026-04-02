@@ -1,4 +1,18 @@
 // TOPBAR SCRIPT
+
+/* ── Global Currency State (available to all pages) ── */
+window.PORTAL_FX        = { USD: 1, JOD: 0.709, EUR: 0.92, GBP: 0.75, SAR: 3.75, AED: 3.67 };
+window.PORTAL_FX_TO_USD = { USD: 1, JOD: 1.41, EUR: 1.087, GBP: 1.333, SAR: 0.267, AED: 0.272 };
+window.PORTAL_SYMBOLS   = { USD: '$', EUR: '€', GBP: '£', JOD: 'JOD ', SAR: 'SAR ', AED: 'AED ' };
+window.getPortalCurrency = () => localStorage.getItem('portalCurrency') || 'USD';
+window.fmtPortalMoney = (usdAmount) => {
+  const cur  = window.getPortalCurrency();
+  const rate = window.PORTAL_FX[cur] ?? 1;
+  const sym  = window.PORTAL_SYMBOLS[cur] || (cur + ' ');
+  const n    = Number(usdAmount || 0) * rate;
+  return (n < 0 ? '-' + sym : sym) + Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+};
+
 document.addEventListener("DOMContentLoaded", () => {
 
   /* ─────────────────────────────────────────
@@ -9,10 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateGreetingWord() {
     if (!greetingWordEl) return;
-    const h = new Date().getHours();
-    greetingWordEl.textContent =
-      h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    greetingWordEl.textContent = "Welcome back";
   }
+
 
   if (todayBadge) {
     // Build the split clock structure once
@@ -67,20 +80,64 @@ document.addEventListener("DOMContentLoaded", () => {
       const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       dateEl.textContent = `${weekday}, ${dateStr}`;
 
-      updateGreetingWord();
     }
 
     updateDateTime();
+    updateGreetingWord();
     setInterval(updateDateTime, 1000);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") updateDateTime();
     });
   } else {
     updateGreetingWord();
-    setInterval(updateGreetingWord, 60000);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") updateGreetingWord();
+  }
+
+
+  /* ─────────────────────────────────────────
+     GLOBAL CURRENCY SELECTOR (injected into .hud)
+     Custom dropdown — no native <select> so browser
+     system colors can't override our background.
+  ───────────────────────────────────────── */
+  const hud          = document.querySelector('.hud');
+  const todayBadgeEl = document.getElementById('todayBadge');
+  if (hud && todayBadgeEl) {
+    const currencies = ['USD','JOD','EUR','GBP','SAR','AED'];
+    const current = window.getPortalCurrency();
+
+    // Mirror .account structure exactly: outer div + inner <button> like account-btn
+    const wrap = document.createElement('div');
+    wrap.className = 'topbar-currency-wrap';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'icon-btn topbar-currency-btn';
+    btn.innerHTML = `${current} <span class="caret">▼</span>`;
+
+    const menu = document.createElement('ul');
+    menu.className = 'topbar-currency-menu';
+
+    currencies.forEach(c => {
+      const li = document.createElement('li');
+      li.className = 'topbar-currency-option' + (c === current ? ' active' : '');
+      li.setAttribute('data-value', c);
+      li.textContent = c;
+      li.addEventListener('click', (e) => {
+        e.stopPropagation();
+        localStorage.setItem('portalCurrency', c);
+        location.reload();
+      });
+      menu.appendChild(li);
     });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+    hud.insertBefore(wrap, todayBadgeEl.nextSibling);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      wrap.classList.toggle('open');
+    });
+    document.addEventListener('click', () => wrap.classList.remove('open'));
   }
 
 

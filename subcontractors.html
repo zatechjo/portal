@@ -9,13 +9,14 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=18">
 
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
-  <script defer src="./assets/js/topbar.js"></script>
+  <script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 
   <script type="module" src="./assets/js/supabase.js"></script>
   <script defer src="./assets/js/subcontractors.js"></script>
@@ -79,9 +80,8 @@
     </div>
 
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title"><span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span></h1>
-        <p class="greet-sub">Track subcontractors and linked project allocations.</p>
+      <div class="page-heading">
+        <h1>Subcontractors</h1>
       </div>
 
       <div class="hud">
@@ -92,7 +92,7 @@
             <input id="searchInput" type="search" placeholder="Search subcontractors, projects, clients…" />
           </div>
         </div>
-        <button class="icon-btn" id="notifyBtn" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false">
             <img class="avatar" src="./assets/img/user-icon.png" alt=""> Ahmad <span class="caret">▾</span>
@@ -154,7 +154,6 @@
 
       <div class="card">
         <div class="card-head">
-          <h4>Subcontractors</h4>
 
           <div class="filters sub-filters">
             <input id="subSearch" class="sub-search-input" type="search" placeholder="Search by name, project, client..." />
@@ -174,8 +173,8 @@
               </select>
             </div>
 
-            <button id="newSubcontractorBtn" class="btn2">+ New Subcontractor</button>
           </div>
+          <button id="newSubcontractorBtn" class="btn2">+ New Subcontractor</button>
         </div>
 
         <div class="table-scroll">

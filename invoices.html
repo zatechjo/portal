@@ -9,14 +9,15 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=18">
 
   <!-- App scripts (keep your order) -->
   <script type="module" src="./assets/js/firebase.js"></script>
   <script type="module" src="./assets/js/auth-guard.js"></script>
   <script type="module" src="./assets/js/idle.js"></script>
   <script defer src="./assets/js/app.js"></script>
-  <script defer src="./assets/js/topbar.js"></script>
+  <script defer src="./assets/js/topbar.js?v=6"></script>
+<script defer src="./assets/js/notifications.js"></script>
 
   <!-- keep these -->
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.5/dist/pizzip.min.js"></script>
@@ -89,9 +90,8 @@
     </div>
 
     <div class="topbar">
-      <div class="greeting">
-        <h1 class="greet-title"><span id="greetingWord">Good morning</span>, <span class="greet-name">Ahmad</span></h1>
-        <p class="greet-sub">Find all the ZAtech invoices in one place - oh you can filter them as well :D</p>
+      <div class="page-heading">
+        <h1>Invoices</h1>
       </div>
 
       <div class="hud">
@@ -100,7 +100,7 @@
           <button class="icon-btn" id="searchToggle" title="Search">🔎</button>
           <div class="search-anim" id="searchWrap" aria-hidden="true"><input id="searchInput" type="search" placeholder="Search clients, invoices, amounts…"/></div>
         </div>
-        <button class="icon-btn" id="notifyBtn" title="Notifications">🔔</button>
+        <button class="icon-btn" id="notifyBtn" title="Notifications"><img src="./assets/img/notification.png" alt="Notifications" class="nav-icon"></button>
         <div class="account">
           <button class="account-btn" id="accountBtn" aria-expanded="false"><img class="avatar" src="./assets/img/user-icon.png" alt=""> Ahmad <span class="caret">▾</span></button>
           <div class="account-menu" id="accountMenu" role="menu">
@@ -115,7 +115,6 @@
     <section id="invoices">
       <div class="card">
         <div class="card-head">
-          <h4>Invoices</h4>
           <div class="filters">
             <div class="select-wrap" style="margin-right:8px;">
               <select id="statusFilter" class="filter-select">
@@ -146,8 +145,8 @@
                 <option value="y2022">Year 2022</option>
               </select>
             </div>
-            <button id="newInvoiceBtn" class="btn2">New Invoice +</button>
           </div>
+          <button id="newInvoiceBtn" class="btn2 btn-important"><span>New Invoice +</span></button>
         </div>
 
         <table id="invoiceTable">

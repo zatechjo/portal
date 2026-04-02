@@ -11,7 +11,7 @@
 
   // ===== Helpers =====
   const $ = (s) => document.querySelector(s);
-  const fmt$ = (n) => "$" + Number(n || 0).toLocaleString();
+  const fmt$ = (n) => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ("$" + Number(n || 0).toLocaleString());
   const parseISO = (s) => s ? new Date(s + "T00:00:00") : new Date("1970-01-01");
   const titleCase = (s) => String(s || "").replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -936,5 +936,6 @@ tbody.innerHTML =
 
     // 11) First paint
     render();
+
   }
 })();
