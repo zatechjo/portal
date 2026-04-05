@@ -90,25 +90,6 @@ function openSelectDropdown(sel){
   sel.click();
 }
 
-function buildStatusSelectExp(current){
-  const wrap = document.createElement('div');
-  wrap.className = 'select-wrap inline';
-  const sel = document.createElement('select');
-  sel.className = 'filter-select status-select';
-  sel.innerHTML = `
-    <option value="Paid">Paid</option>
-    <option value="Unpaid">Unpaid</option>
-    <option value="Partial Payment">Partial Payment</option>
-    <option value="Upcoming">Upcoming</option>
-    <option value="Null">Null</option>
-  `;
-  // normalize selection
-  const cur = (current || '').trim();
-  const allowed = ['Paid','Unpaid','Partial Payment','Upcoming','Null'];
-  sel.value = allowed.includes(cur) ? cur : 'Unpaid';
-  wrap.appendChild(sel);
-  return { wrap, sel };
-}
 
 
 
@@ -366,7 +347,6 @@ tbody.innerHTML =
           <td>${fmt$(r.amount)}</td>
           <td>${r.frequency||"—"}</td>
           <td><span class="tag ${statusClassForExp(r.status)} status-pill" data-id="${r.id}">${r.status || '—'}</span></td>
-          <td class="row-actions"><button class="mini view-expense" data-id="${r.id}">View</button></td>
 
           <!-- Note toggle cell -->
           <td class="note-toggle-cell" style="text-align:center;">
@@ -376,7 +356,7 @@ tbody.innerHTML =
 
         <!-- Expand row -->
         <tr class="exp-details" data-id="${r.id}" style="display:none;">
-          <td colspan="9" class="details-cell">
+          <td colspan="8" class="details-cell">
             <div class="invoice-note-block">
               <!-- Header: Title + action -->
               <!-- Header: NOTE TEXT (default) + action; title only used in edit mode -->
@@ -414,7 +394,7 @@ tbody.innerHTML =
         </tr>
       `;
     })
-    .join("") || `<tr><td colspan="9">No expenses for this filter.</td></tr>`;
+    .join("") || `<tr><td colspan="8">No expenses for this filter.</td></tr>`;
   }
 
   // ===== Modal logic (view/edit/create) =====
@@ -792,65 +772,34 @@ tbody.innerHTML =
     });
 
     // 5) Inline status change (optimistic; persists to Supabase)
-    // Click pill -> turn into dropdown; change -> save; escape/outside -> restore
     document.addEventListener('click', (e) => {
       const pill = e.target.closest('.status-pill');
       if (!pill) return;
 
-      const id      = pill.dataset.id;
-      const initial = pill.textContent.trim();
-      const { wrap, sel } = buildStatusSelectExp(initial);
-      pill.replaceWith(wrap);
-
-      const restore = (value) => {
-        const span = document.createElement('span');
-        span.className = `tag ${statusClassForExp(value)} status-pill`;
-        span.dataset.id = id;
-        span.textContent = value;
-        wrap.replaceWith(span);
-        cleanup();
-      };
-
-      const onChange = async () => {
-        const next = sel.value;
-        if (next === initial) { restore(initial); return; }
+      const id = pill.dataset.id;
+      showPillDropdown(pill, [
+        { value: 'Paid' },
+        { value: 'Unpaid' },
+        { value: 'Partial Payment' },
+        { value: 'Upcoming' },
+        { value: 'Null' },
+      ], async (next) => {
         try {
-          await updateStatusInDB(id, next);          // you already have this function
-          restore(next);
+          await updateStatusInDB(id, next);
+          pill.className = `tag ${statusClassForExp(next)} status-pill`;
+          pill.textContent = next;
         } catch (err) {
           alert(err.message || 'Failed to update status.');
-          restore(initial);
         }
-      };
-
-      const onKey = (ev) => {
-        if (ev.key === 'Escape') restore(initial);
-      };
-
-      const onDocDown = (ev) => {
-        if (!wrap.contains(ev.target)) restore(initial);
-      };
-
-      const cleanup = () => {
-        sel.removeEventListener('change', onChange);
-        sel.removeEventListener('keydown', onKey);
-        document.removeEventListener('pointerdown', onDocDown, true);
-      };
-
-      sel.addEventListener('change', onChange);
-      sel.addEventListener('keydown', onKey);
-      document.addEventListener('pointerdown', onDocDown, true);
-
-      openSelectDropdown(sel);
+      });
     });
 
 
     // 6) Row → open modal (view)
     $("#expensesBody")?.addEventListener("click", (e) => {
       if (e.target.closest(".exp-mini-btn, .status-pill, .status-select")) return;
-      const btn = e.target.closest("button.view-expense");
-      const tr  = btn ? null : e.target.closest("tr[data-id]:not(.exp-details)");
-      const id  = btn ? btn.getAttribute("data-id") : tr?.getAttribute("data-id");
+      const tr  = e.target.closest("tr[data-id]:not(.exp-details)");
+      const id  = tr?.getAttribute("data-id");
       if (!id) return;
       const exp = items.find((x) => x.id === id);
       if (!exp) return;

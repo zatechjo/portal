@@ -389,13 +389,13 @@ import { sb } from './supabase.js';
   }
 
   function projectProfit(project) {
-    return projectRevenue(project) - projectCost(project);
+    return safeNum(project.contract_value) - projectCost(project);
   }
 
   function projectMargin(project) {
-    const revenue = projectRevenue(project);
+    const contractValue = safeNum(project.contract_value);
     const profit = projectProfit(project);
-    return revenue > 0 ? (profit / revenue) * 100 : 0;
+    return contractValue > 0 ? (profit / contractValue) * 100 : 0;
   }
 
   function projectOpen(project) {
@@ -481,7 +481,7 @@ import { sb } from './supabase.js';
       sumExpenseLines(expenseLines, 'Subcontractor Costs');
 
     const derivedTotalCost = derivedExpenseCost + derivedSubcontractorCost;
-    const derivedTotalProfit = derivedRevenue - derivedTotalCost;
+    const derivedTotalProfit = contractValue - derivedTotalCost;
 
     const costBreakdown = [
       { label: 'Expenses', amount: derivedExpenseCost },
@@ -577,9 +577,9 @@ import { sb } from './supabase.js';
     const rows = (projectsRes.data || []).map((row) => {
       const realExpenseCost = expenseTotals.get(String(row.id)) ?? safeNum(row.expense_cost);
       const subcontractorCost = safeNum(row.subcontractor_cost);
-      const totalRevenue = safeNum(row.total_revenue) || safeNum(row.contract_value);
+      const contractValue = safeNum(row.contract_value);
       const totalCost = realExpenseCost + subcontractorCost;
-      const totalProfit = totalRevenue - totalCost;
+      const totalProfit = contractValue - totalCost;
 
       return {
         ...row,
@@ -751,9 +751,8 @@ import { sb } from './supabase.js';
           <td>${fmtDate(project.end_date)}</td>
           <td>
             <div class="row-actions">
-              <button class="mini project-view-btn" data-id="${project.id}">View</button>
               <button class="proj-edit-icon-btn project-edit-btn" data-id="${project.id}" title="Edit project" aria-label="Edit project">
-                <img src="./assets/img/edit.png" alt="Edit" />
+                <img src="./assets/img/edit.svg" alt="Edit" />
               </button>
             </div>
           </td>
@@ -2374,6 +2373,8 @@ import { sb } from './supabase.js';
 
   function fillModalView(project) {
     if (!project) return;
+    const revenue = projectRevenue(project);
+    const cost = projectCost(project);
     const profit = projectProfit(project);
     const margin = projectMargin(project);
 
@@ -2394,11 +2395,11 @@ import { sb } from './supabase.js';
     els.pmTotalProfit.className = `data-item-value ${moneyClass(profit)}`;
     els.pmProfitMargin.className = `data-item-value ${marginClass(margin)}`;
 
-    els.pmTotalRevenue.textContent = fmtMoney(safeNum(project.contract_value || 0));
-    els.pmTotalCost.textContent = fmtMoney(0);
-    els.pmTotalProfit.textContent = fmtMoney(safeNum(project.contract_value || 0));
-    els.pmProfitMargin.textContent = fmtPct(safeNum(project.contract_value || 0) > 0 ? 100 : 0);
-    els.pmProfitMargin.className = `data-item-value ${marginClass(safeNum(project.contract_value || 0) > 0 ? 100 : 0)}`;
+    els.pmTotalRevenue.textContent = fmtMoney(revenue);
+    els.pmTotalCost.textContent = fmtMoney(cost);
+    els.pmTotalProfit.textContent = fmtMoney(profit);
+    els.pmProfitMargin.textContent = fmtPct(margin);
+    els.pmProfitMargin.className = `data-item-value ${marginClass(margin)}`;
 
     renderDataList(els.pmCostBreakdown, [
       { label: 'Expenses', amount: 0, sub: 'Linked project expenses' },
@@ -2484,10 +2485,10 @@ import { sb } from './supabase.js';
     const totalRevenue = getProjectRevenueValue(project, invoiceRows);
     const expenseCost = getProjectExpenseValue(expenseRows);
     const subcontractorCost = getProjectSubcontractorValue(project);
-
+    const contractValue = safeNum(project.contract_value);
     const totalCost = expenseCost + subcontractorCost;
-    const totalProfit = totalRevenue - totalCost;
-    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+    const totalProfit = contractValue - totalCost;
+    const profitMargin = contractValue > 0 ? (totalProfit / contractValue) * 100 : 0;
 
     els.pmTotalRevenue.textContent = fmtMoney(totalRevenue);
     els.pmTotalCost.textContent = fmtMoney(totalCost);
@@ -3178,9 +3179,6 @@ import { sb } from './supabase.js';
     });
 
     els.tbody?.addEventListener('click', (e) => {
-      const viewBtn = e.target.closest('.project-view-btn');
-      if (viewBtn) return openModalView(viewBtn.dataset.id);
-
       const editBtn = e.target.closest('.project-edit-btn');
       if (editBtn) return openModalEdit(editBtn.dataset.id);
 

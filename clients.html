@@ -35,33 +35,33 @@
         <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
         <span class="txt">Dashboard</span>
       </a>
-      <a href="/clients">
+      <a href="/clients" class="active">
         <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
         <span class="txt">Clients</span>
-      </a>
-      <a href="/invoices">
-        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-        <span class="txt">Invoices</span>
-      </a>
-      <a href="/projects" class="active">
-        <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
-        <span class="txt">Projects</span>
-      </a>
-      <a href="/revenue">
-        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-        <span class="txt">Revenue</span>
       </a>
       <a href="/dues">
         <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
         <span class="txt">Dues</span>
       </a>
+      <a href="/projects">
+        <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
+        <span class="txt">Projects</span>
+      </a>
+      <a href="/invoices">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
+      </a>
       <a href="/expenses">
         <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
         <span class="txt">Expenses</span>
       </a>
-      <a href="/subcontractors" class="active">
+      <a href="/subcontractors">
         <img src="./assets/img/sub.png" alt="Subcontractors" class="nav-icon">
         <span class="txt">Subcontractors</span>
+      </a>
+      <a href="/revenue">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
       </a>
       <a href="/opps">
         <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
@@ -133,7 +133,6 @@
                 <th>Joined</th>
                 <th>Address</th>
                 <th>Invoices</th>
-                <th></th>
               </tr>
             </thead>
             <tbody id="clients-tbody"></tbody>
@@ -152,7 +151,10 @@
     <div class="client-modal-topbar">
       <h3 id="client-name">
         <span id="client-name-text"></span>
-        <input id="client-name-input" class="edit-field" type="text" placeholder="Client Name" style="max-width:340px;">
+        <div class="client-name-edit-wrap">
+          <label class="label" for="client-name-input">Client Name</label>
+          <input id="client-name-input" class="edit-field" type="text" placeholder="Client Name" style="max-width:340px;">
+        </div>
       </h3>
       <div class="client-modal-topbar-right">
         <button class="btn2" id="editClientBtn">Edit</button>
@@ -169,7 +171,7 @@
 
     <!-- ── VIEW / EDIT fields ── -->
     <div class="client-details">
-      <div class="info-box">
+      <div class="info-box client-id-field">
         <span class="label">Client ID</span>
         <span id="client-no" class="value-clip"></span>
         <input id="client-no-input" class="edit-field" type="text" />
@@ -194,9 +196,11 @@
         <span id="client-joined"></span>
         <input id="client-joined-input" class="edit-field" type="date" />
       </div>
-      <div class="info-box">
+      <div class="info-box status-box">
         <span class="label">Status</span>
-        <span id="client-status"></span>
+        <div class="client-status-stack">
+          <span id="client-status"></span>
+        </div>
         <div class="select-wrap edit-field-wrap">
           <select id="client-status-input" class="edit-field" style="display:block;">
             <option>Active</option>

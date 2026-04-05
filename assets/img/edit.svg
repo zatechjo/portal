@@ -1,0 +1,20 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="editFlow" x1="3" y1="12" x2="21" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0891B2"/>
+      <stop offset="0.3" stop-color="#4F46E5"/>
+      <stop offset="0.62" stop-color="#0369A1"/>
+      <stop offset="0.82" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#0891B2"/>
+      <animateTransform
+        attributeName="gradientTransform"
+        type="translate"
+        values="-6 0; 6 0; -6 0"
+        dur="3.6s"
+        repeatCount="indefinite"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M4 20L8.45 18.92L17.8 9.58C18.31 9.06 18.31 8.22 17.8 7.71L16.29 6.2C15.78 5.69 14.94 5.69 14.42 6.2L5.08 15.55L4 20Z"
+    fill="url(#editFlow)"/>
+</svg>

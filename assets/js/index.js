@@ -100,9 +100,13 @@
       .from('invoices')
       .select(`id, invoice_no, issue_date, subtotal, status, pdf_url, clients!invoices_client_id_fkey ( name )`)
       .order('issue_date', { ascending: false })
-      .limit(6);
+      .limit(12);
 
-    if (error || !data || !data.length) {
+    const visibleInvoices = (data || [])
+      .filter(inv => (inv.status || '').toLowerCase() !== 'cancelled')
+      .slice(0, 6);
+
+    if (error || !visibleInvoices.length) {
       list.innerHTML = `<div style="padding:20px;text-align:center;color:rgba(200,217,238,.3);font-size:13px;">No invoices yet.</div>`;
       return;
     }
@@ -120,7 +124,7 @@
       return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
     };
 
-    list.innerHTML = data.map(inv => {
+    list.innerHTML = visibleInvoices.map(inv => {
       // If PDF exists, open it directly; otherwise fall back to invoices page
       const href = inv.pdf_url ? inv.pdf_url : './invoices.html';
       const target = inv.pdf_url ? ' target="_blank" rel="noopener"' : '';
@@ -557,7 +561,7 @@
       .order('updated_at', { ascending: false });
 
     if (error || !data?.length) {
-      tbody.innerHTML = `<tr class="table-empty-row"><td colspan="10">${error ? 'Could not load projects.' : 'No projects yet.'}</td></tr>`;
+      tbody.innerHTML = `<tr class="table-empty-row"><td colspan="9">${error ? 'Could not load projects.' : 'No projects yet.'}</td></tr>`;
       return;
     }
 
@@ -576,11 +580,9 @@
         <td>${fmt(p.total_cost)}</td>
         <td>${fmtDate(p.start_date)}</td>
         <td>${fmtDate(p.end_date)}</td>
-        <td><a href="./projects.html?open=${encodeURIComponent(p.id)}" class="dash-proj-view">View</a></td>
       </tr>`).join('');
 
     tbody.addEventListener('click', (e) => {
-      if (e.target.closest('a, button')) return;
       const tr = e.target.closest('tr[data-id]');
       if (tr) window.location.href = `./projects.html?open=${tr.dataset.id}`;
     });

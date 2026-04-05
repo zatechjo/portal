@@ -36,21 +36,17 @@
         <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
         <span class="txt">Clients</span>
       </a>
-      <a href="/invoices">
-        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-        <span class="txt">Invoices</span>
-      </a>
-      <a href="/projects" class="active">
-        <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
-        <span class="txt">Projects</span>
-      </a>
-      <a href="/revenue">
-        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-        <span class="txt">Revenue</span>
-      </a>
       <a href="/dues">
         <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
         <span class="txt">Dues</span>
+      </a>
+      <a href="/projects">
+        <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
+        <span class="txt">Projects</span>
+      </a>
+      <a href="/invoices">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
       </a>
       <a href="/expenses">
         <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
@@ -59,6 +55,10 @@
       <a href="/subcontractors" class="active">
         <img src="./assets/img/sub.png" alt="Subcontractors" class="nav-icon">
         <span class="txt">Subcontractors</span>
+      </a>
+      <a href="/revenue">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
       </a>
       <a href="/opps">
         <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
@@ -188,7 +188,6 @@
                 <th data-sort="paid">Paid</th>
                 <th data-sort="remaining">Remaining</th>
                 <th data-sort="status">Status</th>
-                <th></th>
               </tr>
             </thead>
             <tbody id="subcontractorsBody">
@@ -204,16 +203,16 @@
 <!-- SUBCONTRACTOR MODAL -->
 <div id="subcontractorModal" class="modal" aria-hidden="true">
   <div class="modal-content sub-modal-content">
-    <button class="close" id="subModalCloseBtn" aria-label="Close">×</button>
-
     <div class="sub-modal-title-row">
       <h3 id="subModalTitle">Subcontractor</h3>
       <div class="sub-modal-actions-top">
         <button id="subEditBtn" class="btn2">Edit</button>
+        <span class="modal-head-divider"></span>
       </div>
+      <button class="close" id="subModalCloseBtn" aria-label="Close">×</button>
     </div>
 
-    <p id="subModalSubtitle" class="muted">View and manage subcontractor details.</p>
+    <p id="subModalSubtitle" class="muted"></p>
 
     <!-- VIEW MODE -->
     <div id="subViewMode" class="sub-mode">

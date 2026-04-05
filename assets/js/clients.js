@@ -89,9 +89,6 @@ function renderTable() {
         <td>${c.joined || '—'}</td>
         <td>${escapeHTML(c.address || '—')}</td>
         <td>${invCount}</td>
-        <td class="row-actions">
-          <button class="mini more-info" data-id="${c.id}">More Info <span class="row-arrow">></span></button>
-        </td>
       </tr>
     `;
   }).join('');
@@ -132,6 +129,20 @@ function formatMoney(n) {
 function formatDate(d) {
   if (!d) return '—';
   try { return new Date(d).toLocaleDateString(); } catch { return d; }
+}
+
+function clientStatusMeta(statusRaw) {
+  const raw = String(statusRaw || 'Active').trim();
+  const s = raw.toLowerCase();
+  if (s === 'active') return { cls: 'ok', label: 'Active' };
+  if (s === 'paused') return { cls: 'warn', label: 'Paused' };
+  if (s === 'archived') return { cls: 'null', label: 'Archived' };
+  return { cls: 'null', label: raw || '—' };
+}
+
+function clientStatusPillHTML(statusRaw) {
+  const { cls, label } = clientStatusMeta(statusRaw);
+  return `<button type="button" class="tag status-pill client-status-pill ${cls}" aria-label="Client status: ${escapeHTML(label)}">${escapeHTML(label)}</button>`;
 }
 
 // Match the Dues pill look (class names mirror our badge style)
@@ -207,11 +218,11 @@ const cancelBtn = $('#cancelEditBtn');
 const err       = $('#clientEditError');
 const actionsBar= $('#client-edit-actions');
 const newBtn    = $('#newClientBtn');
+const statusBox = $('.status-box', modal);
 
 // ---------- Open rows / modal ----------
 tbody?.addEventListener('click', (e) => {
-  const id = e.target.closest('button.more-info')?.dataset.id
-    ?? e.target.closest('tr[data-id]')?.dataset.id;
+  const id = e.target.closest('tr[data-id]')?.dataset.id;
   if (!id) return;
   current = rows.find(r => r.id === id);
   if (current) openView(current);
@@ -221,6 +232,11 @@ const noInvoicesEl = document.getElementById('client-no-invoices');
 const invSection   = document.getElementById('client-invoices-section');
 const statRevenue  = document.getElementById('statRevenue');
 const statCosts    = document.getElementById('statCosts');
+
+function closeViewStatusPicker() {
+  statusBox?.classList.remove('status-open');
+  document.querySelectorAll('.pill-dropdown').forEach(d => d.remove());
+}
 
 async function loadClientStats(clientName, invoices) {
   // Revenue = sum of paid invoice subtotals (already fetched)
@@ -287,6 +303,7 @@ async function loadClientInvoices(clientId, clientName) {
 }
 
 function openView(c) {
+  closeViewStatusPicker();
   modal.classList.remove('editing'); err.textContent = '';
   disp.nameText.textContent = c.name || '—';
   disp.clientNo.textContent = c.client_no || '—';
@@ -294,7 +311,7 @@ function openView(c) {
   disp.email.textContent    = c.email || '—';
   disp.phone.textContent    = c.phone || '—';
   disp.joined.textContent   = c.joined || '—';
-  disp.status.textContent   = c.status || '—';
+  disp.status.innerHTML     = clientStatusPillHTML(c.status);
   disp.address.textContent  = c.address || '—';
   disp.sector.textContent   = c.sector || '—';
   disp.notes.textContent    = c.notes || '—';
@@ -307,7 +324,9 @@ function openView(c) {
 }
 
 function openEdit(c) {
+  closeViewStatusPicker();
   modal.classList.add('editing'); err.textContent = '';
+  disp.nameText.textContent = c.name ? `Editing ${c.name} info` : 'Editing client info';
   nameInput.value       = c.name || '';
   inputs.client_no.value= c.client_no || '';
   inputs.contact.value  = c.contact_name || '';
@@ -333,6 +352,7 @@ function openEdit(c) {
 
 function openCreate() {
   current = null;
+  closeViewStatusPicker();
   modal.classList.add('editing', 'creating'); err.textContent = '';
   Object.values(ncInputs).forEach(i => { if (i) i.value = ''; });
   if (ncInputs.status) ncInputs.status.value = 'Active';
@@ -344,6 +364,7 @@ function openCreate() {
 }
 
 function closeModal() {
+  closeViewStatusPicker();
   modal.classList.remove('show', 'editing', 'creating');
   err.textContent = '';
 }
@@ -354,8 +375,45 @@ newBtn?.addEventListener('click', openCreate);
 cancelBtn?.addEventListener('click', () => current ? openView(current) : closeModal());
 closeX?.addEventListener('click', closeModal);
 $('#createCloseBtn', modal)?.addEventListener('click', closeModal);
-modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+modal.addEventListener('click', e => {
+  if (e.target === modal) {
+    closeModal();
+    return;
+  }
+  if (!e.target.closest('.status-box')) closeViewStatusPicker();
+});
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+disp.status?.addEventListener('click', (e) => {
+  const pill = e.target.closest('.client-status-pill');
+  if (!pill || modal.classList.contains('editing') || !current) return;
+  e.preventDefault();
+  e.stopPropagation();
+  statusBox?.classList.add('status-open');
+  globalThis.showPillDropdown?.(pill, [
+    { value: 'Active' },
+    { value: 'Paused' },
+    { value: 'Archived' },
+  ], async (nextStatus) => {
+    if (!current || (current.status || 'Active') === nextStatus) {
+      closeViewStatusPicker();
+      return;
+    }
+    err.textContent = '';
+    try {
+      const { error } = await sb.from('clients').update({ status: nextStatus }).eq('id', current.id);
+      if (error) throw error;
+      await fetchClients();
+      current = rows.find(r => r.id === current.id) || current;
+      if (current) openView(current);
+    } catch (e2) {
+      console.error('[clients] status update error:', e2);
+      err.textContent = e2?.message || 'Failed to update client status.';
+    } finally {
+      closeViewStatusPicker();
+    }
+  });
+});
 
 // ---------- Save (create or update) ----------
 saveBtn?.addEventListener('click', async () => {

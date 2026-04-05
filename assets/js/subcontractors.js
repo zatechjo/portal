@@ -312,7 +312,7 @@
     if (!els.body) return;
 
     if (!rows.length) {
-      els.body.innerHTML = `<tr><td colspan="8" class="table-empty">No subcontractors found.</td></tr>`;
+      els.body.innerHTML = `<tr><td colspan="7" class="table-empty">No subcontractors found.</td></tr>`;
       return;
     }
 
@@ -336,9 +336,6 @@
         <td>${fmt$(r.paid_value)}</td>
         <td>${fmt$(r.remaining_value)}</td>
         <td>${statusTag(r.status)}</td>
-        <td class="row-actions">
-          <button class="mini sub-view-btn" data-id="${esc(r.id)}">View</button>
-        </td>
       </tr>
     `).join("");
   }
@@ -347,9 +344,12 @@
     state.modalMode = mode;
 
     const isEdit = mode === "edit" || mode === "create";
+    els.modal.classList.toggle("editing", isEdit);
+    els.modal.classList.toggle("creating", mode === "create");
     els.viewMode.style.display = isEdit ? "none" : "";
     els.editMode.style.display = isEdit ? "" : "none";
-    els.editBtn.style.display = mode === "view" ? "inline-flex" : "none";
+    const _actionsTop = els.editBtn?.closest('.sub-modal-actions-top');
+    if (_actionsTop) _actionsTop.style.display = mode === "view" ? "" : "none";
     els.cancelBtn.style.display = isEdit ? "inline-flex" : "none";
     els.saveBtn.style.display = isEdit ? "inline-flex" : "none";
 
@@ -362,7 +362,7 @@
   }
 
   function closeModal() {
-    els.modal.classList.remove("show");
+    els.modal.classList.remove("show", "editing", "creating");
     els.modal.setAttribute("aria-hidden", "true");
     state.currentId = null;
   }
@@ -374,7 +374,7 @@
     }
 
     els.assignedProjectsBody.innerHTML = assignments.map(a => `
-      <tr>
+      <tr class="sub-proj-row" data-project-id="${esc(a.project_id || "")}" style="cursor:pointer;">
         <td>${esc(a.project_code || "—")}</td>
         <td>${esc(a.project_name || "—")}</td>
         <td>${esc(a.client_name || "—")}</td>
@@ -422,7 +422,7 @@
 
     state.currentId = sub.id;
     els.modalTitle.textContent = sub.name || "Subcontractor";
-    els.modalSubtitle.textContent = "View subcontractor details and assigned project financial summary.";
+    els.modalSubtitle.textContent = "";
     fillView(sub);
     fillEdit(sub);
     setMode("view");
@@ -443,7 +443,7 @@
     if (!sub) return;
 
     els.modalTitle.textContent = `Edit — ${sub.name}`;
-    els.modalSubtitle.textContent = "Update subcontractor info.";
+    els.modalSubtitle.textContent = "";
     fillEdit(sub);
     setMode("edit");
   }
@@ -551,15 +551,23 @@
     });
 
     els.body?.addEventListener("click", (e) => {
-      if (e.target.closest("button:not(.sub-view-btn), a, select, input")) return;
-      const btn = e.target.closest(".sub-view-btn");
-      const id  = btn ? btn.dataset.id : e.target.closest("tr[data-id]")?.dataset.id;
+      if (e.target.closest("button, a, select, input")) return;
+      const id  = e.target.closest("tr[data-id]")?.dataset.id;
       if (!id) return;
       openView(id);
     });
 
     els.modal?.addEventListener("click", (e) => {
       if (e.target === els.modal) closeModal();
+    });
+
+    // Click assigned-project row → open that project on the projects page
+    els.assignedProjectsBody?.addEventListener("click", (e) => {
+      const row = e.target.closest(".sub-proj-row");
+      if (!row) return;
+      const projectId = row.dataset.projectId;
+      if (!projectId) return;
+      window.location.href = `/projects?open=${encodeURIComponent(projectId)}`;
     });
 
     window.addEventListener("keydown", (e) => {

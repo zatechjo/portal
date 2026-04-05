@@ -29,17 +29,7 @@
 }
 
 
-  const statusSelect = (value, id) => {
-    return `
-      <div class="select-wrap inline" data-id="${id}">
-        <select class="filter-select status-select" data-id="${id}">
-          ${STATUS_OPTIONS.map(
-            (o) => `<option value="${o}" ${o === value ? "selected" : ""}>${o}</option>`
-          ).join("")}
-        </select>
-      </div>
-    `;
-  };
+
 
 
   // ===== DOM =====
@@ -201,11 +191,10 @@
         <td>${fmt$(r.value)}</td>
         <td>${r.last_contact || "—"}</td>
         <td class="row-actions">
-          <button class="btn2 mini view-opp" data-id="${r.id}">View</button>
           <button 
-            class="mini delete-opp" 
+            class="pm-icon-btn pm-del-btn delete-opp" 
             data-id="${r.id}" 
-            style="background:#9C0000;color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer;"
+            title="Delete opportunity" aria-label="Delete opportunity"
           >
             🗑️
           </button>
@@ -330,9 +319,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     loadOpps();
 
-    // Inline status change
-    // Click pill -> turn into select (like invoices)
-    // Inline status editor (match invoices UX)
+    // Inline status change — portal-themed pill dropdown
     tbody.addEventListener("click", (evt) => {
       const pill = evt.target.closest(".status-pill");
       if (!pill) return;
@@ -341,79 +328,13 @@
       const rec = rows.find(r => String(r.id) === String(id));
       if (!rec) return;
 
-      const initial = rec.status || "Proposed";
-
-      // Build invoices-style dropdown
-      const tmp = document.createElement("div");
-      tmp.innerHTML = statusSelect(initial, id).trim();
-      const wrap = tmp.firstElementChild;                   // <div.select-wrap.inline>
-      const sel  = wrap.querySelector(".status-select");    // <select.filter-select.status-select>
-
-      // Swap pill → select
-      pill.replaceWith(wrap);
-
-      const restore = (value) => {
-        const span = document.createElement("span");
-        span.className   = `tag ${statusClass(value)} status-pill`;
-        span.dataset.id  = id;
-        span.textContent = value;
-        wrap.replaceWith(span);
-        cleanup();
-      };
-
-      const onChange = async () => {
-        const next = sel.value;
-        if (next === initial) {            // SAME value → just restore pill
-          restore(initial);
-          return;
-        }
-        await updateStatus(id, next, sel); // persists to DB
-        restore(next);                     // show updated pill
-      };
-
-      const onKey = (ev) => {
-        if (ev.key === "Escape") restore(initial);
-      };
-
-      const onDocDown = (ev) => {
-        if (!wrap.contains(ev.target)) restore(initial);
-      };
-
-      const cleanup = () => {
-        sel.removeEventListener("change", onChange);
-        sel.removeEventListener("keydown", onKey);
-        document.removeEventListener("pointerdown", onDocDown, true);
-      };
-
-      sel.addEventListener("change", onChange);
-      sel.addEventListener("keydown", onKey);
-      document.addEventListener("pointerdown", onDocDown, true);
-
-      // open native dropdown immediately (same as invoices)
-      openSelectDropdown(sel);
-    });
-
-
-    // When select changes, persist then restore pill
-    tbody.addEventListener("change", async (evt) => {
-      const el = evt.target.closest(".status-select");
-      if (!el) return;
-
-      const id  = el.getAttribute("data-id");
-      const val = el.value;
-      const rec = rows.find(r => String(r.id) === String(id));
-      if (!rec) return;
-
-      // Persist using your existing function
-      await updateStatus(id, val, el);
-
-      // Restore pill UI (match invoices design)
-      const span = document.createElement("span");
-      span.className = `tag ${statusClass(val)} status-pill`;
-      span.dataset.id = id;
-      span.textContent = val;
-
-      el.replaceWith(span);
+      showPillDropdown(pill, STATUS_OPTIONS.map(v => ({ value: v })), async (next) => {
+        const { error } = await sb.from("opportunities").update({ status: next }).eq("id", id);
+        if (error) { alert(error.message || 'Could not update status.'); return; }
+        rec.status = next;
+        pill.className   = `tag ${statusClass(next)} status-pill`;
+        pill.textContent = next;
+      });
     });
 
 
@@ -421,9 +342,8 @@
     // View only
     tbody.addEventListener("click", (evt) => {
       if (evt.target.closest(".delete-opp, .status-pill, select, input")) return;
-      const btn = evt.target.closest("button.view-opp");
-      const tr  = btn ? null : evt.target.closest("tr[data-id]");
-      const id  = btn ? btn.getAttribute("data-id") : tr?.getAttribute("data-id");
+      const tr  = evt.target.closest("tr[data-id]");
+      const id  = tr?.getAttribute("data-id");
       if (!id) return;
       const rec = rows.find(r => String(r.id) === String(id));
       if (!rec) return;

@@ -837,89 +837,24 @@ async function saveInvoice(){
 }
 
 
-// ---- Inline status editor (click pill -> dropdown) ----
-function buildStatusSelect(current){
-  const wrap = document.createElement('div');
-  wrap.className = 'select-wrap inline';
-  const sel = document.createElement('select');
-  sel.className = 'filter-select status-select';
-  sel.innerHTML = `
-    <option value="Paid">Paid</option>
-    <option value="Not Paid">Not Paid</option>
-    <option value="Cancelled">Cancelled</option>
-    <option value="Partial Payment">Partial Payment</option>
-  `;
-  sel.value = ['Paid','Not Paid','Cancelled'].includes(current) ? current : 'Not Paid';
-  wrap.appendChild(sel);
-  return { wrap, sel };
-}
-
-async function applyStatusUpdate(el, id, desired){
-  const res = await persistStatusToDb(id, desired);
-  if (!res.ok){ alert(res.error?.message || 'Could not update status.'); return; }
-
-  // rebuild the pill span with correct id + new style
-  const span = document.createElement('span');
-  span.className = `tag ${statusClassFor(res.value)} status-pill`;
-  span.dataset.id = id;
-  span.textContent = res.value;
-
-  el.replaceWith(span);
-}
-
+// ---- Inline status editor (click pill -> portal dropdown) ----
 document.addEventListener('click', (e) => {
   const pill = e.target.closest('.status-pill');
   if (!pill) return;
 
-  const id       = pill.dataset.id;                 // keep the real id
-  const initial  = pill.textContent.trim();
-  const { wrap, sel } = buildStatusSelect(initial);
-  pill.replaceWith(wrap);
-
-  const restore = (value) => {
-    const span = document.createElement('span');
-    span.className = `tag ${statusClassFor(value)} status-pill`;
-    span.dataset.id = id;
-    span.textContent = value;
-    wrap.replaceWith(span);
-    cleanup();
-  };
-
-  const onChange = async () => {
-    const next = sel.value;
-    if (next === initial) {            // no change -> just restore pill
-      restore(initial);
-      return;
-    }
+  const id = pill.dataset.id;
+  showPillDropdown(pill, [
+    { value: 'Paid' },
+    { value: 'Not Paid' },
+    { value: 'Partial Payment' },
+    { value: 'Cancelled' },
+  ], async (next) => {
     const res = await persistStatusToDb(id, next);
-    if (!res.ok) {
-      alert(res.error?.message || 'Could not update status.');
-      restore(initial);
-      return;
-    }
-    restore(res.value);                // success -> show updated pill
-  };
-
-  const onKey = (ev) => {
-    if (ev.key === 'Escape') restore(initial);
-  };
-
-  const onDocDown = (ev) => {
-    if (!wrap.contains(ev.target)) restore(initial);
-  };
-
-  const cleanup = () => {
-    sel.removeEventListener('change', onChange);
-    sel.removeEventListener('keydown', onKey);
-    document.removeEventListener('pointerdown', onDocDown, true);
-  };
-
-  sel.addEventListener('change', onChange);
-  sel.addEventListener('keydown', onKey);
-  document.addEventListener('pointerdown', onDocDown, true); // capture outside clicks
-
-  // open the native dropdown for quick editing
-  openSelectDropdown(sel);
+    if (!res.ok) { alert(res.error?.message || 'Could not update status.'); return; }
+    pill.className = `tag ${statusClassFor(res.value)} status-pill`;
+    pill.textContent = res.value;
+    pill.dataset.id = id;
+  });
 });
 
 

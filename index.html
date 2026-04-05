@@ -28,7 +28,7 @@
       <img src="./assets/img/zatech-logo.png" alt="ZAtech Logo" class="brand-logo" />
     </div>
     <nav class="nav" id="nav">
-      <a href="/">
+      <a href="/" class="active">
         <img src="./assets/img/dashboard.png" alt="Dashboard" class="nav-icon">
         <span class="txt">Dashboard</span>
       </a>
@@ -36,21 +36,17 @@
         <img src="./assets/img/multiple-users-silhouette.png" alt="Clients" class="nav-icon">
         <span class="txt">Clients</span>
       </a>
-      <a href="/invoices">
-        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
-        <span class="txt">Invoices</span>
+      <a href="/dues">
+        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
+        <span class="txt">Dues</span>
       </a>
       <a href="/projects">
         <img src="./assets/img/projects.png" alt="Projects" class="nav-icon">
         <span class="txt">Projects</span>
       </a>
-      <a href="/revenue">
-        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
-        <span class="txt">Revenue</span>
-      </a>
-      <a href="/dues">
-        <img src="./assets/img/deadline.png" alt="Dues" class="nav-icon">
-        <span class="txt">Dues</span>
+      <a href="/invoices">
+        <img src="./assets/img/file.png" alt="Invoices" class="nav-icon">
+        <span class="txt">Invoices</span>
       </a>
       <a href="/expenses">
         <img src="./assets/img/credit-card.png" alt="Expenses" class="nav-icon">
@@ -59,6 +55,10 @@
       <a href="/subcontractors">
         <img src="./assets/img/sub.png" alt="Subcontractors" class="nav-icon">
         <span class="txt">Subcontractors</span>
+      </a>
+      <a href="/revenue">
+        <img src="./assets/img/increase.png" alt="Revenue" class="nav-icon">
+        <span class="txt">Revenue</span>
       </a>
       <a href="/opps">
         <img src="./assets/img/rocket.png" alt="Opportunities" class="nav-icon">
@@ -319,11 +319,10 @@
                 <th>Total Cost</th>
                 <th>Start Date</th>
                 <th>End Date</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="dashProjBody">
-              <tr class="table-empty-row"><td colspan="10">Loading projects&hellip;</td></tr>
+              <tr class="table-empty-row"><td colspan="9">Loading projects&hellip;</td></tr>
             </tbody>
           </table>
         </div>
