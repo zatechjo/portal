@@ -2486,7 +2486,99 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 /* ── 22. Responsive Breakpoints ───────────────────────────── */
 
 
-/* 1200px — icon-only sidebar */
+/* 1366px — small laptop layout */
+@media (max-width: 1366px) {
+  .app { grid-template-columns: 232px 1fr; }
+  .side { padding: 24px 14px; }
+  .brand { margin: 0 -14px 18px; padding: 0 14px 12px; margin-top: -4px; }
+  .brand-logo { width: 176px; }
+  .nav a { padding: 12px 14px; }
+
+  .main { padding: 22px; }
+  .topbar {
+    margin-left: -22px;
+    margin-right: -22px;
+    margin-top: -22px;
+    padding: 14px 22px;
+    gap: 14px;
+  }
+  .greeting { padding-top: 10px; }
+  .greeting .greet-title { font-size: 32px; }
+  .greeting .greet-title .greet-name { font-size: 46px; padding-right: 8px; }
+  .page-heading { padding-top: 22px; }
+  .page-heading h1 { font-size: 32px; }
+  .hud { gap: 8px; }
+  .search-anim.open { width: clamp(170px, 22vw, 320px); }
+  .account-btn { padding: 10px 12px; }
+
+  .card-head { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+  .card-head > .filters { flex: 1 1 auto; min-width: 0; }
+  .pilltabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .pilltabs::-webkit-scrollbar { display: none; }
+
+  #revenue .rev-toolbar { flex-wrap: wrap; gap: 10px; }
+  #revenue .rev-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #revenue .rev-kpi:last-child { grid-column: 1 / -1; }
+  #revenue .rev-tables-row { grid-template-columns: 1fr; }
+  #revenue .rev-kpi { padding: 18px 18px 18px 22px; }
+
+  #dues .dues-row { grid-template-columns: 1fr; }
+  #dues .dues-card { padding: 18px 18px 16px 22px; }
+  #dues .dues-card-top { flex-wrap: wrap; align-items: flex-start; }
+
+  #client-modal .client-details,
+  #client-modal .client-create-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .client-modal-topbar { flex-wrap: wrap; }
+  .client-inv-layout { flex-direction: column; }
+  .client-inv-stats { width: 100%; margin-top: 0; }
+
+  #expense-modal .exp-form-grid,
+  #opp-modal .opp-form-grid { grid-template-columns: 1fr; }
+  .opp-modal-topbar { flex-wrap: wrap; }
+
+  .dash-shortcuts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .dash-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-activity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-iris-slot { grid-column: 1 / -1; height: 360px; }
+  .dash-tile { height: 360px; }
+  .dash-proj-wrap, .dash-panel { padding: 18px; }
+
+  .task-add-controls { flex-wrap: wrap; }
+  .task-add-controls > :nth-child(1) { flex: 1 1 100% !important; width: 100% !important; }
+  .task-add-controls > :nth-child(2),
+  .task-add-controls > :nth-child(3),
+  .task-add-controls > :nth-child(4) {
+    flex: 1 1 calc(33.333% - 7px) !important;
+    width: auto !important;
+    min-width: 0;
+  }
+  .task-add-controls > :nth-child(5) { flex: 0 0 auto !important; }
+
+  #projects .toolbar { align-items: stretch; }
+  #projects .toolbar-left, #projects .toolbar-right { width: 100%; }
+  #projects .toolbar-left .select-wrap { flex: 1 1 170px; width: auto; }
+  #projects .search-input { min-width: 280px; flex: 1 1 280px; }
+  #projects .summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #projects #projectsTable { min-width: 1100px; }
+  #projectsModal .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #projectsModal .detail-grid { grid-template-columns: 1fr; }
+
+  #invoices .filters { flex-wrap: wrap; gap: 8px; }
+  #invoices #clientFilter { flex: 1 1 100%; width: 100%; }
+  #invoices #statusFilter,
+  #invoices #dateFilter { flex: 1 1 calc(50% - 4px); width: auto; }
+  #invoices .filters #newInvoiceBtn { margin-left: 0; }
+
+  #subcontractors .sub-filters { flex-wrap: wrap; align-items: stretch; }
+  #subcontractors .sub-search-input { flex: 1 1 100%; width: 100%; }
+  #subcontractors .sub-filters .select-wrap { flex: 1 1 calc(50% - 5px); width: auto; }
+  #subcontractors #subcontractorsTable { min-width: 1020px; }
+  #subcontractorModal .sub-info-grid,
+  #subcontractorModal .sub-summary-grid-row,
+  #subcontractorModal .sub-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 1200px — compact desktop / icon-only sidebar */
 @media (max-width: 1200px) {
   .app { grid-template-columns: 80px 1fr; }
   .txt { display: none; }
@@ -2494,6 +2586,44 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
   .grid.cols-4 { grid-template-columns: repeat(2,1fr); }
   #projects .analytics-grid, #projects .insights-grid, #projectsModal .detail-grid { grid-template-columns: 1fr; }
   #projects .summary-strip, #projectsModal .info-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+
+/* 1100px — tighter laptop/tablet layout */
+@media (max-width: 1100px) {
+  #revenue .rev-kpi-strip { grid-template-columns: 1fr; }
+  #revenue .rev-kpi:last-child { grid-column: auto; }
+
+  .dash-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-glance { grid-template-columns: 1fr; }
+  .dash-activity { grid-template-columns: 1fr; }
+  .dash-iris-slot { grid-column: auto; height: 340px; }
+  .dash-tile { height: auto; min-height: 300px; max-height: 380px; }
+
+  #client-modal .client-details,
+  #client-modal .client-create-grid { grid-template-columns: 1fr; }
+  .client-name-edit-wrap { max-width: none; }
+  .client-modal-topbar-right { width: 100%; justify-content: flex-end; }
+
+  #projects .toolbar,
+  #projects .toolbar-left,
+  #projects .toolbar-right,
+  #projectsModal .modal-title-row { align-items: stretch; }
+  #projects .toolbar-left,
+  #projects .toolbar-right { width: 100%; }
+  #projects .toolbar-left .select-wrap { flex: 1 1 calc(50% - 5px); width: auto; }
+  #projects .search-input { min-width: 100%; }
+  #projects .summary-strip,
+  #projectsModal .info-grid,
+  #projectsModal .form-grid { grid-template-columns: 1fr; }
+  #projectsModal .activity-entry-grid,
+  #projectsModal .team-entry-grid,
+  #projectsModal .payment-entry-grid,
+  #projectsModal .team-summary-metrics,
+  #projectsModal .project-team-grid { grid-template-columns: 1fr; }
+
+  #subcontractorModal .sub-info-grid,
+  #subcontractorModal .sub-summary-grid-row,
+  #subcontractorModal .sub-form-grid { grid-template-columns: 1fr; }
 }
 
 /* 900px */
