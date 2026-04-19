@@ -884,6 +884,7 @@ th[data-sort="doc"], th[data-sort="pdf"] { text-align: center; }
 
 /* Client modal */
 #client-modal .modal-content { width: min(1060px,96vw); padding: 0; max-height: calc(100vh - 60px); overflow-y: auto; overflow-x: hidden; }
+#client-modal .required-mark { color: #ff8f8f; font-weight: 800; margin-left: 2px; }
 #client-modal .modal-content .close,
 #expense-modal .modal-content .close,
 #opp-modal .modal-content .close { position: static !important; top: auto; right: auto; font-size: 22px; background: none; border: none; color: rgba(200,217,238,.55); cursor: pointer; line-height: 1; padding: 0; transition: color .15s; }
@@ -913,6 +914,7 @@ th[data-sort="doc"], th[data-sort="pdf"] { text-align: center; }
 #client-modal .client-create-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
 #client-modal .client-create-grid .form-field.full { grid-column: 1 / -1; }
 #client-modal.creating #client-edit-actions { padding: 0 20px 20px; }
+#client-modal .form-field { position: relative; }
 .client-inv-hdr { padding-top: 18px; margin-bottom: 12px; }
 .client-inv-layout { display: flex; gap: 20px; align-items: flex-start; }
 .client-inv-left { flex: 1; min-width: 0; padding-right: 4px; }
@@ -947,7 +949,7 @@ select.edit-field option { background: #0b1220; color: rgba(212,232,255,.9); bor
 #client-modal.editing .edit-field-wrap { display: block !important; }
 .edit-field.show { display: block; }
 #client-notes-input.edit-field { padding: 8px 10px; margin-top: 12px; height: auto; min-height: 80px; resize: vertical; }
-.modal.editing .info-box span:not(.label), .modal.editing #client-notes { display: none; margin-top: 4px; }
+.modal.editing .info-box > span:not(.label), .modal.editing #client-notes { display: none; margin-top: 4px; }
 .modal.editing .edit-field { display: block; }
 
 /* Client modal edit mode should mirror the create-form layout */
@@ -1044,6 +1046,39 @@ select.edit-field option { background: #0b1220; color: rgba(212,232,255,.9); bor
 #client-modal.editing #client-edit-actions {
   padding: 0 20px 20px;
   margin-top: 8px !important;
+}
+#client-modal .field-invalid .label,
+#client-modal.editing .field-invalid .label {
+  color: #ffb4b4;
+}
+#client-modal .field-invalid .pm-input,
+#client-modal .field-invalid .edit-field,
+#client-modal .field-invalid .select-wrap > .pm-input,
+#client-modal .field-invalid .select-wrap > .edit-field {
+  border-color: rgba(255, 99, 99, 0.95) !important;
+  background: rgba(96, 18, 30, 0.35) !important;
+  box-shadow: 0 0 0 4px rgba(255, 99, 99, 0.12);
+}
+#client-modal .field-invalid::after {
+  content: "Required";
+  display: block;
+  margin-top: 6px;
+  color: #ffb4b4;
+  font-size: 11px;
+  font-weight: 700;
+}
+#client-modal #clientEditError {
+  display: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.35);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #ffe1e1 !important;
+  font-weight: 600;
+}
+#client-modal #clientEditError.visible {
+  display: inline-flex;
+  align-items: center;
 }
 
 #client-modal .status-box { position: relative; }

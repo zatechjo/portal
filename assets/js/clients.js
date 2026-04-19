@@ -219,6 +219,79 @@ const err       = $('#clientEditError');
 const actionsBar= $('#client-edit-actions');
 const newBtn    = $('#newClientBtn');
 const statusBox = $('.status-box', modal);
+const REQUIRED_FIELDS = ['name', 'contact', 'joined', 'status', 'address', 'sector'];
+
+function getFieldContainer(input) {
+  return input?.closest('.form-field, .info-box, .client-name-edit-wrap') || null;
+}
+
+function clearValidationState() {
+  modal.querySelectorAll('.field-invalid').forEach(el => el.classList.remove('field-invalid'));
+  err.textContent = '';
+  err.classList.remove('visible');
+}
+
+function showValidationError(message, invalidInputs = []) {
+  err.textContent = message;
+  err.classList.add('visible');
+
+  invalidInputs.forEach(input => {
+    const container = getFieldContainer(input);
+    container?.classList.add('field-invalid');
+  });
+
+  const firstInvalid = invalidInputs[0];
+  firstInvalid?.focus();
+}
+
+function bindValidationReset(inputsToWatch) {
+  inputsToWatch.forEach(input => {
+    if (!input) return;
+    const evt = input.tagName === 'SELECT' ? 'change' : 'input';
+    input.addEventListener(evt, () => {
+      getFieldContainer(input)?.classList.remove('field-invalid');
+      if (!modal.querySelector('.field-invalid')) {
+        err.textContent = '';
+        err.classList.remove('visible');
+      }
+    });
+  });
+}
+
+function validateClientPayload(payload, src) {
+  const invalidInputs = [];
+  const missingLabels = [];
+  const fieldMap = {
+    name: current ? nameInput : ncInputs.name,
+    contact: src.contact,
+    joined: src.joined,
+    status: src.status,
+    address: src.address,
+    sector: src.sector,
+  };
+  const fieldLabels = {
+    name: 'Client Name',
+    contact: 'Contact Name',
+    joined: 'Joined',
+    status: 'Status',
+    address: 'Address',
+    sector: 'Sector',
+  };
+
+  REQUIRED_FIELDS.forEach(field => {
+    if (!String(payload[field === 'contact' ? 'contact_name' : field] || '').trim()) {
+      invalidInputs.push(fieldMap[field]);
+      missingLabels.push(fieldLabels[field]);
+    }
+  });
+
+  if (invalidInputs.length) {
+    showValidationError(`Missing required fields: ${missingLabels.join(', ')}.`, invalidInputs);
+    return false;
+  }
+
+  return true;
+}
 
 // ---------- Open rows / modal ----------
 tbody?.addEventListener('click', (e) => {
@@ -304,7 +377,7 @@ async function loadClientInvoices(clientId, clientName) {
 
 function openView(c) {
   closeViewStatusPicker();
-  modal.classList.remove('editing'); err.textContent = '';
+  modal.classList.remove('editing'); clearValidationState();
   disp.nameText.textContent = c.name || '—';
   disp.clientNo.textContent = c.client_no || '—';
   disp.contact.textContent  = c.contact_name || '—';
@@ -325,7 +398,7 @@ function openView(c) {
 
 function openEdit(c) {
   closeViewStatusPicker();
-  modal.classList.add('editing'); err.textContent = '';
+  modal.classList.add('editing'); clearValidationState();
   disp.nameText.textContent = c.name ? `Editing ${c.name} info` : 'Editing client info';
   nameInput.value       = c.name || '';
   inputs.client_no.value= c.client_no || '';
@@ -353,7 +426,7 @@ function openEdit(c) {
 function openCreate() {
   current = null;
   closeViewStatusPicker();
-  modal.classList.add('editing', 'creating'); err.textContent = '';
+  modal.classList.add('editing', 'creating'); clearValidationState();
   Object.values(ncInputs).forEach(i => { if (i) i.value = ''; });
   if (ncInputs.status) ncInputs.status.value = 'Active';
 
@@ -366,7 +439,7 @@ function openCreate() {
 function closeModal() {
   closeViewStatusPicker();
   modal.classList.remove('show', 'editing', 'creating');
-  err.textContent = '';
+  clearValidationState();
 }
 
 // ---------- Buttons ----------
@@ -409,6 +482,7 @@ disp.status?.addEventListener('click', (e) => {
     } catch (e2) {
       console.error('[clients] status update error:', e2);
       err.textContent = e2?.message || 'Failed to update client status.';
+      err.classList.add('visible');
     } finally {
       closeViewStatusPicker();
     }
@@ -417,7 +491,7 @@ disp.status?.addEventListener('click', (e) => {
 
 // ---------- Save (create or update) ----------
 saveBtn?.addEventListener('click', async () => {
-  err.textContent = '';
+  clearValidationState();
 
   // Base payload — read from create form (ncInputs) or edit form (inputs)
   const src = current ? inputs : ncInputs;
@@ -434,9 +508,7 @@ saveBtn?.addEventListener('click', async () => {
     notes:        src.notes.value.trim(),
   };
 
-  if (!basePayload.name || !basePayload.email.includes('@')) {
-    err.textContent = 'Client name and a valid email are required.'; return;
-  }
+  if (!validateClientPayload(basePayload, src)) return;
 
   try {
     if (current) {
@@ -467,8 +539,23 @@ saveBtn?.addEventListener('click', async () => {
   } catch (e) {
     console.error('[clients] save error:', e);
     err.textContent = e?.message || 'Failed to save client.';
+    err.classList.add('visible');
   }
 });
 
 // ---------- Init ----------
+bindValidationReset([
+  nameInput,
+  inputs.contact,
+  inputs.joined,
+  inputs.status,
+  inputs.address,
+  inputs.sector,
+  ncInputs.name,
+  ncInputs.contact,
+  ncInputs.joined,
+  ncInputs.status,
+  ncInputs.address,
+  ncInputs.sector,
+]);
 document.addEventListener('DOMContentLoaded', fetchClients);
