@@ -1673,6 +1673,47 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 #expenses .card .filters { display: flex; gap: 10px; align-items: center; }
 #expenses .select-wrap { position: relative; display: inline-block; width: auto; }
 #expenses .filter-select { width: auto; }
+#expenses .expense-table-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 0 16px;
+}
+#expenses .expense-table-summary h4 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+#expenses .expense-month-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+#expenses .expense-total-box {
+  min-width: 150px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,.035);
+}
+#expenses .expense-total-box .label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+#expenses .expense-total-box strong {
+  display: block;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.1;
+}
 #expensesTable { font-size: .8rem; }
 #expensesTable thead th { text-transform: uppercase; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; }
 #expensesBody td:nth-child(1) { font-weight: 700; }

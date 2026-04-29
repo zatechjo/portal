@@ -14,6 +14,38 @@
   const fmt$ = (n) => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ("$" + Number(n || 0).toLocaleString());
   const parseISO = (s) => s ? new Date(s + "T00:00:00") : new Date("1970-01-01");
   const titleCase = (s) => String(s || "").replace(/\b\w/g, (c) => c.toUpperCase());
+  const toYMD = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const daysInMonth = (year, monthIndex) => new Date(year, monthIndex + 1, 0).getDate();
+  const addMonthsClamped = (date, months, preferredDay = date.getDate()) => {
+    const target = new Date(date);
+    target.setDate(1);
+    target.setMonth(target.getMonth() + months);
+    target.setDate(Math.min(preferredDay, daysInMonth(target.getFullYear(), target.getMonth())));
+    return target;
+  };
+  const isMonthlyFrequency = (value) => String(value || "").trim().toLowerCase() === "monthly";
+  const startOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+  const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  const monthLabel = (date) => date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const buildMonthlyExpenseDates = (startDate, endDate) => {
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
+
+    const dates = [];
+    const preferredDay = start.getDate();
+    let cursor = new Date(start);
+    while (cursor <= end) {
+      dates.push(toYMD(cursor));
+      cursor = addMonthsClamped(start, dates.length, preferredDay);
+    }
+    return dates;
+  };
 
   async function debugSupabaseSmokeTest() {
     console.group("[expenses:smoke]");
@@ -128,6 +160,7 @@ function openSelectDropdown(sel){
     const d = parseISO(rec.date);
     switch (filter) {
       case "all":        return true;
+      case "month":      return d.getFullYear() === state.monthCursor.getFullYear() && d.getMonth() === state.monthCursor.getMonth();
       case "this_month": return d.getFullYear() === y && d.getMonth() === m;  // NEW
       case "this_year":  return d.getFullYear() === y;
       case "next_90":    { const end = new Date(now); end.setDate(end.getDate()+90); return d >= now && d <= end; }
@@ -277,10 +310,52 @@ function openSelectDropdown(sel){
     sortKey: "date",
     sortDir: "desc",
     clientFilter: "all",      // ← NEW
-    dateFilter: "this_month",
+    dateFilter: "month",
+    monthCursor: startOfMonth(new Date()),
     vendorFilter: "all",
     serviceFilter: "all",
   };
+
+  function setMonthFilterOptionLabel() {
+    const dateSel = $("#expDateFilter");
+    const opt = dateSel?.querySelector('option[value="month"]');
+    if (!opt) return;
+    const currentMonth = startOfMonth(new Date());
+    opt.textContent = sameMonth(state.monthCursor, currentMonth) ? "This month" : monthLabel(state.monthCursor);
+  }
+
+  function setMonthCursor(delta) {
+    state.monthCursor = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth() + delta, 1);
+    state.dateFilter = "month";
+    const dateSel = $("#expDateFilter");
+    if (dateSel) dateSel.value = "month";
+    render();
+  }
+
+  function updateExpenseSummary(rows) {
+    const title = $("#expenseMonthTitle");
+    const meta = $("#expenseMonthMeta");
+    const total = $("#expenseVisibleTotal");
+    const sum = rows.reduce((n, row) => n + Number(row.amount || 0), 0);
+    const count = rows.length;
+    const labelMap = {
+      all: "All expenses",
+      this_year: `${new Date().getFullYear()} expenses`,
+      next_90: "Next 90 days",
+      last_90: "Last 90 days",
+      y2025: "2025 expenses",
+      y2024: "2024 expenses",
+      y2023: "2023 expenses",
+      y2022: "2022 expenses",
+      this_month: monthLabel(new Date()),
+      month: monthLabel(state.monthCursor),
+    };
+
+    setMonthFilterOptionLabel();
+    if (title) title.textContent = labelMap[state.dateFilter] || "Expenses";
+    if (meta) meta.textContent = `${count} expense${count === 1 ? "" : "s"} shown`;
+    if (total) total.textContent = fmt$(sum);
+  }
 
   // ===== Render table =====
   function statusSelect(value, id) {
@@ -313,6 +388,8 @@ function openSelectDropdown(sel){
       .filter((x) => (state.vendorFilter  === "all" ? true : x.vendor      === state.vendorFilter))
       .filter((x) => (state.clientFilter  === "all" ? true : x.client      === state.clientFilter)) // ← NEW
       .filter((x) => (state.serviceFilter === "all" ? true : x.serviceType === state.serviceFilter));
+
+    updateExpenseSummary(rows);
 
 
     console.log("[expenses:render] after filters — date:", state.dateFilter, "vendor:", state.vendorFilter, "service:", state.serviceFilter, "=>", rows.length);
@@ -423,8 +500,10 @@ tbody.innerHTML =
     date: $("#exp-date-input"),
     amount: $("#exp-amount-input"),
     freq: $("#exp-frequency-input"),
+    repeatUntil: $("#exp-repeat-until-input"),
     status: $("#exp-status-input"),
   };
+  const repeatUntilField = $("#exp-repeat-until-field");
 
   const editBtn = $("#editExpenseBtn");
   const saveBtn = $("#saveExpenseBtn");
@@ -434,6 +513,12 @@ tbody.innerHTML =
 
   let mode = "view"; // 'view' | 'edit' | 'create'
   let currentId = null;
+
+  function syncRepeatUntilField() {
+    const shouldShow = mode === "create" && isMonthlyFrequency(inputs.freq?.value);
+    if (repeatUntilField) repeatUntilField.style.display = shouldShow ? "" : "none";
+    if (!shouldShow && inputs.repeatUntil) inputs.repeatUntil.value = "";
+  }
 
 
   // Open confirm modal from Delete button (view mode)
@@ -629,7 +714,9 @@ tbody.innerHTML =
     inputs.date.value = exp.date || "";
     inputs.amount.value = exp.amount ?? "";
     inputs.freq.value = exp.frequency || "Monthly";
+    if (inputs.repeatUntil) inputs.repeatUntil.value = "";
     inputs.status.value = exp.status || "Unpaid";
+    syncRepeatUntilField();
 
     editBtn.style.display = "none";
     if (deleteBtn) deleteBtn.style.display = "none";
@@ -649,8 +736,10 @@ tbody.innerHTML =
 
     // sensible defaults
     inputs.service.value = inputs.service.querySelector("option")?.value || "other";
-    inputs.freq.value = "Monthly";
+    inputs.freq.value = "One time";
+    if (inputs.repeatUntil) inputs.repeatUntil.value = "";
     inputs.status.value = "Unpaid";
+    syncRepeatUntilField();
 
     modal.classList.add("editing");
     err.textContent = "";
@@ -682,6 +771,14 @@ tbody.innerHTML =
       console.log("[expenses:save] UPDATE ok ->", data);
       return data;
     }
+  }
+
+  async function insertExpensesToDB(payloads) {
+    console.log("[expenses:save] BULK INSERT payloads:", payloads);
+    const { data, error } = await sb.from("expenses").insert(payloads).select();
+    if (error) throw error;
+    console.log("[expenses:save] BULK INSERT ok ->", data);
+    return data || [];
   }
 
   async function updateStatusInDB(id, newStatus) {
@@ -737,9 +834,17 @@ tbody.innerHTML =
     // 3) Filters
     $("#expDateFilter")?.addEventListener("change", (e) => {
       state.dateFilter = e.target.value;
+      if (state.dateFilter === "this_month") {
+        state.dateFilter = "month";
+        state.monthCursor = startOfMonth(new Date());
+        e.target.value = "month";
+      }
       console.log("[expenses:ui] set dateFilter ->", state.dateFilter);
       render();
     });
+
+    $("#expensePrevMonthBtn")?.addEventListener("click", () => setMonthCursor(-1));
+    $("#expenseNextMonthBtn")?.addEventListener("click", () => setMonthCursor(1));
 
     const vendorSel = $("#expVendorFilter");
     const serviceSel = $("#expServiceFilter");
@@ -821,6 +926,8 @@ tbody.innerHTML =
     });
 
     // 9) Save (create or edit)
+    inputs.freq?.addEventListener("change", syncRepeatUntilField);
+
     $("#saveExpenseBtn")?.addEventListener("click", async () => {
       err.textContent = "";
 
@@ -831,6 +938,15 @@ tbody.innerHTML =
       if (!vendor) { err.textContent = "Vendor is required."; return; }
       if (!date)   { err.textContent = "Date is required."; return; }
       if (Number.isNaN(amount)) { err.textContent = "Amount must be a number."; return; }
+      if (
+        mode === "create" &&
+        isMonthlyFrequency(inputs.freq.value) &&
+        inputs.repeatUntil?.value &&
+        parseISO(inputs.repeatUntil.value) < parseISO(date)
+      ) {
+        err.textContent = "Repeat until must be after the first expense date.";
+        return;
+      }
 
       const payloadDB = {
         vendor,
@@ -844,10 +960,17 @@ tbody.innerHTML =
       };
 
       try {
-        const saved = await upsertExpenseToDB(payloadDB, mode === "edit" ? currentId : null);
+        const monthlyDates = (
+          mode === "create" &&
+          isMonthlyFrequency(payloadDB.frequency) &&
+          inputs.repeatUntil?.value
+        ) ? buildMonthlyExpenseDates(date, inputs.repeatUntil.value) : [];
+        const savedRows = monthlyDates.length > 1
+          ? await insertExpensesToDB(monthlyDates.map((expenseDate) => ({ ...payloadDB, expense_date: expenseDate })))
+          : [await upsertExpenseToDB(payloadDB, mode === "edit" ? currentId : null)];
 
         // reflect back in UI shape
-        const mapped = {
+        const mapExpenseRow = (saved) => ({
           id: saved.id,
           vendor: saved.vendor || "",
           description: saved.description || "",
@@ -857,13 +980,15 @@ tbody.innerHTML =
           amount: saved.amount ?? 0,
           frequency: saved.frequency || "",
           status: saved.status || "Unpaid",
-        };
+          note: saved.note || "",
+        });
+        const mappedRows = savedRows.map(mapExpenseRow);
 
         if (mode === "create") {
-          items.unshift(mapped);
+          items.unshift(...mappedRows);
         } else if (mode === "edit" && currentId) {
           const idx = items.findIndex((x) => x.id === currentId);
-          if (idx !== -1) items[idx] = mapped;
+          if (idx !== -1) items[idx] = mappedRows[0];
         }
 
         // Update dropdowns in case the vendor/service universe changed

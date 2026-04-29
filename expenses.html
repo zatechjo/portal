@@ -121,7 +121,7 @@
             <div class="select-wrap">
               <select id="expDateFilter" class="filter-select" aria-label="Filter by date">
                 <option value="all">All years</option>
-                <option value="this_month" selected>This month</option>
+                <option value="month" selected>This month</option>
                 <option value="this_year">This year</option> <!-- keep selected -->
                 <option value="next_90">Next 90 days</option>
                 <option value="last_90">Last 90 days</option>
@@ -156,6 +156,21 @@
 
           </div>
           <button class="btn2 btn-important" id="newExpenseBtn"><span>New Expense +</span></button>
+        </div>
+
+        <div class="expense-table-summary">
+          <div>
+            <h4 id="expenseMonthTitle">This month</h4>
+            <div id="expenseMonthMeta" class="muted">0 expenses shown</div>
+          </div>
+          <div class="expense-month-actions">
+            <button class="btn2" id="expensePrevMonthBtn" type="button">Prev</button>
+            <button class="btn2" id="expenseNextMonthBtn" type="button">Next</button>
+            <div class="expense-total-box">
+              <span class="label">Total</span>
+              <strong id="expenseVisibleTotal">$0</strong>
+            </div>
+          </div>
         </div>
 
         <div class="table-scroll">
@@ -283,6 +298,10 @@
               <option>One time</option>
             </select>
           </div>
+        </div>
+        <div class="form-field" id="exp-repeat-until-field" style="display:none;">
+          <label class="label" for="exp-repeat-until-input">Repeat until</label>
+          <input id="exp-repeat-until-input" class="pm-input" type="date" />
         </div>
         <div class="form-field">
           <label class="label" for="exp-status-input">Status</label>

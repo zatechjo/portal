@@ -7,6 +7,36 @@ import { sb } from './supabase.js';
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const byId = (id) => document.getElementById(id);
+  const parseYMD = (value) => value ? new Date(`${value}T00:00:00`) : new Date('Invalid Date');
+  const toYMD = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+  const daysInMonth = (year, monthIndex) => new Date(year, monthIndex + 1, 0).getDate();
+  const addMonthsClamped = (date, months, preferredDay = date.getDate()) => {
+    const target = new Date(date);
+    target.setDate(1);
+    target.setMonth(target.getMonth() + months);
+    target.setDate(Math.min(preferredDay, daysInMonth(target.getFullYear(), target.getMonth())));
+    return target;
+  };
+  const isMonthlyFrequency = (value) => String(value || '').trim().toLowerCase() === 'monthly';
+  const buildMonthlyExpenseDates = (startDate, endDate) => {
+    const start = parseYMD(startDate);
+    const end = parseYMD(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
+
+    const dates = [];
+    const preferredDay = start.getDate();
+    let cursor = new Date(start);
+    while (cursor <= end) {
+      dates.push(toYMD(cursor));
+      cursor = addMonthsClamped(start, dates.length, preferredDay);
+    }
+    return dates;
+  };
 
   const els = {
     loader: byId('contentLoader'),
@@ -151,6 +181,8 @@ import { sb } from './supabase.js';
     expDateInput: byId('exp-date-input'),
     expAmountInput: byId('exp-amount-input'),
     expFrequencyInput: byId('exp-frequency-input'),
+    expRepeatUntilField: byId('exp-repeat-until-field'),
+    expRepeatUntilInput: byId('exp-repeat-until-input'),
     expStatusInput: byId('exp-status-input'),
 
     saveExpenseBtn: byId('saveExpenseBtn'),
@@ -1426,7 +1458,9 @@ import { sb } from './supabase.js';
     if (els.expServiceInput) els.expServiceInput.value = els.expServiceInput.querySelector('option')?.value || 'other';
     if (els.expDateInput) els.expDateInput.value = todayYMD();
     if (els.expAmountInput) els.expAmountInput.value = '';
-    if (els.expFrequencyInput) els.expFrequencyInput.value = 'Monthly';
+    if (els.expFrequencyInput) els.expFrequencyInput.value = 'One time';
+    if (els.expRepeatUntilInput) els.expRepeatUntilInput.value = '';
+    syncExpenseRepeatUntilField();
     if (els.expStatusInput) els.expStatusInput.value = 'Unpaid';
 
     if (els.expenseEditError) els.expenseEditError.textContent = '';
@@ -1441,6 +1475,12 @@ import { sb } from './supabase.js';
 
 
     els.expenseModal?.classList.add('editing', 'show');
+  }
+
+  function syncExpenseRepeatUntilField() {
+    const shouldShow = isMonthlyFrequency(els.expFrequencyInput?.value);
+    if (els.expRepeatUntilField) els.expRepeatUntilField.style.display = shouldShow ? '' : 'none';
+    if (!shouldShow && els.expRepeatUntilInput) els.expRepeatUntilInput.value = '';
   }
 
   async function refreshProjectLinkedFinancials(projectId) {
@@ -1520,6 +1560,7 @@ import { sb } from './supabase.js';
     const expenseDate = els.expDateInput?.value || '';
     const amount = parseFloat(els.expAmountInput?.value || '');
     const frequency = els.expFrequencyInput?.value || 'Monthly';
+    const repeatUntil = els.expRepeatUntilInput?.value || '';
     const status = els.expStatusInput?.value || 'Unpaid';
 
     if (!vendor) {
@@ -1537,6 +1578,11 @@ import { sb } from './supabase.js';
       return;
     }
 
+    if (isMonthlyFrequency(frequency) && repeatUntil && parseYMD(repeatUntil) < parseYMD(expenseDate)) {
+      els.expenseEditError.textContent = 'Repeat until must be after the first expense date.';
+      return;
+    }
+
     const payload = {
       vendor,
       description,
@@ -1550,15 +1596,22 @@ import { sb } from './supabase.js';
     };
 
     try {
+      const monthlyDates = isMonthlyFrequency(frequency) && repeatUntil
+        ? buildMonthlyExpenseDates(expenseDate, repeatUntil)
+        : [];
+      const rowsToInsert = monthlyDates.length > 1
+        ? monthlyDates.map((date) => ({ ...payload, expense_date: date }))
+        : [payload];
+
       const { error } = await sb
         .from('expenses')
-        .insert(payload);
+        .insert(rowsToInsert);
 
       if (error) throw error;
 
       await refreshProjectLinkedFinancials(project.id);
       closeProjectExpenseModal();
-      showToast('Expense added to project');
+      showToast(rowsToInsert.length > 1 ? `${rowsToInsert.length} monthly expenses added to project` : 'Expense added to project');
     } catch (error) {
       console.error('[projects] save project expense failed:', error);
       els.expenseEditError.textContent = error?.message || 'Failed to save expense.';
@@ -1567,7 +1620,7 @@ import { sb } from './supabase.js';
     await logProjectActivity(project.id, {
       title: 'Expense added',
       type: 'Expense',
-      note: `${vendor} · $${Number(amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+      note: `${vendor} · $${Number(amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}${isMonthlyFrequency(frequency) && repeatUntil ? ` monthly through ${repeatUntil}` : ''}`
     });
   }
 
@@ -3139,6 +3192,7 @@ import { sb } from './supabase.js';
     });
 
     els.saveExpenseBtn?.addEventListener('click', saveProjectExpenseBridge);
+    els.expFrequencyInput?.addEventListener('change', syncExpenseRepeatUntilField);
     els.cancelExpenseBtn?.addEventListener('click', closeProjectExpenseModal);
     els.expenseCloseBtn?.addEventListener('click', closeProjectExpenseModal);
 
