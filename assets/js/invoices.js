@@ -177,6 +177,9 @@ function statusClassFor(s){
     ['cancelled','canceled'].includes(v) ? 'null' : 'null'
   );
 }
+function statusLabelFor(s) {
+  return String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || 'â€”');
+}
 function openSelectDropdown(sel){
   if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
   sel.focus();
@@ -236,6 +239,435 @@ function fmtDate(dateStr) {
 
 // ====== Invoices list ======
 let invoices = [];
+let paymentsByInvoice = new Map();
+let notesByInvoice = new Map();
+let invoicePaymentsAvailable = true;
+let invoiceNotesAvailable = true;
+let activeDetailsId = null;
+let pendingPaymentDelete = null;
+let pendingNoteDelete = null;
+
+function invoiceKey(id) {
+  return String(id ?? '');
+}
+
+function invoiceTotalAmount(inv) {
+  return Number(inv?.total ?? (Number(inv?.subtotal || 0) + Number(inv?.tax || 0))) || 0;
+}
+
+function getInvoicePayments(invoiceId) {
+  return paymentsByInvoice.get(invoiceKey(invoiceId)) || [];
+}
+
+function getInvoiceNotes(invoiceId) {
+  return notesByInvoice.get(invoiceKey(invoiceId)) || [];
+}
+
+function getInvoicePaidAmount(inv) {
+  return getInvoicePayments(inv.id).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+}
+
+function getInvoicePaymentStats(inv) {
+  const total = invoiceTotalAmount(inv);
+  const paid = getInvoicePaidAmount(inv);
+  const remaining = Math.max(total - paid, 0);
+  const pct = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
+  return { total, paid, remaining, pct };
+}
+
+function findInvoicePayment(invoiceId, paymentId) {
+  return getInvoicePayments(invoiceId).find(payment => invoiceKey(payment.id) === invoiceKey(paymentId));
+}
+
+function findInvoiceNote(invoiceId, noteId) {
+  return getInvoiceNotes(invoiceId).find(note => invoiceKey(note.id) === invoiceKey(noteId));
+}
+
+function paymentDrivenStatus(inv) {
+  const { total, paid } = getInvoicePaymentStats(inv);
+  if (total > 0 && paid >= total - 0.005) return 'Paid';
+  if (paid > 0) return 'Partial Payment';
+  return inv.status || 'Not Paid';
+}
+
+function fmtPaymentDate(dateStr) {
+  if (!dateStr) return 'No date';
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function loadInvoicePaymentsFor(invoiceIds = []) {
+  const ids = invoiceIds.map(invoiceKey).filter(Boolean);
+  paymentsByInvoice = new Map();
+  if (!ids.length || !invoicePaymentsAvailable) return;
+
+  const { data, error } = await sb
+    .from('invoice_payments')
+    .select('id, invoice_id, amount, payment_date, note, created_at')
+    .in('invoice_id', ids)
+    .order('payment_date', { ascending: false });
+
+  if (error) {
+    invoicePaymentsAvailable = false;
+    console.warn('[invoices] invoice_payments unavailable:', error.message || error);
+    return;
+  }
+
+  (data || []).forEach((payment) => {
+    const key = invoiceKey(payment.invoice_id);
+    if (!paymentsByInvoice.has(key)) paymentsByInvoice.set(key, []);
+    paymentsByInvoice.get(key).push(payment);
+  });
+}
+
+async function loadInvoiceNotesFor(invoiceIds = []) {
+  const ids = invoiceIds.map(invoiceKey).filter(Boolean);
+  notesByInvoice = new Map();
+  if (!ids.length || !invoiceNotesAvailable) return;
+
+  const { data, error } = await sb
+    .from('invoice_notes')
+    .select('id, invoice_id, body, created_at')
+    .in('invoice_id', ids)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    invoiceNotesAvailable = false;
+    console.warn('[invoices] invoice_notes unavailable:', error.message || error);
+    return;
+  }
+
+  (data || []).forEach((note) => {
+    const key = invoiceKey(note.invoice_id);
+    if (!notesByInvoice.has(key)) notesByInvoice.set(key, []);
+    notesByInvoice.get(key).push(note);
+  });
+}
+
+async function setInvoiceStatusLocalAndDb(invoiceId, desiredStatus) {
+  const res = await persistStatusToDb(invoiceId, desiredStatus);
+  if (!res.ok) throw res.error || new Error('Could not update invoice status.');
+  const inv = invoices.find(x => invoiceKey(x.id) === invoiceKey(invoiceId));
+  if (inv) inv.status = res.value;
+  return res.value;
+}
+
+async function refreshInvoicePaymentData(invoiceId, { deriveZeroStatus = false } = {}) {
+  await loadInvoicePaymentsFor(invoices.map(inv => inv.id));
+  const inv = invoices.find(x => invoiceKey(x.id) === invoiceKey(invoiceId));
+  if (!inv) return;
+  const paid = getInvoicePaidAmount(inv);
+  const nextStatus = deriveZeroStatus && paid <= 0.005 ? 'Not Paid' : paymentDrivenStatus(inv);
+  if (nextStatus !== inv.status && !['cancelled', 'canceled'].includes(String(inv.status || '').toLowerCase())) {
+    try {
+      await setInvoiceStatusLocalAndDb(invoiceId, nextStatus);
+    } catch (error) {
+      console.warn('[invoices] payment status sync failed:', error.message || error);
+    }
+  }
+}
+
+function paymentProgressHtml(inv, { compact = false } = {}) {
+  const cur = inv.currency || 'USD';
+  const { total, paid, remaining, pct } = getInvoicePaymentStats(inv);
+  const percentLabel = `${Math.round(pct)}%`;
+  const cls = compact ? 'invoice-pay-progress compact' : 'invoice-pay-progress';
+  return `
+    <div class="${cls}">
+      <div class="invoice-pay-progress-head">
+        <span>Paid ${fmtMoney(paid, undefined, cur)} / ${fmtMoney(total, undefined, cur)}</span>
+        <strong>${percentLabel}</strong>
+      </div>
+      <div class="invoice-pay-bar" aria-label="Payment progress">
+        <span style="width:${pct.toFixed(2)}%;"></span>
+      </div>
+    </div>
+  `;
+}
+
+function invoicePaymentCellHtml(inv) {
+  if (!invoicePaymentsAvailable) return '';
+  const status = String(inv.status || '').toLowerCase();
+  if (status !== 'partial payment') return '';
+  return paymentProgressHtml(inv, { compact: true });
+}
+
+function shouldShowPaymentPanel(inv) {
+  const status = String(inv.status || '').toLowerCase();
+  const hasPayments = getInvoicePayments(inv.id).length > 0;
+  return status === 'partial payment' || (status === 'paid' && hasPayments);
+}
+
+function paymentDrawerHtml(inv) {
+  const cur = inv.currency || 'USD';
+  const payments = getInvoicePayments(inv.id);
+  const { total, paid, remaining } = getInvoicePaymentStats(inv);
+
+  if (!invoicePaymentsAvailable) {
+    return `
+      <div class="invoice-payment-panel">
+        <div class="invoice-panel-head">
+          <div>
+            <h4>Payments</h4>
+            <p>Run supabase/invoice_payments.sql to enable payment history.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const history = payments.length
+    ? payments.map(payment => {
+      const hasNote = !!(payment.note && String(payment.note).trim());
+      return `
+        <div class="invoice-payment-history-item${hasNote ? '' : ' no-note'}">
+          <div class="invoice-payment-history-main">
+            <div class="invoice-payment-history-title">${fmtMoney(payment.amount, undefined, cur)}</div>
+            ${hasNote ? `<div class="invoice-payment-history-meta">${escapeHTML(payment.note)}</div>` : ''}
+          </div>
+          <div class="invoice-payment-history-right">
+            <div class="invoice-payment-date-chip">
+              <span>Date</span>
+              <strong>${fmtPaymentDate(payment.payment_date)}</strong>
+            </div>
+            <div class="invoice-payment-row-actions">
+              <button type="button" class="pm-icon-btn pm-edit-btn invoice-payment-edit" data-invoice-id="${inv.id}" data-payment-id="${payment.id}" title="Edit payment" aria-label="Edit payment"><img src="./assets/img/edit.png" alt="" /></button>
+              <button type="button" class="pm-icon-btn pm-del-btn invoice-payment-delete" data-invoice-id="${inv.id}" data-payment-id="${payment.id}" title="Delete payment" aria-label="Delete payment"><img src="./assets/img/bin.png" alt="" /></button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('')
+    : '<div class="invoice-payment-empty">No payments recorded yet.</div>';
+
+  return `
+    <div class="invoice-payment-panel">
+      <div class="invoice-panel-head">
+        <div>
+          <h4>Payment Progress</h4>
+          <p>Track recorded payments against this invoice.</p>
+        </div>
+        <div class="invoice-payment-summary">
+          <div><span>Paid</span><strong>${fmtMoney(paid, undefined, cur)}</strong></div>
+          <div><span>Remaining</span><strong>${fmtMoney(remaining, undefined, cur)}</strong></div>
+        </div>
+      </div>
+      ${paymentProgressHtml(inv)}
+      <div class="invoice-payment-form" data-id="${inv.id}">
+        <label class="invoice-money-input" aria-label="Amount paid">
+          <span>$</span>
+          <input class="pm-input invoice-payment-amount" data-id="${inv.id}" type="number" min="0" step="0.01" placeholder="0.00" />
+          <span>USD</span>
+        </label>
+        <input class="pm-input invoice-payment-date" data-id="${inv.id}" type="date" value="${todayISO()}" />
+        <input class="pm-input invoice-payment-note" data-id="${inv.id}" type="text" placeholder="Note or reference" />
+        <button type="button" class="btn2 invoice-payment-save" data-id="${inv.id}">Add payment</button>
+        <button type="button" class="btn2 invoice-payment-cancel-edit" data-id="${inv.id}" style="display:none;">Cancel</button>
+      </div>
+      <div class="invoice-payment-history">
+        <div class="invoice-payment-history-label">Payment history</div>
+        ${history}
+      </div>
+    </div>
+  `;
+}
+
+function invoiceNotesPanelHtml(inv) {
+  if (!invoiceNotesAvailable) return '';
+
+  const notes = getInvoiceNotes(inv.id);
+  const invoiceId = escapeHTML(inv.id);
+  const noteItems = notes.length
+    ? notes.map((note, index) => `
+      <div class="invoice-note-item" data-note-id="${escapeHTML(note.id)}">
+        <div class="invoice-note-item-main">
+          <div class="invoice-note-index">Note ${notes.length - index}</div>
+          <div class="invoice-note-item-text">${escapeHTML(note.body)}</div>
+        </div>
+        <div class="invoice-note-item-actions">
+          <button type="button" class="pm-icon-btn pm-edit-btn invoice-note-edit" data-invoice-id="${invoiceId}" data-note-id="${escapeHTML(note.id)}" title="Edit note" aria-label="Edit note"><img src="./assets/img/edit.png" alt="" /></button>
+          <button type="button" class="pm-icon-btn pm-del-btn invoice-note-delete" data-invoice-id="${invoiceId}" data-note-id="${escapeHTML(note.id)}" title="Delete note" aria-label="Delete note"><img src="./assets/img/bin.png" alt="" /></button>
+        </div>
+      </div>
+    `).join('')
+    : '<div class="invoice-notes-empty">No notes yet.</div>';
+
+  return `
+    <div class="invoice-note-block invoice-notes-panel" data-id="${invoiceId}">
+      <div class="invoice-notes-top">
+        <div class="invoice-note-panel-title">Notes</div>
+        <button type="button" class="btn2 invoice-note-add-toggle" data-id="${invoiceId}">Add note</button>
+      </div>
+      <div class="invoice-note-form" data-id="${invoiceId}" style="display:none;">
+        <textarea class="note-textarea invoice-note-input" data-id="${invoiceId}" rows="3" placeholder="Write a note..."></textarea>
+        <div class="invoice-note-form-actions">
+          <button type="button" class="btn2 invoice-note-save" data-id="${invoiceId}">Add note</button>
+          <button type="button" class="btn2 invoice-note-cancel" data-id="${invoiceId}">Cancel</button>
+        </div>
+      </div>
+      <div class="invoice-notes-list${notes.length > 2 ? ' is-scrollable' : ''}">
+        ${noteItems}
+      </div>
+    </div>
+  `;
+}
+
+function ensurePaymentDeleteModal() {
+  let modalEl = document.getElementById('invoicePaymentDeleteModal');
+  if (modalEl) return modalEl;
+
+  modalEl = document.createElement('div');
+  modalEl.id = 'invoicePaymentDeleteModal';
+  modalEl.className = 'modal';
+  modalEl.setAttribute('aria-hidden', 'true');
+  modalEl.innerHTML = `
+    <div class="modal-content invoice-payment-delete-modal">
+      <h3>Delete payment?</h3>
+      <p id="invoicePaymentDeleteText">This payment will be removed from the invoice history.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn2 btn-danger" id="invoicePaymentDeleteConfirm">Delete</button>
+        <button type="button" class="btn2" id="invoicePaymentDeleteCancel">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modalEl);
+
+  modalEl.querySelector('#invoicePaymentDeleteCancel')?.addEventListener('click', closePaymentDeleteModal);
+  modalEl.addEventListener('click', (e) => {
+    if (e.target === modalEl) closePaymentDeleteModal();
+  });
+  modalEl.querySelector('#invoicePaymentDeleteConfirm')?.addEventListener('click', confirmPaymentDelete);
+  return modalEl;
+}
+
+function openPaymentDeleteModal(invoiceId, paymentId) {
+  const inv = invoices.find(x => invoiceKey(x.id) === invoiceKey(invoiceId));
+  const payment = findInvoicePayment(invoiceId, paymentId);
+  if (!inv || !payment) return;
+
+  pendingPaymentDelete = { invoiceId, paymentId };
+  const modalEl = ensurePaymentDeleteModal();
+  const text = modalEl.querySelector('#invoicePaymentDeleteText');
+  if (text) {
+    text.textContent = `Delete ${fmtMoney(payment.amount, undefined, inv.currency || 'USD')} from ${fmtPaymentDate(payment.payment_date)}? This cannot be undone.`;
+  }
+  show(modalEl);
+}
+
+function closePaymentDeleteModal() {
+  const modalEl = document.getElementById('invoicePaymentDeleteModal');
+  pendingPaymentDelete = null;
+  hide(modalEl);
+}
+
+async function confirmPaymentDelete() {
+  if (!pendingPaymentDelete) return;
+  const { invoiceId, paymentId } = pendingPaymentDelete;
+  const btn = document.getElementById('invoicePaymentDeleteConfirm');
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+    }
+    const { error } = await sb.from('invoice_payments').delete().eq('id', paymentId);
+    if (error) throw error;
+
+    closePaymentDeleteModal();
+    activeDetailsId = invoiceKey(invoiceId);
+    await refreshInvoicePaymentData(invoiceId, { deriveZeroStatus: true });
+    renderTable();
+  } catch (err) {
+    console.error('[invoices] delete payment failed:', err);
+    alert(err.message || 'Failed to delete payment.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+    }
+  }
+}
+
+function ensureNoteDeleteModal() {
+  let modalEl = document.getElementById('invoiceNoteDeleteModal');
+  if (modalEl) return modalEl;
+
+  modalEl = document.createElement('div');
+  modalEl.id = 'invoiceNoteDeleteModal';
+  modalEl.className = 'modal';
+  modalEl.setAttribute('aria-hidden', 'true');
+  modalEl.innerHTML = `
+    <div class="modal-content invoice-note-delete-modal">
+      <h3>Delete note?</h3>
+      <p id="invoiceNoteDeleteText">This note will be removed from the invoice.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn2 btn-danger" id="invoiceNoteDeleteConfirm">Delete</button>
+        <button type="button" class="btn2" id="invoiceNoteDeleteCancel">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modalEl);
+
+  modalEl.querySelector('#invoiceNoteDeleteCancel')?.addEventListener('click', closeNoteDeleteModal);
+  modalEl.addEventListener('click', (e) => {
+    if (e.target === modalEl) closeNoteDeleteModal();
+  });
+  modalEl.querySelector('#invoiceNoteDeleteConfirm')?.addEventListener('click', confirmNoteDelete);
+  return modalEl;
+}
+
+function openNoteDeleteModal(invoiceId, noteId) {
+  const note = findInvoiceNote(invoiceId, noteId);
+  if (!note) return;
+
+  pendingNoteDelete = { invoiceId, noteId };
+  const modalEl = ensureNoteDeleteModal();
+  const text = modalEl.querySelector('#invoiceNoteDeleteText');
+  if (text) {
+    const body = String(note.body || '').trim();
+    const preview = body.length > 80 ? `${body.slice(0, 80)}...` : body;
+    text.textContent = preview
+      ? `Delete "${preview}"? This cannot be undone.`
+      : 'Delete this note? This cannot be undone.';
+  }
+  show(modalEl);
+}
+
+function closeNoteDeleteModal() {
+  const modalEl = document.getElementById('invoiceNoteDeleteModal');
+  pendingNoteDelete = null;
+  hide(modalEl);
+}
+
+async function confirmNoteDelete() {
+  if (!pendingNoteDelete) return;
+  const { invoiceId, noteId } = pendingNoteDelete;
+  const btn = document.getElementById('invoiceNoteDeleteConfirm');
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+    }
+    const { error } = await sb.from('invoice_notes').delete().eq('id', noteId);
+    if (error) throw error;
+
+    closeNoteDeleteModal();
+    activeDetailsId = invoiceKey(invoiceId);
+    await loadInvoiceNotesFor(invoices.map(inv => inv.id));
+    renderTable();
+  } catch (err) {
+    console.error('[invoices] delete note failed:', err);
+    alert(err.message || 'Failed to delete note.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+    }
+  }
+}
+
 async function loadInvoices(){
   const { data, error } = await sb
     .from('invoices')
@@ -249,6 +681,11 @@ async function loadInvoices(){
     .order('invoice_no', { ascending: false });
   if (error){ console.error(error); return; }
   invoices = data || [];
+  const invoiceIds = invoices.map(inv => inv.id);
+  await Promise.all([
+    loadInvoicePaymentsFor(invoiceIds),
+    loadInvoiceNotesFor(invoiceIds),
+  ]);
   renderTable();
 }
 
@@ -368,6 +805,56 @@ function renderTable(){
     `;
   }).join('');
 
+  rows.forEach((inv) => {
+    const key = invoiceKey(inv.id);
+    const statusCell = tbody.querySelector(`tr.inv-row[data-id="${inv.id}"] td:nth-child(6)`);
+    const pill = statusCell?.querySelector('.status-pill');
+    if (!statusCell || !pill) return;
+    pill.textContent = statusLabelFor(inv.status);
+    pill.dataset.value = inv.status || '';
+    const stack = document.createElement('div');
+    stack.className = 'invoice-status-stack';
+    stack.appendChild(pill);
+    const paymentCell = invoicePaymentCellHtml(inv);
+    if (paymentCell) stack.insertAdjacentHTML('beforeend', paymentCell);
+    statusCell.replaceChildren(stack);
+
+    const detailsRow = tbody.querySelector(`tr.inv-details[data-id="${inv.id}"]`);
+    const detailsCell = detailsRow?.querySelector('.details-cell');
+    const noteBlock = detailsCell?.querySelector('.invoice-note-block');
+    let notePanel = noteBlock;
+
+    if (detailsCell && noteBlock && invoiceNotesAvailable) {
+      const shell = document.createElement('div');
+      shell.innerHTML = invoiceNotesPanelHtml(inv).trim();
+      const multiNotePanel = shell.firstElementChild;
+      if (multiNotePanel) {
+        noteBlock.replaceWith(multiNotePanel);
+        notePanel = multiNotePanel;
+      }
+    } else if (noteBlock && !noteBlock.querySelector('.invoice-note-panel-title')) {
+      noteBlock.insertAdjacentHTML('afterbegin', '<div class="invoice-note-panel-title">Notes</div>');
+    }
+
+    if (detailsCell && notePanel && shouldShowPaymentPanel(inv)) {
+      const drawer = document.createElement('div');
+      drawer.className = 'invoice-actions-drawer';
+      drawer.innerHTML = paymentDrawerHtml(inv);
+      drawer.appendChild(notePanel);
+      detailsCell.replaceChildren(drawer);
+    }
+
+    if (detailsRow && activeDetailsId === key) {
+      detailsRow.style.display = '';
+      const btn = tbody.querySelector(`.inv-mini-btn[data-id="${inv.id}"]`);
+      if (btn) {
+        btn.innerHTML = '<span>-</span>';
+        btn.classList.add('inv-open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    }
+  });
+
   updateSortIndicators();
 }
 
@@ -466,6 +953,11 @@ async function applyFilters() {
   if (error) { console.error(error); return; }
 
   invoices = data || [];
+  const invoiceIds = invoices.map(inv => inv.id);
+  await Promise.all([
+    loadInvoicePaymentsFor(invoiceIds),
+    loadInvoiceNotesFor(invoiceIds),
+  ]);
   renderTable();
 }
 
@@ -521,10 +1013,13 @@ tbody?.addEventListener("click", (e) => {
 
   // 2) Open this one if it was closed
   if (!isOpen) {
+    activeDetailsId = invoiceKey(id);
     detailsRow.style.display = "";
     btn.innerHTML = "<span>−</span>";
     btn.classList.add("inv-open");
     btn.setAttribute("aria-expanded", "true");
+  } else {
+    activeDetailsId = null;
   }
 });
 
@@ -563,6 +1058,40 @@ function refreshNoteActionButton(id){
   actions.innerHTML = hasNote
     ? `<button type="button" class="btn-note btn-note--ghost note-edit-btn" data-id="${id}">Edit</button>`
     : `<button type="button" class="btn-note btn-note--ghost note-new-btn"  data-id="${id}">Write new</button>`;
+}
+
+function openInvoiceNoteForm(invoiceId, { noteId = '', body = '' } = {}) {
+  const form = tbody.querySelector(`.invoice-note-form[data-id="${invoiceId}"]`);
+  const textarea = tbody.querySelector(`.invoice-note-input[data-id="${invoiceId}"]`);
+  const saveBtn = tbody.querySelector(`.invoice-note-save[data-id="${invoiceId}"]`);
+  const list = tbody.querySelector(`.invoice-notes-panel[data-id="${invoiceId}"] .invoice-notes-list`);
+  if (!form || !textarea || !saveBtn) return;
+
+  form.style.display = '';
+  if (list) list.style.display = 'none';
+  textarea.value = body;
+  textarea.focus();
+  if (noteId) {
+    saveBtn.dataset.noteId = noteId;
+    saveBtn.textContent = 'Save note';
+  } else {
+    delete saveBtn.dataset.noteId;
+    saveBtn.textContent = 'Add note';
+  }
+}
+
+function closeInvoiceNoteForm(invoiceId) {
+  const form = tbody.querySelector(`.invoice-note-form[data-id="${invoiceId}"]`);
+  const textarea = tbody.querySelector(`.invoice-note-input[data-id="${invoiceId}"]`);
+  const saveBtn = tbody.querySelector(`.invoice-note-save[data-id="${invoiceId}"]`);
+  const list = tbody.querySelector(`.invoice-notes-panel[data-id="${invoiceId}"] .invoice-notes-list`);
+  if (textarea) textarea.value = '';
+  if (saveBtn) {
+    delete saveBtn.dataset.noteId;
+    saveBtn.textContent = 'Add note';
+  }
+  if (form) form.style.display = 'none';
+  if (list) list.style.display = '';
 }
 
 
@@ -627,6 +1156,193 @@ tbody?.addEventListener("click", async (e) => {
     setEditMode(id, false);
   }catch(err){
     alert(err.message || "Failed to save note.");
+  }
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-note-add-toggle");
+  if (!btn) return;
+  if (!invoiceNotesAvailable) {
+    alert("Multiple notes are not enabled yet. Run supabase/invoice_notes.sql first.");
+    return;
+  }
+  openInvoiceNoteForm(btn.dataset.id);
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-note-cancel");
+  if (!btn) return;
+  closeInvoiceNoteForm(btn.dataset.id);
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-note-edit");
+  if (!btn) return;
+  const invoiceId = btn.dataset.invoiceId;
+  const noteId = btn.dataset.noteId;
+  const note = findInvoiceNote(invoiceId, noteId);
+  if (!note) return;
+  openInvoiceNoteForm(invoiceId, { noteId, body: note.body || '' });
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-note-delete");
+  if (!btn) return;
+  openNoteDeleteModal(btn.dataset.invoiceId, btn.dataset.noteId);
+});
+
+tbody?.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".invoice-note-save");
+  if (!btn) return;
+  const invoiceId = btn.dataset.id;
+  const textarea = tbody.querySelector(`.invoice-note-input[data-id="${invoiceId}"]`);
+  const noteId = btn.dataset.noteId || '';
+  const body = textarea?.value.trim() || '';
+
+  if (!invoiceNotesAvailable) {
+    alert("Multiple notes are not enabled yet. Run supabase/invoice_notes.sql first.");
+    return;
+  }
+  if (!body) {
+    alert("Write a note before saving.");
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    const { error } = noteId
+      ? await sb.from('invoice_notes').update({ body }).eq('id', noteId)
+      : await sb.from('invoice_notes').insert({ invoice_id: invoiceKey(invoiceId), body });
+    if (error) throw error;
+
+    activeDetailsId = invoiceKey(invoiceId);
+    await loadInvoiceNotesFor(invoices.map(inv => inv.id));
+    renderTable();
+  } catch (err) {
+    console.error('[invoices] save note failed:', err);
+    alert(err.message || 'Failed to save note.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = noteId ? 'Save note' : 'Add note';
+  }
+});
+
+tbody?.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".invoice-payment-save");
+  if (!btn) return;
+  const id = btn.getAttribute("data-id");
+  const inv = invoices.find(x => invoiceKey(x.id) === invoiceKey(id));
+  if (!inv) return;
+  if (!invoicePaymentsAvailable) {
+    alert("Payment history is not enabled yet. Run supabase/invoice_payments.sql first.");
+    return;
+  }
+
+  const amountInput = tbody.querySelector(`.invoice-payment-amount[data-id="${id}"]`);
+  const dateInput = tbody.querySelector(`.invoice-payment-date[data-id="${id}"]`);
+  const noteInput = tbody.querySelector(`.invoice-payment-note[data-id="${id}"]`);
+  const editPaymentId = btn.dataset.editPaymentId || '';
+  const editingPayment = editPaymentId ? findInvoicePayment(id, editPaymentId) : null;
+  const amount = Number(amountInput?.value || 0);
+  const paymentDate = dateInput?.value || todayISO();
+  const note = noteInput?.value.trim() || null;
+  const { remaining } = getInvoicePaymentStats(inv);
+  const maxAllowed = remaining + Number(editingPayment?.amount || 0);
+
+  if (!editingPayment && remaining <= 0.005) {
+    alert("This invoice is already fully paid.");
+    return;
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Enter a payment amount greater than 0.");
+    return;
+  }
+  if (amount > maxAllowed + 0.005) {
+    alert("Payment amount is higher than the remaining invoice balance.");
+    return;
+  }
+  if (!paymentDate) {
+    alert("Choose a payment date.");
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+    const payload = { amount, payment_date: paymentDate, note };
+    const { error } = editingPayment
+      ? await sb.from("invoice_payments").update(payload).eq("id", editPaymentId)
+      : await sb.from("invoice_payments").insert({ invoice_id: invoiceKey(id), ...payload });
+    if (error) throw error;
+
+    activeDetailsId = invoiceKey(id);
+    await refreshInvoicePaymentData(id);
+    renderTable();
+  } catch (err) {
+    console.error("[invoices] save payment failed:", err);
+    alert(err.message || "Failed to save payment.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.editPaymentId ? "Save payment" : "Add payment";
+  }
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-payment-edit");
+  if (!btn) return;
+  const invoiceId = btn.dataset.invoiceId;
+  const paymentId = btn.dataset.paymentId;
+  const payment = findInvoicePayment(invoiceId, paymentId);
+  if (!payment) return;
+
+  const amountInput = tbody.querySelector(`.invoice-payment-amount[data-id="${invoiceId}"]`);
+  const dateInput = tbody.querySelector(`.invoice-payment-date[data-id="${invoiceId}"]`);
+  const noteInput = tbody.querySelector(`.invoice-payment-note[data-id="${invoiceId}"]`);
+  const saveBtn = tbody.querySelector(`.invoice-payment-save[data-id="${invoiceId}"]`);
+  const cancelBtn = tbody.querySelector(`.invoice-payment-cancel-edit[data-id="${invoiceId}"]`);
+
+  if (amountInput) amountInput.value = Number(payment.amount || 0).toFixed(2);
+  if (dateInput) dateInput.value = payment.payment_date || todayISO();
+  if (noteInput) noteInput.value = payment.note || '';
+  if (saveBtn) {
+    saveBtn.dataset.editPaymentId = paymentId;
+    saveBtn.textContent = "Save payment";
+  }
+  if (cancelBtn) cancelBtn.style.display = "";
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-payment-delete");
+  if (!btn) return;
+  openPaymentDeleteModal(btn.dataset.invoiceId, btn.dataset.paymentId);
+});
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".invoice-payment-cancel-edit");
+  if (!btn) return;
+  const invoiceId = btn.dataset.id;
+  const amountInput = tbody.querySelector(`.invoice-payment-amount[data-id="${invoiceId}"]`);
+  const dateInput = tbody.querySelector(`.invoice-payment-date[data-id="${invoiceId}"]`);
+  const noteInput = tbody.querySelector(`.invoice-payment-note[data-id="${invoiceId}"]`);
+  const saveBtn = tbody.querySelector(`.invoice-payment-save[data-id="${invoiceId}"]`);
+
+  if (amountInput) amountInput.value = "";
+  if (dateInput) dateInput.value = todayISO();
+  if (noteInput) noteInput.value = "";
+  if (saveBtn) {
+    delete saveBtn.dataset.editPaymentId;
+    saveBtn.textContent = "Add payment";
+  }
+  btn.style.display = "none";
+});
+
+tbody?.addEventListener("click", (e) => {
+  const input = e.target.closest(".invoice-payment-date");
+  if (!input) return;
+  input.focus();
+  if (typeof input.showPicker === "function") {
+    try { input.showPicker(); } catch (_) {}
   }
 });
 
@@ -846,14 +1562,18 @@ document.addEventListener('click', (e) => {
   showPillDropdown(pill, [
     { value: 'Paid' },
     { value: 'Not Paid' },
-    { value: 'Partial Payment' },
+    { value: 'Partial Payment', label: 'Partial' },
     { value: 'Cancelled' },
   ], async (next) => {
     const res = await persistStatusToDb(id, next);
     if (!res.ok) { alert(res.error?.message || 'Could not update status.'); return; }
+    const inv = invoices.find(x => invoiceKey(x.id) === invoiceKey(id));
+    if (inv) inv.status = res.value;
     pill.className = `tag ${statusClassFor(res.value)} status-pill`;
-    pill.textContent = res.value;
+    pill.textContent = statusLabelFor(res.value);
     pill.dataset.id = id;
+    pill.dataset.value = res.value;
+    renderTable();
   });
 });
 
@@ -1050,7 +1770,7 @@ const hideLoader = () => loader?.classList.add('hidden');
 
 async function initInvoicesPage() {
   showLoader();
-  await Promise.all([loadClientsForSelect(), loadClientsForFilter(), loadInvoices()]);
+  await Promise.all([loadClientsForSelect(), loadClientsForFilter()]);
   await applyFilters();
   hideLoader();
   mainEl?.classList.add('content-ready');
@@ -1071,10 +1791,3 @@ addServiceBtn?.addEventListener('click', (e) => {
   e.preventDefault();      // safe even if inside a <form> later
   addServiceRow();         // appends a blank service row
 });
-
-// Init
-loadClientsForSelect();
-loadInvoices();
-
-
-

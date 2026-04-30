@@ -10,7 +10,7 @@ function showPillDropdown(pill, options, onSelect) {
   // Remove any stale dropdown
   document.querySelectorAll('.pill-dropdown').forEach(d => d.remove());
 
-  const current = pill.textContent.trim();
+  const current = pill.dataset.value || pill.textContent.trim();
   const rect = pill.getBoundingClientRect();
 
   const menu = document.createElement('div');

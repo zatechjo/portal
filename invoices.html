@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css?v=18">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=28">
 
   <!-- App scripts (keep your order) -->
   <script type="module" src="./assets/js/firebase.js"></script>
@@ -26,7 +26,7 @@
 
   <!-- Supabase + page logic -->
   <script type="module" src="./assets/js/supabase.js"></script>
-  <script type="module" src="./assets/js/invoices.js?v=3"></script>
+  <script type="module" src="./assets/js/invoices.js?v=6"></script>
 </head>
 <body>
 
@@ -121,7 +121,7 @@
                 <option value="all" selected>All Status</option>
                 <option value="Paid">Paid</option>
                 <option value="Not Paid">Not Paid</option>
-                <option value="Partial Payment">Partial Payment</option>
+                <option value="Partial Payment">Partial</option>
                 <option value="Cancelled">Cancelled</option>
                 <option value="Sent">Sent</option>
               </select>
@@ -162,7 +162,7 @@
                 <th data-sort="coverage">Coverage Period</th>
                 <th data-sort="doc">Doc</th>
                 <th data-sort="pdf">PDF</th>
-                <th data-sort="note" style="width:64px;">Note</th>
+                <th data-sort="note" style="width:64px;">Actions</th>
               </tr>
             </thead>
             <tbody id="invoices-tbody"></tbody>
