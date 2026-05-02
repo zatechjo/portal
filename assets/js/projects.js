@@ -1337,7 +1337,6 @@ import { auth } from './firebase.js';
 
     const validation = validateProjectFile(file);
     if (validation) {
-      if (!file && els.pmFileInput) els.pmFileInput.click();
       setProjectFileStatus(validation, validation === 'Choose a file first.' ? '' : 'error');
       return;
     }
@@ -1404,6 +1403,21 @@ import { auth } from './firebase.js';
     } finally {
       setProjectFileBusy(false);
     }
+  }
+
+  function handleProjectFileButtonClick(e) {
+    e?.preventDefault();
+    e?.stopPropagation();
+
+    if (state.fileUploadBusy) return;
+
+    const file = els.pmFileInput?.files?.[0];
+    if (!file) {
+      els.pmFileInput?.click();
+      return;
+    }
+
+    uploadProjectFile();
   }
 
   async function downloadProjectFile(storageKey) {
@@ -3374,7 +3388,7 @@ import { auth } from './firebase.js';
     els.pmAddActivityBtn?.addEventListener('click', addProjectActivity);
     els.pmAddTeamMemberBtn?.addEventListener('click', addProjectTeamMember);
     els.pmAddTeamPaymentBtn?.addEventListener('click', addProjectTeamPayment);
-    els.pmUploadFileBtn?.addEventListener('click', uploadProjectFile);
+    els.pmUploadFileBtn?.addEventListener('click', handleProjectFileButtonClick);
     els.pmFileInput?.addEventListener('change', syncSelectedProjectFile);
 
     els.pmFileDropzone?.addEventListener('click', (e) => {
