@@ -6,6 +6,11 @@
     "ignore": [
       "firebase.json",
       "supabase/**",
+      ".git/**",
+      ".claude/**",
+      ".firebase/**",
+      "*.log",
+      "**/*.log",
       "**/.*",
       "**/node_modules/**"
     ],
