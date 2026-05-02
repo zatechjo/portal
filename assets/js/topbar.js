@@ -23,7 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateGreetingWord() {
     if (!greetingWordEl) return;
-    greetingWordEl.textContent = "Welcome back,";
+    const isIndexPage = /^\/(?:index(?:\.html)?)?$/.test(window.location.pathname);
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    greetingWordEl.textContent = isIndexPage && isMobile ? "Hello," : "Welcome back,";
   }
 
 

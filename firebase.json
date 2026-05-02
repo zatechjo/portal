@@ -5,6 +5,7 @@
     "trailingSlash": false,
     "ignore": [
       "firebase.json",
+      "supabase/**",
       "**/.*",
       "**/node_modules/**"
     ],

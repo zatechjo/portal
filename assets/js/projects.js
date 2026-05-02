@@ -1,4 +1,5 @@
 import { sb } from './supabase.js';
+import { auth } from './firebase.js';
 
 (() => {
   const STATUSES = ['Planned', 'Active', 'On Hold', 'Completed', 'Cancelled'];
@@ -127,6 +128,11 @@ import { sb } from './supabase.js';
     pmTeamSummaryCard: byId('pmTeamSummaryCard'),
     pmPaymentHistoryCard: byId('pmPaymentHistoryCard'),
     pmTeamBottomGrid: byId('pmTeamBottomGrid'),
+    pmFileInput: byId('pmFileInput'),
+    pmFileDropzone: byId('pmFileDropzone'),
+    pmUploadFileBtn: byId('pmUploadFileBtn'),
+    pmFileList: byId('pmFileList'),
+    pmFileStatus: byId('pmFileStatus'),
 
     // modal edit fields
     projectCodeInput: byId('projectCodeInput'),
@@ -258,8 +264,17 @@ import { sb } from './supabase.js';
 
     invoiceBridgeProjectId: null,
     clientsFull: [],
+    projectFiles: [],
+    fileUploadBusy: false,
 
   };
+
+  const PROJECT_FILES_API = 'https://portal-project-files-api.icy-meadow-218b.workers.dev';
+  const PROJECT_FILE_MAX_BYTES = 100 * 1024 * 1024;
+  const PROJECT_FILE_ALLOWED_EXTENSIONS = new Set([
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+    'png', 'jpg', 'jpeg', 'webp', 'gif', 'txt', 'csv', 'zip'
+  ]);
 
   const PROJECT_FX_USD_PER = {
     USD: 1,
@@ -1199,6 +1214,258 @@ import { sb } from './supabase.js';
     `).join('');
   }
 
+  function formatFileSize(bytes) {
+    const size = Number(bytes || 0);
+    if (!size) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+    return `${(size / Math.pow(1024, index)).toFixed(index ? 1 : 0)} ${units[index]}`;
+  }
+
+  function projectFileExtension(fileName = '') {
+    const parts = String(fileName).split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : '';
+  }
+
+  function cleanProjectFileName(value) {
+    const cleaned = String(value || 'file')
+      .trim()
+      .replace(/[\\/:*?"<>|#%{}^~[\]`]/g, '-')
+      .replace(/\s+/g, ' ')
+      .slice(0, 180);
+    return cleaned || 'file';
+  }
+
+  function setProjectFileStatus(message = '', tone = '') {
+    if (!els.pmFileStatus) return;
+    els.pmFileStatus.textContent = message;
+    els.pmFileStatus.className = `project-file-status ${tone}`.trim();
+  }
+
+  function setProjectFileBusy(on) {
+    state.fileUploadBusy = !!on;
+    if (els.pmUploadFileBtn) {
+      els.pmUploadFileBtn.disabled = !!on;
+      els.pmUploadFileBtn.innerHTML = `<span>${on ? 'Uploading...' : 'Add File'}</span>`;
+    }
+    els.pmFileDropzone?.classList.toggle('is-busy', !!on);
+  }
+
+  function renderProjectFiles(files = state.projectFiles) {
+    if (!els.pmFileList) return;
+
+    if (!files.length) {
+      els.pmFileList.innerHTML = '<div class="empty-state compact">No files attached yet.</div>';
+      return;
+    }
+
+    els.pmFileList.innerHTML = files.map((file) => {
+      const ext = projectFileExtension(file.file_name || file.name || '').toUpperCase() || 'FILE';
+      const uploadedBy = file.uploaded_by ? ` · ${escapeHTML(file.uploaded_by)}` : '';
+      return `
+        <div class="data-item project-file-row" data-file-id="${escapeHTML(file.id)}">
+          <div class="project-file-badge">${escapeHTML(ext)}</div>
+          <div class="data-item-main">
+            <div class="data-item-title">${escapeHTML(file.file_name || 'Untitled file')}</div>
+            <div class="data-item-sub">${formatFileSize(file.file_size)} · ${fmtDate(file.uploaded_at)}${uploadedBy}</div>
+          </div>
+          <div class="project-file-actions">
+            <button class="btn2 project-file-download-btn" type="button" data-key="${escapeHTML(file.storage_key)}">Download</button>
+            <button class="btn2 project-file-delete-btn" type="button" data-id="${escapeHTML(file.id)}" data-key="${escapeHTML(file.storage_key)}">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function getProjectFileToken() {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Please sign in again before managing files.');
+    return user.getIdToken();
+  }
+
+  async function fetchProjectFiles(projectId) {
+    if (!projectId) return [];
+
+    const { data, error } = await sb
+      .from('project_files')
+      .select('id, project_id, storage_key, file_id, file_name, file_size, content_type, uploaded_by, uploaded_at, created_at')
+      .eq('project_id', String(projectId))
+      .order('uploaded_at', { ascending: false });
+
+    if (error) {
+      console.error('[projects] fetchProjectFiles failed:', error);
+      setProjectFileStatus('Could not load files. Run supabase/project_files.sql if this is the first setup.', 'error');
+      return [];
+    }
+
+    return data || [];
+  }
+
+  async function refreshProjectFiles(projectId = state.selectedId) {
+    const rows = await fetchProjectFiles(projectId);
+    state.projectFiles = rows;
+    renderProjectFiles(rows);
+  }
+
+  function validateProjectFile(file) {
+    if (!file) return 'Choose a file first.';
+    if (file.size > PROJECT_FILE_MAX_BYTES) return 'File is larger than 100 MB.';
+    const ext = projectFileExtension(file.name);
+    if (!PROJECT_FILE_ALLOWED_EXTENSIONS.has(ext)) return 'This file type is not allowed.';
+    return '';
+  }
+
+  function syncSelectedProjectFile() {
+    const file = els.pmFileInput?.files?.[0];
+    if (!file) {
+      setProjectFileStatus('');
+      return;
+    }
+    const error = validateProjectFile(file);
+    if (error) {
+      setProjectFileStatus(error, 'error');
+      return;
+    }
+    setProjectFileStatus(`${cleanProjectFileName(file.name)} selected · ${formatFileSize(file.size)}`, 'ready');
+  }
+
+  async function uploadProjectFile() {
+    const project = findProject(state.selectedId);
+    const file = els.pmFileInput?.files?.[0];
+    if (!project || state.fileUploadBusy) return;
+
+    const validation = validateProjectFile(file);
+    if (validation) {
+      if (!file && els.pmFileInput) els.pmFileInput.click();
+      setProjectFileStatus(validation, validation === 'Choose a file first.' ? '' : 'error');
+      return;
+    }
+
+    const safeFileName = cleanProjectFileName(file.name);
+    let token = '';
+    let uploadedStorageKey = '';
+
+    try {
+      setProjectFileBusy(true);
+      setProjectFileStatus(`Uploading ${safeFileName}...`, 'ready');
+
+      token = await getProjectFileToken();
+      const uploadRes = await fetch(`${PROJECT_FILES_API}/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'content-type': file.type || 'application/octet-stream',
+          'x-project-id': String(project.id),
+          'x-file-name': safeFileName
+        },
+        body: file
+      });
+
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) throw new Error(uploadData.error || 'R2 upload failed.');
+      uploadedStorageKey = uploadData.key || '';
+
+      const metadata = {
+        project_id: String(project.id),
+        storage_key: uploadData.key,
+        file_id: uploadData.fileId,
+        file_name: safeFileName,
+        file_size: file.size,
+        content_type: file.type || 'application/octet-stream',
+        uploaded_by: auth.currentUser?.email || uploadData.uploadedBy || '',
+        uploaded_at: uploadData.uploadedAt || new Date().toISOString()
+      };
+
+      const { error } = await sb.from('project_files').insert(metadata);
+      if (error) throw error;
+
+      if (els.pmFileInput) els.pmFileInput.value = '';
+      setProjectFileStatus('File attached to project.', 'success');
+      await refreshProjectFiles(project.id);
+      showToast('File attached to project');
+
+      await logProjectActivity(project.id, {
+        title: 'File attached',
+        type: 'Files',
+        note: safeFileName
+      });
+    } catch (error) {
+      if (uploadedStorageKey && token) {
+        fetch(`${PROJECT_FILES_API}/file?key=${encodeURIComponent(uploadedStorageKey)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch((cleanupError) => {
+          console.warn('[projects] orphan file cleanup failed:', cleanupError);
+        });
+      }
+      console.error('[projects] uploadProjectFile failed:', error);
+      setProjectFileStatus(error?.message || 'Failed to upload file.', 'error');
+    } finally {
+      setProjectFileBusy(false);
+    }
+  }
+
+  async function downloadProjectFile(storageKey) {
+    if (!storageKey) return;
+
+    try {
+      const token = await getProjectFileToken();
+      const res = await fetch(`${PROJECT_FILES_API}/download?key=${encodeURIComponent(storageKey)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Download failed.');
+      }
+
+      const blob = await res.blob();
+      const fileName = storageKey.split('/').pop() || 'download';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    } catch (error) {
+      console.error('[projects] downloadProjectFile failed:', error);
+      setProjectFileStatus(error?.message || 'Failed to download file.', 'error');
+    }
+  }
+
+  async function deleteProjectFile(fileId, storageKey) {
+    if (!fileId || !storageKey) return;
+    const file = state.projectFiles.find((item) => String(item.id) === String(fileId));
+    const label = file?.file_name || 'this file';
+    if (!confirm(`Delete "${label}" from this project?`)) return;
+
+    try {
+      const token = await getProjectFileToken();
+      const res = await fetch(`${PROJECT_FILES_API}/file?key=${encodeURIComponent(storageKey)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'R2 delete failed.');
+      }
+
+      const { error } = await sb.from('project_files').delete().eq('id', fileId);
+      if (error) throw error;
+
+      state.projectFiles = state.projectFiles.filter((item) => String(item.id) !== String(fileId));
+      renderProjectFiles();
+      setProjectFileStatus('File deleted.', 'success');
+      showToast('File deleted');
+    } catch (error) {
+      console.error('[projects] deleteProjectFile failed:', error);
+      setProjectFileStatus(error?.message || 'Failed to delete file.', 'error');
+    }
+  }
+
   function todayYMD() {
     return new Date().toISOString().slice(0, 10);
   }
@@ -1855,7 +2122,7 @@ import { sb } from './supabase.js';
       hideModalEl(els.projectInvoiceProgressModal);
       closeProjectInvoiceModal();
 
-      window.location.href = './invoices.html';
+      window.location.href = '/invoices';
     } catch (error) {
       console.error('[projects] saveProjectInvoiceBridge failed:', error);
       hideModalEl(els.projectInvoiceProgressModal);
@@ -2575,15 +2842,22 @@ import { sb } from './supabase.js';
     applyLiveFinancialSummary(project, [], []);
     renderProjectInvoices([]);
     renderProjectExpenses([]);
+    state.projectFiles = [];
+    renderProjectFiles([]);
+    setProjectFileStatus('');
+    if (els.pmFileInput) els.pmFileInput.value = '';
 
     Promise.all([
       fetchProjectInvoices(project.id),
-      fetchProjectExpenses(project.id)
-    ]).then(([invoiceRows, expenseRows]) => {
+      fetchProjectExpenses(project.id),
+      fetchProjectFiles(project.id)
+    ]).then(([invoiceRows, expenseRows, fileRows]) => {
       _cachedInvoiceRows = invoiceRows;
       _cachedExpenseRows = expenseRows;
+      state.projectFiles = fileRows;
       renderProjectInvoices(invoiceRows);
       renderProjectExpenses(expenseRows);
+      renderProjectFiles(fileRows);
       applyLiveFinancialSummary(project, invoiceRows, expenseRows);
     }).catch((err) => {
       console.error('[projects] modal related data load failed:', err);
@@ -2630,6 +2904,9 @@ import { sb } from './supabase.js';
     els.modal.setAttribute('aria-hidden', 'true');
     els.modalError.textContent = '';
     state.selectedId = null;
+    state.projectFiles = [];
+    if (els.pmFileInput) els.pmFileInput.value = '';
+    setProjectFileStatus('');
     setActiveModalTab('summary');
   }
 
@@ -3097,6 +3374,40 @@ import { sb } from './supabase.js';
     els.pmAddActivityBtn?.addEventListener('click', addProjectActivity);
     els.pmAddTeamMemberBtn?.addEventListener('click', addProjectTeamMember);
     els.pmAddTeamPaymentBtn?.addEventListener('click', addProjectTeamPayment);
+    els.pmUploadFileBtn?.addEventListener('click', uploadProjectFile);
+    els.pmFileInput?.addEventListener('change', syncSelectedProjectFile);
+
+    els.pmFileDropzone?.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      els.pmFileInput?.click();
+    });
+
+    els.pmFileDropzone?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      els.pmFileDropzone?.classList.add('is-dragging');
+    });
+
+    els.pmFileDropzone?.addEventListener('dragleave', () => {
+      els.pmFileDropzone?.classList.remove('is-dragging');
+    });
+
+    els.pmFileDropzone?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      els.pmFileDropzone?.classList.remove('is-dragging');
+      const file = e.dataTransfer?.files?.[0];
+      if (!file || !els.pmFileInput) return;
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      els.pmFileInput.files = dt.files;
+      syncSelectedProjectFile();
+    });
+
+    els.pmFileList?.addEventListener('click', (e) => {
+      const downloadBtn = e.target.closest('.project-file-download-btn');
+      const deleteBtn = e.target.closest('.project-file-delete-btn');
+      if (downloadBtn) downloadProjectFile(downloadBtn.dataset.key);
+      if (deleteBtn) deleteProjectFile(deleteBtn.dataset.id, deleteBtn.dataset.key);
+    });
 
     els.pmTeamList?.addEventListener('click', (e) => {
       const editBtn = e.target.closest('.team-edit-btn');

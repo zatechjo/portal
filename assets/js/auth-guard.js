@@ -41,8 +41,23 @@ function applyGreeting(user) {
   const wordEl = document.getElementById('greetingWord');
   const nameEl = document.querySelector('.greet-name');
   if (!wordEl || !nameEl) return; // not all pages have the greeting
-  wordEl.textContent = 'Welcome back,';
-  nameEl.textContent = ' ' + resolveDisplayName(user) + '!';
+
+  const name = resolveDisplayName(user);
+  const isIndexPage = /^\/(?:index(?:\.html)?)?$/.test(window.location.pathname);
+  const mobileGreetingQuery = window.matchMedia('(max-width: 768px)');
+
+  function renderGreeting() {
+    const useMobileIndexGreeting = isIndexPage && mobileGreetingQuery.matches;
+    wordEl.textContent = useMobileIndexGreeting ? 'Hello,' : 'Welcome back,';
+    nameEl.textContent = useMobileIndexGreeting ? ` ${name}` : ` ${name}!`;
+  }
+
+  renderGreeting();
+
+  if (isIndexPage && !wordEl.dataset.mobileGreetingBound) {
+    mobileGreetingQuery.addEventListener('change', renderGreeting);
+    wordEl.dataset.mobileGreetingBound = 'true';
+  }
 }
 
 function applyTopbarAccount(user) {

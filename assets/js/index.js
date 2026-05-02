@@ -126,7 +126,7 @@
 
     list.innerHTML = visibleInvoices.map(inv => {
       // If PDF exists, open it directly; otherwise fall back to invoices page
-      const href = inv.pdf_url ? inv.pdf_url : './invoices.html';
+      const href = inv.pdf_url ? inv.pdf_url : '/invoices';
       const target = inv.pdf_url ? ' target="_blank" rel="noopener"' : '';
       const title = inv.pdf_url ? 'title="Open PDF"' : 'title="View invoices"';
 

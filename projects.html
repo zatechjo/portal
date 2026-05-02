@@ -265,6 +265,7 @@
       <button class="tab-btn" type="button" data-tab="expenses">Expenses</button>
       <button class="tab-btn" type="button" data-tab="activity">Activity</button>
       <button class="tab-btn" type="button" data-tab="team">Team / Resources</button>
+      <button class="tab-btn" type="button" data-tab="files">Files</button>
     </div>
 
     <!-- VIEW MODE -->
@@ -578,6 +579,50 @@
                   <div class="empty-sub">Payments logged for this project will appear here</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-tab-panel" data-panel="files">
+        <div class="project-tab-shell">
+          <div class="project-entry-card">
+            <div class="card-head project-entry-head">
+              <div>
+                <h4 style="margin:0 0 4px;">Project Files</h4>
+                <div class="muted">Store proposals, contracts, docs, references, and delivery files</div>
+              </div>
+            </div>
+
+            <div class="project-file-uploader" id="pmFileDropzone">
+              <input
+                id="pmFileInput"
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.zip"
+              />
+              <div class="project-file-dropcopy">
+                <div class="project-file-icon">+</div>
+                <div>
+                  <div class="project-file-title">Drop a file here or choose from your computer</div>
+                  <div class="project-file-sub">PDF, Office docs, images, text, CSV, and ZIP up to 100 MB</div>
+                </div>
+              </div>
+              <button class="btn2 btn-important" id="pmUploadFileBtn" type="button"><span>Add File</span></button>
+            </div>
+
+            <div class="project-file-status" id="pmFileStatus"></div>
+          </div>
+
+          <div class="tab-card project-list-card">
+            <div class="card-head" style="margin-bottom:12px;">
+              <div>
+                <h4 style="margin:0 0 4px;">Attached Files</h4>
+                <div class="muted">Files are kept private and opened through secure portal requests</div>
+              </div>
+            </div>
+
+            <div id="pmFileList" class="project-scroll-list project-file-list">
+              <div class="empty-state compact">No files attached yet.</div>
             </div>
           </div>
         </div>
