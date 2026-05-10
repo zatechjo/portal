@@ -13,10 +13,11 @@
 <!-- Global styles -->
 <link rel="stylesheet" href="./assets/css/styles.css?v=18">
 <!-- Page-specific styles -->
-<link rel="stylesheet" href="./assets/css/settings.css">
+<link rel="stylesheet" href="./assets/css/settings.css?v=2">
 
 <!-- Core scripts -->
 <script type="module" src="./assets/js/firebase.js"></script>
+<script type="module" src="./assets/js/supabase.js"></script>
 <script type="module" src="./assets/js/auth-guard.js"></script>
 <script type="module" src="./assets/js/idle.js"></script>
 
@@ -25,8 +26,8 @@
 <script defer src="./assets/js/topbar.js?v=6"></script>
 <script defer src="./assets/js/notifications.js"></script>
 
-<!-- Page-specific logic -->
-<script defer src="./assets/js/settings.js"></script>
+<!-- Page-specific logic (module — uses firebase + supabase) -->
+<script type="module" src="./assets/js/settings.js?v=2"></script>
 </head>
 <body>
 
@@ -120,6 +121,7 @@
         <div class="card" id="companyCard">
           <div class="card-head">
             <h4>Company Details</h4>
+            <span class="muted small" id="coUpdatedAt"></span>
           </div>
 
           <div class="grid cols-2">
@@ -142,36 +144,97 @@
             </div>
 
             <div class="field">
-              <label for="companyAddress" class="filter-label">Address</label>
-              <input id="companyAddress" type="text" class="edit-field show" placeholder="Street name, city, country" />
+              <label for="coAddress" class="filter-label">Address</label>
+              <input id="coAddress" type="text" class="edit-field show" placeholder="Street name, city, country" />
+            </div>
+            <div class="field">
+              <label for="coTaxId" class="filter-label">Tax ID</label>
+              <input id="coTaxId" type="text" class="edit-field show" placeholder="Tax / VAT registration number" />
             </div>
 
           </div>
 
           <div class="settings-actions">
             <button id="coSaveBtn" class="btn2">Save Details</button>
-            <span id="coSaveMsg" class="muted"></span>
+            <span id="coSaveMsg" class="save-msg"></span>
           </div>
         </div>
 
-        <!-- Invoice Template Placeholder -->
+        <!-- Invoice Template -->
         <div class="card" id="templateCard">
           <div class="card-head">
             <h4>Invoice Template</h4>
+            <span class="muted small" id="tplUpdatedAt"></span>
           </div>
 
-          <p class="muted">Space reserved for your invoice template. No upload yet — coming later.</p>
+          <p class="muted">
+            Replace the <code>.docx</code> used to generate every invoice.
+            The template must use <code>[[ ]]</code> delimiters
+            (e.g. <code>[[client_name]]</code>, <code>[[#lines]]…[[/lines]]</code>) — never <code>{{ }}</code>.
+          </p>
 
-          <div id="tplPlaceholder" class="tpl-placeholder">
-            <div>
-              <div class="tpl-title">Template Preview</div>
-              <div class="muted">This card will host your template preview/controls when enabled.</div>
+          <div id="tplCurrent" class="tpl-current">
+            <div class="tpl-current-info">
+              <div class="tpl-title" id="tplFileName">ZAtech Invoice.docx</div>
+              <div class="muted small" id="tplStatus">Loading…</div>
+            </div>
+            <a id="tplDownloadBtn" class="btn2 ghost" href="#" target="_blank" rel="noopener">Download current</a>
+          </div>
+
+          <input type="file" id="tplFileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
+
+          <div class="settings-actions">
+            <button id="tplPickBtn" class="btn2">Choose .docx file</button>
+            <button id="tplUploadBtn" class="btn2 primary" disabled>Upload &amp; replace</button>
+            <span id="tplMsg" class="save-msg"></span>
+          </div>
+          <div id="tplPicked" class="muted small" style="margin-top:6px;"></div>
+        </div>
+
+        <!-- User Profile -->
+        <div class="card" id="profileCard">
+          <div class="card-head">
+            <h4>Your Profile</h4>
+            <span class="muted small" id="profileEmail"></span>
+          </div>
+
+          <div class="grid cols-2">
+            <div class="field">
+              <label class="filter-label" for="profDisplayName">Display Name</label>
+              <input id="profDisplayName" class="edit-field show" type="text" placeholder="Your name" />
+            </div>
+            <div class="field">
+              <label class="filter-label" for="profEmail">Email</label>
+              <input id="profEmail" class="edit-field show" type="email" disabled />
             </div>
           </div>
 
-          <!-- (Optional) disabled controls for future use -->
           <div class="settings-actions">
-            <button class="btn2" disabled>Upload Template (soon)</button>
+            <button id="profSaveBtn" class="btn2">Save Profile</button>
+            <span id="profMsg" class="save-msg"></span>
+          </div>
+
+          <hr class="divider" />
+
+          <h5 class="sub-head">Change password</h5>
+          <div class="grid cols-2">
+            <div class="field">
+              <label class="filter-label" for="pwCurrent">Current password</label>
+              <input id="pwCurrent" class="edit-field show" type="password" autocomplete="current-password" />
+            </div>
+            <div class="field">
+              <label class="filter-label" for="pwNew">New password</label>
+              <input id="pwNew" class="edit-field show" type="password" autocomplete="new-password" placeholder="At least 8 characters" />
+            </div>
+            <div class="field">
+              <label class="filter-label" for="pwConfirm">Confirm new password</label>
+              <input id="pwConfirm" class="edit-field show" type="password" autocomplete="new-password" />
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button id="pwChangeBtn" class="btn2">Update password</button>
+            <span id="pwMsg" class="save-msg"></span>
           </div>
         </div>
       </div>
