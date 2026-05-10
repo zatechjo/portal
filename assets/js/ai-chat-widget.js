@@ -20,6 +20,7 @@
   const EMPTY_STATE_HTML = body.innerHTML;
   let pending = false;
   let requestSeq = 0;
+  let expandBtn = null;
 
   try { localStorage.removeItem(KEY); } catch {}
 
@@ -269,6 +270,7 @@
       embedHeader.appendChild(actions);
     }
     installResetButton(actions, " iris-reset-btn");
+    installExpandButton(actions);
   }
 
   window.IrisResetChat = resetChat;
@@ -281,6 +283,101 @@
     history = loadHistory();
     renderHistory();
   });
+
+  function isDesktopExpandAllowed() {
+    return window.matchMedia("(min-width: 1101px)").matches;
+  }
+
+  function buildExpandIcon(expanded = false) {
+    if (expanded) {
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M8 3v5H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 21v-5H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 21v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+    }
+
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3 9V3h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 9V3h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3 15v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 15v6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+  }
+
+  function syncExpandButton() {
+    if (!expandBtn) return;
+    const slot = chat.closest(".dash-iris-slot");
+    const expanded = Boolean(slot?.classList.contains("iris-expanded"));
+    const allowed = isDesktopExpandAllowed();
+    expandBtn.hidden = !allowed;
+    expandBtn.disabled = !allowed;
+    expandBtn.setAttribute("aria-pressed", String(expanded));
+    expandBtn.title = expanded ? "Collapse Iris" : "Expand Iris";
+    expandBtn.setAttribute("aria-label", expanded ? "Collapse Iris" : "Expand Iris");
+    expandBtn.innerHTML = buildExpandIcon(expanded);
+  }
+
+  function setIrisExpanded(expanded, animate = true) {
+    const slot = chat.closest(".dash-iris-slot");
+    if (!slot) return;
+
+    const nextExpanded = Boolean(expanded && isDesktopExpandAllowed());
+    const wasExpanded = slot.classList.contains("iris-expanded");
+    if (wasExpanded === nextExpanded) {
+      syncExpandButton();
+      return;
+    }
+
+    const before = animate ? slot.getBoundingClientRect() : null;
+    slot.classList.toggle("iris-expanded", nextExpanded);
+    chat.classList.toggle("iris-expanded", nextExpanded);
+    syncExpandButton();
+
+    if (!animate || !before) return;
+
+    const after = slot.getBoundingClientRect();
+    const dx = before.left - after.left;
+    const dy = before.top - after.top;
+    const sx = before.width / Math.max(after.width, 1);
+    const sy = before.height / Math.max(after.height, 1);
+
+    if (typeof slot.animate !== "function") return;
+
+    slot.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
+        { transform: "translate(0, 0) scale(1, 1)" },
+      ],
+      { duration: 380, easing: "cubic-bezier(.2,.8,.2,1)" }
+    );
+  }
+
+  function installExpandButton(container) {
+    if (!chat.classList.contains("dash-iris-embed") || !container || container.querySelector(".ai-expand-btn")) return;
+    expandBtn = document.createElement("button");
+    expandBtn.type = "button";
+    expandBtn.className = "ai-icon-btn ai-expand-btn";
+    expandBtn.addEventListener("click", () => {
+      const slot = chat.closest(".dash-iris-slot");
+      setIrisExpanded(!slot?.classList.contains("iris-expanded"));
+    });
+    container.appendChild(expandBtn);
+    syncExpandButton();
+  }
+
+  const expandMq = window.matchMedia("(min-width: 1101px)");
+  const onExpandViewportChange = () => {
+    if (!isDesktopExpandAllowed()) setIrisExpanded(false, false);
+    syncExpandButton();
+  };
+  if (expandMq.addEventListener) expandMq.addEventListener("change", onExpandViewportChange);
+  else if (expandMq.addListener) expandMq.addListener(onExpandViewportChange);
 
   async function getRequestHeaders() {
     const headers = { "Content-Type": "application/json" };

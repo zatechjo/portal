@@ -2650,10 +2650,11 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 .ai-icon-btn { width: 32px; height: 32px; border-radius: 10px; border: none; background: rgba(255,255,255,.05); color: white; cursor: pointer; }
 .ai-icon-btn:hover { background: rgba(255,255,255,.1); }
 .ai-icon-btn.danger:hover { background: rgba(255,70,70,.2); }
-.ai-reset-btn { display: inline-flex; align-items: center; justify-content: center; color: rgba(226,232,240,.82); transition: background .16s ease, color .16s ease, transform .16s ease; }
-.ai-reset-btn svg { width: 16px; height: 16px; display: block; }
+.ai-reset-btn, .ai-expand-btn { display: inline-flex; align-items: center; justify-content: center; color: rgba(226,232,240,.82); transition: background .16s ease, color .16s ease, transform .16s ease; }
+.ai-reset-btn svg, .ai-expand-btn svg { width: 16px; height: 16px; display: block; }
 .ai-reset-btn:hover { color: #61dafb; background: rgba(97,218,251,.12); transform: rotate(-18deg); }
-.ai-reset-btn:focus-visible { outline: 2px solid rgba(97,218,251,.65); outline-offset: 2px; }
+.ai-expand-btn:hover { color: #c4b5fd; background: rgba(196,181,253,.12); transform: scale(1.06); }
+.ai-reset-btn:focus-visible, .ai-expand-btn:focus-visible { outline: 2px solid rgba(97,218,251,.65); outline-offset: 2px; }
 
 .ai-chat-body { flex: 1; padding: 16px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
 .ai-msg { display: flex; }
@@ -2753,8 +2754,19 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 .dash-att-empty { display: flex; align-items: center; justify-content: center; height: 80px; font-size: 13px; color: rgba(200,217,238,.3); font-style: italic; }
 
 .dash-activity { display: grid; grid-template-columns: 1.1fr 1fr 1.6fr; gap: 14px; margin-bottom: 28px; animation: dashSlideUp .45s .15s ease both; align-items: stretch; }
-.dash-iris-slot { display: flex; flex-direction: column; height: 420px; }
+.dash-iris-slot { display: flex; flex-direction: column; height: 420px; min-width: 0; transform-origin: top right; transition: height .42s cubic-bezier(.2,.8,.2,1), filter .28s ease; }
 .dash-iris-slot #aiChat { flex: 1; min-height: 0; }
+@media (min-width: 1101px) {
+  .dash-activity .dash-iris-slot.iris-expanded {
+    grid-column: 1 / -1;
+    height: clamp(620px, 72dvh, 820px);
+    filter: drop-shadow(0 26px 58px rgba(0,0,0,.32));
+  }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed {
+    border-color: rgba(97,218,251,.28);
+    box-shadow: 0 0 0 1px rgba(97,218,251,.08), 0 22px 62px rgba(0,0,0,.44);
+  }
+}
 
 .dash-tile { background: linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.015)); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; height: 420px; overflow: hidden; }
 .dash-tile-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-shrink: 0; }
@@ -3005,8 +3017,9 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 .iris-embed-status { font-size: 11px; color: rgba(200,217,238,.45); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
 .iris-online-dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; flex-shrink: 0; }
 .iris-embed-actions { display: flex; align-items: center; gap: 6px; margin-left: 12px; }
-.iris-embed-actions .ai-reset-btn { width: 34px; height: 34px; border-radius: 11px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); }
+.iris-embed-actions .ai-reset-btn, .iris-embed-actions .ai-expand-btn { width: 34px; height: 34px; border-radius: 11px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); }
 .iris-embed-actions .ai-reset-btn:hover { background: rgba(97,218,251,.12); border-color: rgba(97,218,251,.2); }
+.iris-embed-actions .ai-expand-btn:hover { background: rgba(196,181,253,.12); border-color: rgba(196,181,253,.2); }
 /* Hero area — fills available space, centers content vertically */
 #irisHero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 16px 14px 60px; min-height: 0; }
 .iris-hero-greeting { text-align: center; }
@@ -3159,6 +3172,7 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
   .dash-glance { grid-template-columns: 1fr; }
   .dash-activity { grid-template-columns: 1fr; }
   .dash-iris-slot { grid-column: auto; height: 340px; }
+  .iris-embed-actions .ai-expand-btn { display: none; }
   .dash-tile { height: auto; min-height: 300px; max-height: 380px; }
 
   #client-modal .client-details,
@@ -3264,7 +3278,7 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
   #subcontractorModal .sub-modal-content, #invModal .modal-content, #projectInvoiceModal .modal-content, #projectsModal .modal-content { max-height: 92dvh; overflow-y: auto; }
 
   /* AI chat — fixed full panel on mobile, no swipe/drag */
-  .ai-chat { right: 0; left: 0; bottom: 0; top: auto; width: 100%; max-width: 100%; height: 88dvh; border-radius: 20px 20px 0 0; display: none; }
+  .ai-chat { right: 0; left: 0; bottom: 0; top: auto; width: 100%; max-width: 100%; height: 96dvh; max-height: calc(100dvh - 8px); border-radius: 20px 20px 0 0; display: none; }
   .ai-chat.show { display: flex; }
   .ai-fab { right: 16px; bottom: 20px; width: 52px; height: 52px; transition: opacity .2s, transform .2s; }
   body.iris-open .ai-fab { opacity: 0; pointer-events: none; transform: scale(.8); }
@@ -3280,6 +3294,7 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
   #aiChat.dash-iris-embed {
     min-height: 300px;
   }
+  .iris-embed-actions .ai-expand-btn { display: none; }
   #aiChat.dash-iris-embed #irisHero {
     justify-content: center;
     gap: 8px;
@@ -3333,7 +3348,7 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
   .dash-glance > :nth-child(1) .dash-kpi-value, .dash-glance > :nth-child(2) .dash-kpi-value { font-size: 20px; }
   .dash-glance > :nth-child(1) .dash-kpi-label, .dash-glance > :nth-child(2) .dash-kpi-label { font-size: 11px; }
   .dash-glance > :nth-child(1) .dash-kpi-sub, .dash-glance > :nth-child(2) .dash-kpi-sub { font-size: 10px; }
-  .dash-iris-slot { height: 360px; }
+  .dash-iris-slot { height: min(680px, 82dvh); }
   .dash-panel { height: auto; }
   .dash-att-list { max-height: 110px; }
   .dash-section-label { margin-top: 6px; }
