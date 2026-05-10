@@ -113,6 +113,16 @@ Deno.serve(async (req) => {
       timezone,
     };
 
+    const directAnswer = await maybeAnswerDirect(latestQuestion, ctx);
+    if (directAnswer) {
+      return jsonResponse({
+        reply: directAnswer.reply,
+        model: "deterministic",
+        toolsUsed: directAnswer.toolsUsed,
+        usage: null,
+      });
+    }
+
     const model = chooseModel(latestQuestion);
     const toolsUsed: string[] = [];
     const workingMessages: ChatMessage[] = [
@@ -228,6 +238,8 @@ function systemPrompt(input: { user: FirebaseUser | null; timezone: string; page
     "A little dry wit is fine, but the work comes first.",
     "Be sharp, direct, and useful. Keep most answers under 180 words unless the user asks for detail.",
     "For portal/business data questions, call tools instead of guessing. Never invent numbers, invoices, clients, dates, balances, or project status.",
+    "For simple counts like 'how many clients do we have?', pull the exact table count immediately. Never say 'if you want, I can pull it' when a read-only tool can answer now.",
+    "If the user asks about clients, use get_clients unless the question is clearly only general strategy.",
     "When you calculate a total, briefly say what data it is based on. If a table or field is unavailable, say what is missing.",
     "If something looks off, like overdue invoices, weak margins, unpaid subcontractors, or a losing project, flag it plainly.",
     "You are read-only. Do not claim to create, edit, delete, send, upload, or change portal records.",
@@ -280,6 +292,34 @@ function chooseModel(question: string) {
   const q = question.toLowerCase();
   const needsReasoning = /\b(analy[sz]e|why|forecast|predict|strategy|recommend|compare|trend|margin|profit|loss|cash flow|risk|explain|summari[sz]e|insight)\b/.test(q);
   return needsReasoning ? SMART_MODEL : FAST_MODEL;
+}
+
+async function maybeAnswerDirect(question: string, ctx: ToolContext): Promise<{ reply: string; toolsUsed: string[] } | null> {
+  const clientCountArgs = parseClientCountIntent(question);
+  if (!clientCountArgs) return null;
+
+  const result = await getClients(ctx, { ...clientCountArgs, limit: 1 });
+  const count = Number(result.count || 0);
+  const scope = clientCountArgs.status ? `${String(clientCountArgs.status).toLowerCase()} clients` : "clients";
+  const noun = count === 1
+    ? (clientCountArgs.status ? `${String(clientCountArgs.status).toLowerCase()} client` : "client")
+    : scope;
+
+  return {
+    reply: `We have ${count} ${noun} in the portal.`,
+    toolsUsed: ["get_clients"],
+  };
+}
+
+function parseClientCountIntent(question: string): Record<string, unknown> | null {
+  const q = question.toLowerCase();
+  const asksCount = /\b(how many|count|number of|total|total number|client count)\b/.test(q);
+  if (!asksCount || !/\bclients?\b/.test(q)) return null;
+
+  if (/\barchived|archive\b/.test(q)) return { status: "Archived" };
+  if (/\bpaused|pause|on hold\b/.test(q)) return { status: "Paused" };
+  if (/\bactive|current|live\b/.test(q)) return { status: "Active" };
+  return {};
 }
 
 async function callOpenAI(openaiKey: string, payload: Record<string, unknown>) {
@@ -396,7 +436,7 @@ const IRIS_TOOLS = [
     type: "function",
     function: {
       name: "get_portal_overview",
-      description: "Get high-level current totals for invoices, revenue, expenses, projects, opportunities, and tasks.",
+      description: "Get high-level current totals for clients, invoices, revenue, expenses, projects, opportunities, and tasks.",
       parameters: {
         type: "object",
         properties: {},
@@ -470,7 +510,7 @@ const IRIS_TOOLS = [
     type: "function",
     function: {
       name: "get_clients",
-      description: "Find clients by name, email, phone, sector, country, or status.",
+      description: "Find clients and client counts by name, email, phone, sector, country, or status. Use this for 'how many clients', 'client count', and client lists.",
       parameters: {
         type: "object",
         properties: {
@@ -597,12 +637,13 @@ async function runTool(name: string, args: any, ctx: ToolContext): Promise<ToolR
 }
 
 async function getPortalOverview(ctx: ToolContext) {
-  const [invoiceRows, expenses, projects, opportunities, tasks] = await Promise.all([
+  const [invoiceRows, expenses, projects, opportunities, tasks, clients] = await Promise.all([
     fetchInvoicesWithPayments(ctx.sb, {}),
     fetchTable(ctx.sb, "expenses", "id, vendor, description, client_name, amount, expense_date, status, service", 1000),
     fetchProjectsWithComputedCosts(ctx.sb, {}),
     fetchTable(ctx.sb, "opportunities", "id, name, opportunity, status, value, last_contact", 1000),
     fetchTable(ctx.sb, "tasks", "id, text, priority, due_date, assigned_to, done, created_at", 1000),
+    fetchTable(ctx.sb, "clients", "id, status, country, sector", 1000),
   ]);
 
   const owedInvoices = invoiceRows.filter((inv) => isOwedStatus(inv.status));
@@ -617,9 +658,16 @@ async function getPortalOverview(ctx: ToolContext) {
   const projectRevenue = activeProjects.reduce((sum: number, p: any) => sum + safeNumber(p.revenue), 0);
   const projectCost = activeProjects.reduce((sum: number, p: any) => sum + safeNumber(p.cost), 0);
   const projectProfit = projectRevenue - projectCost;
+  const clientRows = clients.rows || [];
 
   return {
     generated_at: ctx.now.toISOString(),
+    clients: {
+      total_count: clientRows.length,
+      active_count: clientRows.filter((client: any) => normalizeStatus(client.status) === "active").length,
+      paused_count: clientRows.filter((client: any) => normalizeStatus(client.status) === "paused").length,
+      archived_count: clientRows.filter((client: any) => normalizeStatus(client.status) === "archived").length,
+    },
     invoices: {
       total_count: invoiceRows.length,
       owed_count: owedInvoices.length,
