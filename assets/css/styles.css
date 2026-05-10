@@ -2758,6 +2758,7 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 .dash-iris-slot #aiChat { flex: 1; min-height: 0; }
 @media (min-width: 1101px) {
   .dash-activity .dash-iris-slot.iris-expanded {
+    order: -1;
     grid-column: 1 / -1;
     height: clamp(620px, 72dvh, 820px);
     filter: drop-shadow(0 26px 58px rgba(0,0,0,.32));
@@ -2766,6 +2767,19 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
     border-color: rgba(97,218,251,.28);
     box-shadow: 0 0 0 1px rgba(97,218,251,.08), 0 22px 62px rgba(0,0,0,.44);
   }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-embed-name { font-size: 16px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-embed-status { font-size: 12px; }
+  .dash-activity .dash-iris-slot.iris-expanded #irisHero { gap: 22px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-hero-title { font-size: 19px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-hero-sub { font-size: 12.5px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-sug-text { font-size: 11.5px; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-chat-body { padding: 18px 20px 12px; gap: 12px; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-bubble { font-size: 14.5px; line-height: 1.55; padding: 13px 16px; max-width: 82%; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-list li { grid-template-columns: minmax(120px,.45fr) minmax(0,1fr); padding: 10px 12px 10px 28px; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-item-label { font-size: 12px; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-chat-foot { padding: 14px 18px 16px; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-input { font-size: 14.5px; }
+  .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-send { width: 40px; height: 40px; }
 }
 
 .dash-tile { background: linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.015)); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; height: 420px; overflow: hidden; }
