@@ -96,12 +96,91 @@
   // Swipe-to-dismiss removed — mobile chat is a fixed panel, close via X button only
 
   // ===== Messages =====
+  function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[ch]));
+  }
+
+  function formatInline(text) {
+    return escapeHTML(text)
+      .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(\$-?\d[\d,]*(?:\.\d{1,2})?)/g, '<span class="ai-money">$1</span>')
+      .replace(/\b(-?\d+(?:\.\d+)?%)/g, '<span class="ai-percent">$1</span>');
+  }
+
+  function renderListItem(text) {
+    const match = String(text || "").match(/^([^:]{1,44}):\s*(.+)$/);
+    if (!match) return formatInline(text);
+
+    return `
+      <span class="ai-item-label">${formatInline(match[1])}</span>
+      <span class="ai-item-value">${formatInline(match[2])}</span>
+    `;
+  }
+
+  function renderAssistantContent(text) {
+    const normalized = String(text || "").replace(/\r\n/g, "\n").trim();
+    if (!normalized) return "";
+
+    const lines = normalized.split("\n");
+    let html = "";
+    let inList = false;
+
+    const closeList = () => {
+      if (!inList) return;
+      html += "</ul>";
+      inList = false;
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) {
+        closeList();
+        continue;
+      }
+
+      const bullet = line.match(/^[-*]\s+(.+)$/);
+      if (bullet) {
+        if (!inList) {
+          html += '<ul class="ai-list">';
+          inList = true;
+        }
+        html += `<li>${renderListItem(bullet[1])}</li>`;
+        continue;
+      }
+
+      closeList();
+
+      const callout = line.match(/^(Net|Bottom line|Summary|Heads up|Note):\s*(.+)$/i);
+      if (callout) {
+        html += `<p class="ai-callout"><span class="ai-callout-label">${formatInline(callout[1])}</span>${formatInline(callout[2])}</p>`;
+      } else {
+        html += `<p>${formatInline(line)}</p>`;
+      }
+    }
+
+    closeList();
+    return `<div class="ai-rich">${html}</div>`;
+  }
+
   function addMsg(role, text) {
     const wrap   = document.createElement("div");
     wrap.className = `ai-msg ${role}`;
     const bubble = document.createElement("div");
     bubble.className = "ai-bubble";
-    bubble.textContent = String(text || "").replace(/\r\n/g, "\n").trim();
+
+    if (role === "ai") {
+      bubble.innerHTML = renderAssistantContent(text);
+    } else {
+      bubble.textContent = String(text || "").replace(/\r\n/g, "\n").trim();
+    }
+
     wrap.appendChild(bubble);
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
