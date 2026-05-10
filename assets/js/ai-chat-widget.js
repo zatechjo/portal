@@ -17,6 +17,8 @@
   // ===== Memory (SESSION ONLY) =====
   const KEY      = "iris:history:v1";
   const MAX_TURNS = 8;
+  const EMPTY_STATE_HTML = body.innerHTML;
+  let pending = false;
 
   try { localStorage.removeItem(KEY); } catch {}
 
@@ -106,6 +108,11 @@
   }
 
   function renderHistory() {
+    if (!history.length) {
+      body.innerHTML = EMPTY_STATE_HTML;
+      return;
+    }
+
     body.innerHTML = "";
     for (const m of history) addMsg(m.role === "assistant" ? "ai" : "user", m.content);
   }
@@ -122,11 +129,40 @@
     renderHistory();
   };
 
+  async function getRequestHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    try {
+      const token = await window.__getIrisAuthToken?.();
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch (err) {
+      console.warn("Iris widget: could not get auth token", err);
+    }
+    return headers;
+  }
+
+  function getRequestContext() {
+    let timezone = "Asia/Amman";
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || timezone;
+    } catch {}
+
+    return {
+      page: window.location.pathname || "/",
+      title: document.title || "",
+      timezone,
+      now: new Date().toISOString(),
+      clientVersion: "iris-widget-v2",
+    };
+  }
+
   // ===== Send =====
   async function sendMsg() {
+    if (pending) return;
     const text = (input.value || "").trim();
     if (!text) return;
 
+    pending = true;
+    send.disabled = true;
     addMsg("user", text);
     input.value = "";
 
@@ -143,17 +179,24 @@
     try {
       const res  = await fetch(ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getRequestHeaders(),
         body: JSON.stringify({
           messages: history,
           maxTurns: MAX_TURNS,
           user: window.__irisUser || null,
+          context: getRequestContext(),
         }),
       });
       const data = await res.json().catch(() => ({}));
       thinkingEl.remove();
 
-      if (!res.ok) { addMsg("ai", data?.error || "Server error."); return; }
+      if (!res.ok) {
+        const fallback = res.status === 401
+          ? "Please refresh and sign in again, then ask me once more."
+          : "Server error.";
+        addMsg("ai", data?.error || fallback);
+        return;
+      }
 
       const reply = (data?.reply || "").trim() || "…";
       addMsg("ai", reply);
@@ -164,12 +207,18 @@
     } catch {
       thinkingEl.remove();
       addMsg("ai", "Network error.");
+    } finally {
+      pending = false;
+      send.disabled = false;
     }
   }
 
   send.addEventListener("click", sendMsg);
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) sendMsg();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMsg();
+    }
   });
 
   // Chip quick-prompts (delegated so they work after renderHistory clears body)

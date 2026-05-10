@@ -4,6 +4,13 @@ import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/
 
 const logoutBtn = document.getElementById('logoutBtn');
 
+// Iris uses this to authenticate calls to the Supabase Edge Function.
+window.__getIrisAuthToken = async (forceRefresh = false) => {
+  const user = auth.currentUser;
+  if (!user) return '';
+  return user.getIdToken(forceRefresh);
+};
+
 // --- Explicit email → display name map ---
 const NAME_MAP = {
   'za@zatechjo.com': 'Zuhri',
