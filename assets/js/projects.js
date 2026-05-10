@@ -1069,6 +1069,10 @@ import { auth } from './firebase.js';
       ['cancelled','canceled'].includes(v) ? 'null' : 'null';
   }
 
+  function paymentStatusLabel(s) {
+    return String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || '—');
+  }
+
   function renderProjectInvoices(invoices = []) {
     if (!els.pmRevenueList) return;
 
@@ -1090,7 +1094,7 @@ import { auth } from './firebase.js';
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
             <div class="data-item-value">${fmtMoney(total)}</div>
-            <span class="tag ${statusCls} inv-status-pill" data-inv-id="${inv.id}" style="cursor:pointer;" title="Click to change status">${escapeHTML(inv.status || '—')}</span>
+            <span class="tag ${statusCls} inv-status-pill" data-inv-id="${inv.id}" data-status="${escapeHTML(inv.status || '')}" style="cursor:pointer;" title="Click to change status">${escapeHTML(paymentStatusLabel(inv.status))}</span>
           </div>
         </div>
       `;
@@ -1207,7 +1211,7 @@ import { auth } from './firebase.js';
       <div class="data-item">
         <div class="data-item-main">
           <div class="data-item-title">${escapeHTML(exp.vendor || 'Vendor')} — ${escapeHTML(exp.description || 'Expense')}</div>
-          <div class="data-item-sub">${fmtDate(exp.expense_date)} · ${escapeHTML(exp.service || '—')} · ${escapeHTML(exp.status || '—')}</div>
+          <div class="data-item-sub">${fmtDate(exp.expense_date)} · ${escapeHTML(exp.service || '—')} · ${escapeHTML(paymentStatusLabel(exp.status))}</div>
         </div>
         <div class="data-item-value">${fmtMoney(exp.amount)}</div>
       </div>
@@ -3474,7 +3478,7 @@ import { auth } from './firebase.js';
       if (!pill) return;
 
       const invoiceId = pill.dataset.invId;
-      const current = pill.textContent.trim();
+      const current = pill.dataset.status || pill.textContent.trim();
 
       const wrap = document.createElement('div');
       wrap.className = 'select-wrap inline';
@@ -3484,7 +3488,7 @@ import { auth } from './firebase.js';
         <option value="Paid">Paid</option>
         <option value="Not Paid">Not Paid</option>
         <option value="Cancelled">Cancelled</option>
-        <option value="Partial Payment">Partial Payment</option>
+        <option value="Partial Payment">Partial</option>
       `;
       sel.value = current;
       wrap.appendChild(sel);
@@ -3495,9 +3499,10 @@ import { auth } from './firebase.js';
         const span = document.createElement('span');
         span.className = `tag ${invoiceStatusClass(value)} inv-status-pill`;
         span.dataset.invId = invoiceId;
+        span.dataset.status = value;
         span.style.cursor = 'pointer';
         span.title = 'Click to change status';
-        span.textContent = value;
+        span.textContent = paymentStatusLabel(value);
         wrap.replaceWith(span);
       };
 

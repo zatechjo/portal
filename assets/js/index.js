@@ -6,6 +6,7 @@
   const fmt$d = n => window.fmtPortalMoney ? window.fmtPortalMoney(n) : ((Number(n||0) < 0 ? '-$' : '$') + Math.abs(Number(n||0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  const paymentStatusLabel = s => String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || '—');
 
   const today = new Date();
   const toISO = d => d.toISOString().slice(0, 10);
@@ -78,7 +79,7 @@
     list.innerHTML = data.map(inv => {
       const client = inv.clients?.name || 'Unknown';
       const isOverdue = inv.due_date && inv.due_date < todayISO;
-      const statusLabel = isOverdue ? 'Overdue' : (inv.status || 'Open');
+      const statusLabel = isOverdue ? 'Overdue' : paymentStatusLabel(inv.status || 'Open');
       return `
         <div class="dash-att-item">
           <div style="min-width:0;flex:1;">
@@ -139,7 +140,7 @@
           <div class="dash-ir-date">${fmtDate(inv.issue_date)}</div>
           <div class="dash-ir-status">
             <span class="tag ${statusClass(inv.status)}" style="font-size:10px;">
-              ${esc(inv.status || '—')}
+              ${esc(paymentStatusLabel(inv.status))}
             </span>
           </div>
           <div class="dash-ir-amount">${fmt$d(inv.subtotal)}</div>

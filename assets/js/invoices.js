@@ -753,7 +753,7 @@ function renderTable(){
         <td>${escapeHTML(inv.invoice_no || '—')}</td>
         <td>${fmtDate(inv.issue_date)}</td>
         <td>${total}</td>
-        <td><span class="tag ${statusClass} status-pill" data-id="${inv.id}">${escapeHTML(inv.status || '—')}</span></td>
+        <td><span class="tag ${statusClass} status-pill" data-id="${inv.id}" data-value="${escapeHTML(inv.status || '')}">${escapeHTML(statusLabelFor(inv.status))}</span></td>
         <td>${escapeHTML(inv.coverage_period || '—')}</td>
         <td class="doc-actions">${docCellHtml}</td>
         <td class="pdf-actions">${pdfCellHtml}</td>

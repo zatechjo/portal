@@ -115,6 +115,10 @@ function statusClassForExp(s){
   );
 }
 
+function statusLabelForExp(s) {
+  return String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || '—');
+}
+
 function openSelectDropdown(sel){
   if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
   sel.focus();
@@ -362,7 +366,7 @@ function openSelectDropdown(sel){
     const cls = statusClass(value);
     return `
       <select class="status-select badge-${cls}" data-id="${id}">
-        ${STATUS_OPTIONS.map((o) => `<option value="${o}" ${o === value ? "selected" : ""}>${o}</option>`).join("")}
+        ${STATUS_OPTIONS.map((o) => `<option value="${o}" ${o === value ? "selected" : ""}>${statusLabelForExp(o)}</option>`).join("")}
       </select>
     `;
   }
@@ -423,7 +427,7 @@ tbody.innerHTML =
           <td>${titleCase(r.serviceType)}</td>
           <td>${fmt$(r.amount)}</td>
           <td>${r.frequency||"—"}</td>
-          <td><span class="tag ${statusClassForExp(r.status)} status-pill" data-id="${r.id}">${r.status || '—'}</span></td>
+          <td><span class="tag ${statusClassForExp(r.status)} status-pill" data-id="${r.id}" data-value="${r.status || ''}">${statusLabelForExp(r.status)}</span></td>
 
           <!-- Note toggle cell -->
           <td class="note-toggle-cell" style="text-align:center;">
@@ -680,7 +684,7 @@ tbody.innerHTML =
     disp.date.textContent = exp.date || "—";
     disp.amount.textContent = fmt$(exp.amount || 0);
     disp.freq.textContent = exp.frequency || "—";
-    disp.status.textContent = exp.status || "—";
+    disp.status.textContent = statusLabelForExp(exp.status);
 
     editBtn.style.display = "inline-flex";
     if (deleteBtn) deleteBtn.style.display = "inline-flex";
@@ -885,14 +889,15 @@ tbody.innerHTML =
       showPillDropdown(pill, [
         { value: 'Paid' },
         { value: 'Unpaid' },
-        { value: 'Partial Payment' },
+        { value: 'Partial Payment', label: 'Partial' },
         { value: 'Upcoming' },
         { value: 'Null' },
       ], async (next) => {
         try {
           await updateStatusInDB(id, next);
           pill.className = `tag ${statusClassForExp(next)} status-pill`;
-          pill.textContent = next;
+          pill.textContent = statusLabelForExp(next);
+          pill.dataset.value = next;
         } catch (err) {
           alert(err.message || 'Failed to update status.');
         }

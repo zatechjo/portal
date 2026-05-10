@@ -121,12 +121,12 @@
     // Options chips (step 2+)
     if (state.step >= 2 && state.type) {
       if (state.type === 'invoices') {
-        if (state.invoiceStatus   !== 'all') chips.push(chip('Status',   state.invoiceStatus));
+        if (state.invoiceStatus   !== 'all') chips.push(chip('Status',   paymentStatusLabel(state.invoiceStatus)));
         if (state.invoiceCoverage !== 'all') chips.push(chip('Period',   state.invoiceCoverage));
         if (state.invoiceLimit    !== 'all') chips.push(chip('Limit',    limitLabel(state.invoiceLimit)));
       }
       if (state.type === 'expenses') {
-        if (state.expenseStatus   !== 'all')   chips.push(chip('Status',   state.expenseStatus));
+        if (state.expenseStatus   !== 'all')   chips.push(chip('Status',   paymentStatusLabel(state.expenseStatus)));
         if (state.expenseCategory !== 'all')   chips.push(chip('Category', state.expenseCategory));
         if (state.expenseExcludeSubs)          chips.push(chip('Exclude',  'Subcontractors'));
         if (state.expenseLimit    !== 'all')   chips.push(chip('Limit',    limitLabel(state.expenseLimit)));
@@ -236,7 +236,7 @@
             <option value="all"             ${s('invoiceStatus','all')}>All statuses</option>
             <option value="Paid"            ${s('invoiceStatus','Paid')}>Paid only</option>
             <option value="Not Paid"        ${s('invoiceStatus','Not Paid')}>Not Paid only</option>
-            <option value="Partial Payment" ${s('invoiceStatus','Partial Payment')}>Partial Payment</option>
+            <option value="Partial Payment" ${s('invoiceStatus','Partial Payment')}>Partial</option>
             <option value="Sent"            ${s('invoiceStatus','Sent')}>Sent only</option>
             <option value="Cancelled"       ${s('invoiceStatus','Cancelled')}>Cancelled only</option>
           </select>
@@ -298,7 +298,7 @@
             <option value="Paid"            ${s('expenseStatus','Paid')}>Paid only</option>
             <option value="Unpaid"          ${s('expenseStatus','Unpaid')}>Unpaid only</option>
             <option value="Upcoming"        ${s('expenseStatus','Upcoming')}>Upcoming only</option>
-            <option value="Partial Payment" ${s('expenseStatus','Partial Payment')}>Partial Payment</option>
+            <option value="Partial Payment" ${s('expenseStatus','Partial Payment')}>Partial</option>
           </select>
         </div>
 
@@ -543,6 +543,10 @@
   // ── Helpers ────────────────────────────────────────────────────────────────
   function s(stateKey, val) { return state[stateKey] === val ? 'selected' : ''; }
 
+  function paymentStatusLabel(s) {
+    return String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || '—');
+  }
+
   function radioOpt(name, value, current, label) {
     const id      = `rw_${name}_${value}`;
     const checked = current === value ? 'checked' : '';
@@ -748,7 +752,7 @@
           'Due Date':        r.due_date             || '—',
           'Coverage Period': r.coverage_period      || '—',
           'Amount (USD)':    Number(r.subtotal || 0),
-          'Status':          r.status               || '—',
+          'Status':          paymentStatusLabel(r.status),
         };
         if (state.invoiceIncludeNotes) row['Notes'] = r.note || '';
         return row;
@@ -780,7 +784,7 @@
         'Date':        r.expense_date || '—',
         'Category':    r.service      || '—',
         'Frequency':   r.frequency    || '—',
-        'Status':      r.status       || '—',
+        'Status':      paymentStatusLabel(r.status),
         'Note':        r.note         || '',
       }));
     }

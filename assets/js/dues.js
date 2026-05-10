@@ -99,6 +99,10 @@
     if (s === 'partial payment')  return 'tag partial';
     return 'tag null'; // unpaid or anything else
   }
+  function paymentStatusLabel(v){
+    const s = String(v || '');
+    return s.toLowerCase() === 'partial payment' ? 'Partial' : s;
+  }
 
   async function persistExpenseStatusToDb(id, desired){
     // Write capitalized to DB (keeps it consistent with your Expenses page),
@@ -117,11 +121,11 @@
     sel.innerHTML = `
       <option value="paid">Paid</option>
       <option value="unpaid">Unpaid</option>
-      <option value="partial payment">Partial Payment</option>
+      <option value="partial payment">Partial</option>
       <option value="upcoming">Upcoming</option>
     `;
     const cur = String(current || '').toLowerCase();
-    sel.value = ['paid','unpaid','upcoming'].includes(cur) ? cur : 'unpaid';
+    sel.value = ['paid','unpaid','partial payment','upcoming'].includes(cur) ? cur : 'unpaid';
     wrap.appendChild(sel);
     return { wrap, sel };
   }
@@ -500,7 +504,7 @@ async function fetchActualAnnual6mWindow() {
             <td>${esc(toISODate(row.issue_date))}</td>
             <td>${esc(row.client_name || "—")}</td>
             <td>${fmt$(row.subtotal)}</td>
-            <td><span class="${pillClass}">${esc(row.status)}</span></td>
+            <td><span class="${pillClass}">${esc(paymentStatusLabel(row.status))}</span></td>
           </tr>
         `;
       }).join('')
@@ -647,7 +651,7 @@ async function fetchActualAnnual6mWindow() {
                   data-id="${esc(r.id)}"
                   data-status="${esc(st)}"
                   title="Click to change"
-                >${esc(st)}</span>
+                >${esc(paymentStatusLabel(st))}</span>
               </td>
               <td>
                 <button type="button" class="exp-mini-btn" data-id="${esc(r.id)}" aria-expanded="false"><span>+</span></button>
@@ -974,7 +978,7 @@ async function fetchActualAnnual6mWindow() {
         sel.innerHTML = `
           <option value="paid">Paid</option>
           <option value="unpaid">Unpaid</option>
-          <option value="partial payment">Partial Payment</option>
+          <option value="partial payment">Partial</option>
           <option value="upcoming">Upcoming</option>
         `;
         const normalised = String(current).toLowerCase();
@@ -993,7 +997,7 @@ async function fetchActualAnnual6mWindow() {
             // Update the pill in-place — no replace, no flash
             pill.className = `${expStatusToTagClass(next)} exp-status-pill`;
             pill.dataset.status = next;
-            pill.textContent = next;
+            pill.textContent = paymentStatusLabel(next);
             const idx = expensesAll.findIndex(x => String(x.id) === String(id));
             if (idx !== -1) expensesAll[idx].status = next;
           } catch(err) {

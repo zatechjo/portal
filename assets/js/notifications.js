@@ -2,6 +2,7 @@
 (function () {
   const POLL_MS = 5 * 60 * 1000;
   const EXP_STATUSES = ['Paid', 'Unpaid', 'Partial Payment', 'Upcoming', 'Null'];
+  const statusLabel = s => String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || 'Unpaid');
 
   let allItems = [];
   let ui = null;
@@ -57,7 +58,7 @@
         <label class="nq-field-label">Update Status</label>
         <div class="nq-status-grid">
           ${EXP_STATUSES.map(s => `
-            <button class="nq-status-btn${item.currentStatus === s ? ' active' : ''}" data-status="${s}">${s}</button>
+            <button class="nq-status-btn${item.currentStatus === s ? ' active' : ''}" data-status="${s}">${statusLabel(s)}</button>
           `).join('')}
         </div>
       `;
@@ -194,7 +195,7 @@
       const s = (e.status || '').toLowerCase();
       if (s === 'paid' || s === 'null') return;
       const daysAgo = Math.round((new Date(today) - new Date(e.expense_date)) / 86400000);
-      items.push({ id: 'exp-' + e.id, type: 'expense', label: e.vendor || e.description || 'Expense', description: e.description || '', client: e.client_name || '', sub: `${e.status || 'Unpaid'} · ${daysAgo} day${daysAgo !== 1 ? 's' : ''} past due`, currentStatus: e.status || 'Unpaid' });
+      items.push({ id: 'exp-' + e.id, type: 'expense', label: e.vendor || e.description || 'Expense', description: e.description || '', client: e.client_name || '', sub: `${statusLabel(e.status)} · ${daysAgo} day${daysAgo !== 1 ? 's' : ''} past due`, currentStatus: e.status || 'Unpaid' });
     });
 
     return items;
