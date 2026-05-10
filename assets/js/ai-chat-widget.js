@@ -19,6 +19,7 @@
   const MAX_TURNS = 8;
   const EMPTY_STATE_HTML = body.innerHTML;
   let pending = false;
+  let requestSeq = 0;
 
   try { localStorage.removeItem(KEY); } catch {}
 
@@ -96,6 +97,24 @@
   // Swipe-to-dismiss removed — mobile chat is a fixed panel, close via X button only
 
   // ===== Messages =====
+  function showMessagesView() {
+    const hero = document.getElementById("irisHero");
+    if (hero) hero.style.display = "none";
+    body.style.display = "";
+    body.style.flex = "1";
+    body.style.minHeight = "0";
+  }
+
+  function showWelcomeView() {
+    const hero = document.getElementById("irisHero");
+    if (hero) hero.style.display = "";
+    if (chat.classList.contains("dash-iris-embed")) {
+      body.style.display = "none";
+      body.style.flex = "";
+      body.style.minHeight = "";
+    }
+  }
+
   function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
       "&": "&amp;",
@@ -170,6 +189,8 @@
   }
 
   function addMsg(role, text) {
+    showMessagesView();
+
     const wrap   = document.createElement("div");
     wrap.className = `ai-msg ${role}`;
     const bubble = document.createElement("div");
@@ -189,10 +210,12 @@
   function renderHistory() {
     if (!history.length) {
       body.innerHTML = EMPTY_STATE_HTML;
+      showWelcomeView();
       return;
     }
 
     body.innerHTML = "";
+    showMessagesView();
     for (const m of history) addMsg(m.role === "assistant" ? "ai" : "user", m.content);
   }
   renderHistory();
@@ -201,12 +224,63 @@
   // An auto-intro here would immediately trigger the MutationObserver
   // → activateChat() → hide the suggestion chips before the user types anything.
 
-  // Debug reset
-  window.IrisResetChat = () => {
+  function resetChat() {
+    requestSeq++;
+    pending = false;
+    send.disabled = false;
+    input.value = "";
     history = [];
     try { sessionStorage.removeItem(KEY); } catch {}
     renderHistory();
-  };
+    input.focus();
+  }
+
+  function buildResetIcon() {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3 12a9 9 0 1 0 3-6.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3 3v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+  }
+
+  function installResetButton(container, extraClass = "") {
+    if (!container || container.querySelector(".ai-reset-btn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `ai-icon-btn ai-reset-btn${extraClass}`;
+    btn.title = "Reset chat";
+    btn.setAttribute("aria-label", "Reset Iris chat");
+    btn.innerHTML = buildResetIcon();
+    btn.addEventListener("click", resetChat);
+    container.prepend(btn);
+  }
+
+  function installResetButtons() {
+    installResetButton(chat.querySelector(".ai-chat-actions"));
+
+    const embedHeader = chat.querySelector(".iris-embed-header");
+    if (!embedHeader) return;
+
+    let actions = embedHeader.querySelector(".iris-embed-actions");
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.className = "iris-embed-actions";
+      embedHeader.appendChild(actions);
+    }
+    installResetButton(actions, " iris-reset-btn");
+  }
+
+  window.IrisResetChat = resetChat;
+  installResetButtons();
+
+  window.addEventListener("iris:reset", resetChat);
+
+  window.addEventListener("storage", (e) => {
+    if (e.key !== KEY) return;
+    history = loadHistory();
+    renderHistory();
+  });
 
   async function getRequestHeaders() {
     const headers = { "Content-Type": "application/json" };
@@ -241,7 +315,9 @@
     if (!text) return;
 
     pending = true;
+    const requestId = ++requestSeq;
     send.disabled = true;
+    showMessagesView();
     addMsg("user", text);
     input.value = "";
 
@@ -268,6 +344,7 @@
       });
       const data = await res.json().catch(() => ({}));
       thinkingEl.remove();
+      if (requestId !== requestSeq) return;
 
       if (!res.ok) {
         const fallback = res.status === 401
@@ -285,10 +362,13 @@
       saveHistory(history);
     } catch {
       thinkingEl.remove();
+      if (requestId !== requestSeq) return;
       addMsg("ai", "Network error.");
     } finally {
-      pending = false;
-      send.disabled = false;
+      if (requestId === requestSeq) {
+        pending = false;
+        send.disabled = false;
+      }
     }
   }
 
