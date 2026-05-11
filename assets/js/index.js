@@ -11,6 +11,19 @@
   const today = new Date();
   const toISO = d => d.toISOString().slice(0, 10);
   const addDays = (d, n) => { const t = new Date(d); t.setDate(t.getDate() + n); return t; };
+  const settledRows = res =>
+    res.status === 'fulfilled' && !res.value.error ? (res.value.data || []) : [];
+  const settledOk = res => res.status === 'fulfilled' && !res.value.error;
+
+  function revenueForPeriod(paidRes, paymentRes, paymentHistoryIds, paymentsAvailable) {
+    const paidRows = settledRows(paidRes);
+    const paymentRows = paymentsAvailable ? settledRows(paymentRes) : [];
+    const paymentTotal = paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const paidFallback = paidRows.reduce((sum, inv) => {
+      return paymentsAvailable && paymentHistoryIds.has(String(inv.id)) ? sum : sum + Number(inv.subtotal || 0);
+    }, 0);
+    return paymentTotal + paidFallback;
+  }
 
   // ── KPIs ────────────────────────────────────
   async function loadKPIs() {
@@ -21,13 +34,17 @@
     // Unpaid = statuses that represent money actually owed
     const OWED_STATUSES = ['Not Paid', 'Sent', 'Partial Payment', 'Unpaid', 'Overdue'];
 
-    const [unpaidRes, rev90Res, prevRes] = await Promise.allSettled([
+    const [unpaidRes, rev90Res, prevRes, pay90Res, prevPayRes] = await Promise.allSettled([
       window.sb.from('invoices').select('id, subtotal, status')
         .in('status', OWED_STATUSES),
       window.sb.from('invoices').select('id, subtotal').eq('status', 'Paid')
         .gte('issue_date', toISO(ninetyAgo)).lte('issue_date', toISO(today)),
       window.sb.from('invoices').select('id, subtotal').eq('status', 'Paid')
         .gte('issue_date', toISO(prevStart)).lte('issue_date', toISO(ninetyAgo)),
+      window.sb.from('invoice_payments').select('invoice_id, amount, payment_date')
+        .gte('payment_date', toISO(ninetyAgo)).lte('payment_date', toISO(today)),
+      window.sb.from('invoice_payments').select('invoice_id, amount, payment_date')
+        .gte('payment_date', toISO(prevStart)).lte('payment_date', toISO(ninetyAgo)),
     ]);
 
     if (unpaidRes.status === 'fulfilled' && !unpaidRes.value.error) {
@@ -39,17 +56,37 @@
       if (badge) badge.textContent = `${rows.length} invoice${rows.length !== 1 ? 's' : ''}`;
     }
 
-    let rev90 = 0;
-    if (rev90Res.status === 'fulfilled' && !rev90Res.value.error) {
-      const rows = rev90Res.value.data || [];
-      rev90 = rows.reduce((s, r) => s + Number(r.subtotal || 0), 0);
-      const el = $('kpiRev90');
-      if (el) el.textContent = fmt$(rev90);
+    const paymentsAvailable = settledOk(pay90Res) && settledOk(prevPayRes);
+    const paymentHistoryIds = new Set([
+      ...settledRows(pay90Res).map(row => String(row.invoice_id || '')),
+      ...settledRows(prevPayRes).map(row => String(row.invoice_id || '')),
+    ].filter(Boolean));
+
+    if (paymentsAvailable) {
+      const paidIds = [...new Set([
+        ...settledRows(rev90Res).map(inv => String(inv.id || '')),
+        ...settledRows(prevRes).map(inv => String(inv.id || '')),
+      ].filter(Boolean))];
+
+      if (paidIds.length) {
+        const { data, error } = await window.sb
+          .from('invoice_payments')
+          .select('invoice_id')
+          .in('invoice_id', paidIds);
+        if (error) {
+          console.warn('[dashboard] invoice payment history lookup failed:', error.message || error);
+        } else {
+          (data || []).forEach(row => paymentHistoryIds.add(String(row.invoice_id || '')));
+        }
+      }
     }
 
-    if (prevRes.status === 'fulfilled' && !prevRes.value.error) {
-      const prevRows = prevRes.value.data || [];
-      const prev = prevRows.reduce((s, r) => s + Number(r.subtotal || 0), 0);
+    const rev90 = revenueForPeriod(rev90Res, pay90Res, paymentHistoryIds, paymentsAvailable);
+    const el = $('kpiRev90');
+    if (el) el.textContent = fmt$(rev90);
+
+    if (settledOk(prevRes) || paymentsAvailable) {
+      const prev = revenueForPeriod(prevRes, prevPayRes, paymentHistoryIds, paymentsAvailable);
       const pct = prev > 0 ? ((rev90 - prev) / prev * 100) : (rev90 > 0 ? 100 : 0);
       const badge = $('kpiRevDelta');
       if (badge) badge.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% vs prev 90d`;

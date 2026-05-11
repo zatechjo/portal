@@ -2429,6 +2429,15 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 #projectsModal .data-item-title-2 { font-weight: 300; color: #a7a7a7; font-size: 13px; }
 #projectsModal .data-item-sub { color: var(--muted); font-size: 10px; }
 #projectsModal .data-item-value { text-align: right; font-weight: 500; font-size: 15px; white-space: nowrap; }
+#projectsModal #pmExpenseList { max-height: 232px; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; align-content: start; }
+#projectsModal #pmExpenseList .data-item { min-height: 58px; box-sizing: border-box; }
+#projectsModal #pmExpenseList .data-item-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#projectsModal .project-expense-item { align-items: center; }
+#projectsModal .project-expense-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#projectsModal .project-expense-side { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+#projectsModal .project-expense-status { min-width: 78px; text-align: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
+#projectsModal #pmExpenseList::-webkit-scrollbar { width: 6px; }
+#projectsModal #pmExpenseList::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 999px; }
 #projectsModal .modal-actions-bar { display: none; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 14px; }
 #projectsModal.editing .modal-actions-bar { display: flex; }
 #projectsModal.editing .view-mode { display: none !important; }
@@ -2772,7 +2781,10 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
   .dash-activity .dash-iris-slot.iris-expanded #irisHero { gap: 22px; }
   .dash-activity .dash-iris-slot.iris-expanded .iris-hero-title { font-size: 19px; }
   .dash-activity .dash-iris-slot.iris-expanded .iris-hero-sub { font-size: 12.5px; }
-  .dash-activity .dash-iris-slot.iris-expanded .iris-sug-text { font-size: 11.5px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-suggestions { width: min(720px, calc(100% - 44px)); margin: 0 auto; grid-template-columns: repeat(3, minmax(0, 220px)); justify-content: center; gap: 7px 8px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-sug-btn { padding: 7px 10px; gap: 7px; min-height: 38px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-sug-icon { width: 23px; height: 23px; border-radius: 7px; }
+  .dash-activity .dash-iris-slot.iris-expanded .iris-sug-text { font-size: 10.5px; line-height: 1.18; white-space: normal; }
   .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-chat-body { padding: 18px 20px 12px; gap: 12px; }
   .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-bubble { font-size: 14.5px; line-height: 1.55; padding: 13px 16px; max-width: 82%; }
   .dash-activity .dash-iris-slot.iris-expanded #aiChat.dash-iris-embed .ai-list li { grid-template-columns: minmax(120px,.45fr) minmax(0,1fr); padding: 10px 12px 10px 28px; }

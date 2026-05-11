@@ -792,6 +792,15 @@ tbody.innerHTML =
     console.log("[expenses:status] update ok");
   }
 
+  function updateStatusInMemory(id, newStatus) {
+    const idx = items.findIndex((x) => String(x.id) === String(id));
+    if (idx !== -1) items[idx].status = newStatus;
+    if (String(currentId || '') === String(id)) {
+      if (disp.status) disp.status.textContent = statusLabelForExp(newStatus);
+      if (inputs.status) inputs.status.value = newStatus;
+    }
+  }
+
   // ===== Init / Wiring =====
   document.addEventListener("DOMContentLoaded", () => {
     init().catch((e) => console.error("[expenses:init] fatal error", e));
@@ -895,9 +904,11 @@ tbody.innerHTML =
       ], async (next) => {
         try {
           await updateStatusInDB(id, next);
+          updateStatusInMemory(id, next);
           pill.className = `tag ${statusClassForExp(next)} status-pill`;
           pill.textContent = statusLabelForExp(next);
           pill.dataset.value = next;
+          render();
         } catch (err) {
           alert(err.message || 'Failed to update status.');
         }
@@ -971,7 +982,11 @@ tbody.innerHTML =
           inputs.repeatUntil?.value
         ) ? buildMonthlyExpenseDates(date, inputs.repeatUntil.value) : [];
         const savedRows = monthlyDates.length > 1
-          ? await insertExpensesToDB(monthlyDates.map((expenseDate) => ({ ...payloadDB, expense_date: expenseDate })))
+          ? await insertExpensesToDB(monthlyDates.map((expenseDate, index) => ({
+              ...payloadDB,
+              expense_date: expenseDate,
+              status: index > 0 && String(payloadDB.status).toLowerCase() === "paid" ? "Upcoming" : payloadDB.status,
+            })))
           : [await upsertExpenseToDB(payloadDB, mode === "edit" ? currentId : null)];
 
         // reflect back in UI shape

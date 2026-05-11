@@ -431,6 +431,11 @@ import { auth } from './firebase.js';
     return safeNum(project.expense_cost);
   }
 
+  function countsTowardProjectExpense(row) {
+    const status = String(row?.status || '').toLowerCase().trim();
+    return !['unpaid', 'not paid', 'upcoming', 'null', 'cancelled', 'canceled'].includes(status);
+  }
+
   function projectCost(project) {
     return projectExpenseCost(project) + projectSubcontractorCost(project);
   }
@@ -568,7 +573,7 @@ import { auth } from './firebase.js';
   async function fetchExpenseTotalsByProject() {
     const { data, error } = await sb
       .from('expenses')
-      .select('project_id, amount, service')
+      .select('project_id, amount, service, status')
       .not('project_id', 'is', null);
 
     if (error) throw error;
@@ -578,8 +583,10 @@ import { auth } from './firebase.js';
     for (const row of data || []) {
       const key = String(row.project_id || '');
       if (!key) continue;
+      if (!totals.has(key)) totals.set(key, 0);
       // Exclude subcontractor payment records — already counted in agreed_amount (subcontractor_cost)
       if (String(row.service || '').toLowerCase().trim() === 'subcontractor') continue;
+      if (!countsTowardProjectExpense(row)) continue;
       totals.set(key, (totals.get(key) || 0) + safeNum(row.amount));
     }
 
@@ -1049,7 +1056,7 @@ import { auth } from './firebase.js';
         expense_date, amount, frequency, status, project_id
       `)
       .eq('project_id', projectId)
-      .order('expense_date', { ascending: false });
+      .order('expense_date', { ascending: true });
 
     if (error) {
       console.error('[projects] fetchProjectExpenses failed:', error);
@@ -1071,6 +1078,15 @@ import { auth } from './firebase.js';
 
   function paymentStatusLabel(s) {
     return String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || '—');
+  }
+
+  function expenseStatusClass(s) {
+    const v = String(s || '').toLowerCase().trim();
+    return v === 'paid' ? 'ok' :
+      v === 'partial payment' ? 'partial' :
+      v === 'upcoming' ? 'warn' :
+      ['unpaid', 'not paid', 'overdue'].includes(v) ? 'due' :
+      ['null', 'cancelled', 'canceled'].includes(v) ? 'null' : 'null';
   }
 
   function renderProjectInvoices(invoices = []) {
@@ -1207,13 +1223,25 @@ import { auth } from './firebase.js';
       return;
     }
 
-    els.pmExpenseList.innerHTML = expenses.map((exp) => `
-      <div class="data-item">
+    const rows = [...expenses].sort((a, b) => {
+      const ad = a.expense_date ? new Date(`${a.expense_date}T00:00:00`) : new Date(8640000000000000);
+      const bd = b.expense_date ? new Date(`${b.expense_date}T00:00:00`) : new Date(8640000000000000);
+      return ad - bd;
+    });
+
+    els.pmExpenseList.innerHTML = rows.map((exp) => `
+      <div class="data-item project-expense-item">
         <div class="data-item-main">
           <div class="data-item-title">${escapeHTML(exp.vendor || 'Vendor')} — ${escapeHTML(exp.description || 'Expense')}</div>
-          <div class="data-item-sub">${fmtDate(exp.expense_date)} · ${escapeHTML(exp.service || '—')} · ${escapeHTML(paymentStatusLabel(exp.status))}</div>
+          <div class="data-item-sub project-expense-meta">
+            <span>${fmtDate(exp.expense_date)}</span>
+            <span>${escapeHTML(exp.service || '—')}</span>
+          </div>
         </div>
-        <div class="data-item-value">${fmtMoney(exp.amount)}</div>
+        <div class="project-expense-side">
+          <span class="tag ${expenseStatusClass(exp.status)} project-expense-status">${escapeHTML(paymentStatusLabel(exp.status))}</span>
+          <div class="data-item-value">${fmtMoney(exp.amount)}</div>
+        </div>
       </div>
     `).join('');
   }
@@ -1885,7 +1913,11 @@ import { auth } from './firebase.js';
         ? buildMonthlyExpenseDates(expenseDate, repeatUntil)
         : [];
       const rowsToInsert = monthlyDates.length > 1
-        ? monthlyDates.map((date) => ({ ...payload, expense_date: date }))
+        ? monthlyDates.map((date, index) => ({
+            ...payload,
+            expense_date: date,
+            status: index > 0 && String(payload.status).toLowerCase() === 'paid' ? 'Upcoming' : payload.status,
+          }))
         : [payload];
 
       const { error } = await sb
@@ -2805,6 +2837,7 @@ import { auth } from './firebase.js';
     return coerceArray(expenseRows, []).reduce((sum, row) => {
       const service = String(row?.service || '').toLowerCase().trim();
       if (service === 'subcontractor') return sum;
+      if (!countsTowardProjectExpense(row)) return sum;
       return sum + safeNum(row.amount);
     }, 0);
   }
