@@ -6,6 +6,21 @@
   const closeBtn = document.getElementById("aiCloseBtn");
   const minBtn   = document.getElementById("aiMinBtn");
   const body     = document.getElementById("aiBody");
+
+  // Upgrade <input id="aiInput"> → <textarea> so it can auto-grow with multi-line content.
+  (function upgradeInputToTextarea() {
+    const old = document.getElementById("aiInput");
+    if (!old || old.tagName === "TEXTAREA") return;
+    const ta = document.createElement("textarea");
+    ta.id = "aiInput";
+    ta.className = old.className;
+    ta.placeholder = old.placeholder || "";
+    ta.rows = 1;
+    ta.setAttribute("autocomplete", "off");
+    ta.setAttribute("spellcheck", "true");
+    old.replaceWith(ta);
+  })();
+
   const input    = document.getElementById("aiInput");
   const send     = document.getElementById("aiSend");
 
@@ -206,6 +221,45 @@
     wrap.appendChild(bubble);
     body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
+    return wrap;
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Walk text nodes and reveal them progressively for a typewriter feel.
+  async function typewriteAssistant(bubble, text, reqId) {
+    bubble.innerHTML = renderAssistantContent(text);
+    const cursor = document.createElement("span");
+    cursor.className = "ai-typing-cursor";
+    bubble.appendChild(cursor);
+
+    const walker = document.createTreeWalker(bubble, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (n.parentElement && n.parentElement.classList.contains("ai-typing-cursor"))
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT,
+    });
+    const segments = [];
+    let n;
+    while ((n = walker.nextNode())) {
+      segments.push({ node: n, full: n.nodeValue });
+      n.nodeValue = "";
+    }
+
+    // Tune speed by total length so long replies aren't agonizing.
+    const totalLen = segments.reduce((s, x) => s + x.full.length, 0);
+    const chunkSize = totalLen > 600 ? 4 : totalLen > 250 ? 2 : 1;
+    const frameDelay = totalLen > 600 ? 8 : 14;
+
+    for (const seg of segments) {
+      const { node, full } = seg;
+      for (let i = 0; i < full.length; i += chunkSize) {
+        if (reqId !== requestSeq) return;
+        node.nodeValue = full.slice(0, Math.min(i + chunkSize, full.length));
+        await sleep(frameDelay);
+      }
+      node.nodeValue = full;
+    }
+    cursor.remove();
   }
 
   function renderHistory() {
@@ -415,18 +469,38 @@
     const requestId = ++requestSeq;
     send.disabled = true;
     showMessagesView();
-    addMsg("user", text);
+    const userWrap = addMsg("user", text);
     input.value = "";
+    autosizeInput();
 
     history.push({ role: "user", content: text });
     history = trimHistory(history);
     saveHistory(history);
 
+    // Spacer below user msg gives enough room to scroll the user bubble to the top.
+    const spacer = document.createElement("div");
+    spacer.className = "ai-spacer";
+    spacer.style.flex = "0 0 auto";
+    spacer.style.minHeight = body.clientHeight + "px";
+    body.appendChild(spacer);
+
     const thinkingEl = document.createElement("div");
     thinkingEl.className = "ai-msg ai";
-    thinkingEl.innerHTML = `<div class="ai-bubble">Thinking...</div>`;
-    body.appendChild(thinkingEl);
-    body.scrollTop = body.scrollHeight;
+    thinkingEl.innerHTML = `<div class="ai-bubble ai-thinking"><span></span><span></span><span></span></div>`;
+    body.insertBefore(thinkingEl, spacer);
+
+    // Anchor user's question near the top of the chat body (no page scroll).
+    requestAnimationFrame(() => {
+      if (!userWrap) return;
+      const userRect = userWrap.getBoundingClientRect();
+      const bodyRect = body.getBoundingClientRect();
+      const top = body.scrollTop + (userRect.top - bodyRect.top) - 8;
+      if (typeof body.scrollTo === "function") {
+        body.scrollTo({ top, behavior: "smooth" });
+      } else {
+        body.scrollTop = top;
+      }
+    });
 
     try {
       const res  = await fetch(ENDPOINT, {
@@ -441,24 +515,36 @@
       });
       const data = await res.json().catch(() => ({}));
       thinkingEl.remove();
-      if (requestId !== requestSeq) return;
+      if (requestId !== requestSeq) { spacer.remove(); return; }
 
       if (!res.ok) {
         const fallback = res.status === 401
           ? "Please refresh and sign in again, then ask me once more."
           : "Server error.";
-        addMsg("ai", data?.error || fallback);
+        const errWrap = addMsg("ai", "");
+        const errBubble = errWrap.querySelector(".ai-bubble");
+        await typewriteAssistant(errBubble, data?.error || fallback, requestId);
+        spacer.remove();
         return;
       }
 
       const reply = (data?.reply || "").trim() || "…";
-      addMsg("ai", reply);
+      const aiWrap = document.createElement("div");
+      aiWrap.className = "ai-msg ai";
+      const aiBubble = document.createElement("div");
+      aiBubble.className = "ai-bubble";
+      aiWrap.appendChild(aiBubble);
+      body.insertBefore(aiWrap, spacer);
+
+      await typewriteAssistant(aiBubble, reply, requestId);
+      spacer.remove();
 
       history.push({ role: "assistant", content: reply });
       history = trimHistory(history);
       saveHistory(history);
     } catch {
       thinkingEl.remove();
+      spacer.remove();
       if (requestId !== requestSeq) return;
       addMsg("ai", "Network error.");
     } finally {
@@ -469,13 +555,24 @@
     }
   }
 
+  function autosizeInput() {
+    if (!input || input.tagName !== "TEXTAREA") return;
+    input.style.height = "auto";
+    const max = 120;
+    const next = Math.min(input.scrollHeight, max);
+    input.style.height = next + "px";
+    input.style.overflowY = input.scrollHeight > max ? "auto" : "hidden";
+  }
+
   send.addEventListener("click", sendMsg);
+  input.addEventListener("input", autosizeInput);
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMsg();
     }
   });
+  autosizeInput();
 
   // Chip quick-prompts (delegated so they work after renderHistory clears body)
   body.addEventListener("click", (e) => {
