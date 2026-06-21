@@ -180,6 +180,9 @@ function statusClassFor(s){
 function statusLabelFor(s) {
   return String(s || '').toLowerCase() === 'partial payment' ? 'Partial' : (s || 'â€”');
 }
+function isCancelledStatus(s) {
+  return ['cancelled', 'canceled'].includes(String(s || '').trim().toLowerCase());
+}
 function openSelectDropdown(sel){
   if (typeof sel.showPicker === 'function') { sel.showPicker(); return; }
   sel.focus();
@@ -695,6 +698,11 @@ function renderTable(){
 
   // Start from data
   let rows = [...invoices];
+  const includeCancelled = !!includeCancelledFilter?.checked;
+  const wantedStatus = statusFilter?.value || 'all';
+  if (!includeCancelled && wantedStatus !== 'Cancelled') {
+    rows = rows.filter(inv => !isCancelledStatus(inv.status));
+  }
 
   // Apply active sort (if any)
   if (sortState.key) {
@@ -897,6 +905,7 @@ function updateTotals(){
 const statusFilter = document.getElementById('statusFilter');
 const clientFilter = document.getElementById('clientFilter'); // NEW
 const dateFilter = document.getElementById('dateFilter');
+const includeCancelledFilter = document.getElementById('includeCancelledFilter');
 
 async function applyFilters() {
   // ---- Date window ----
@@ -943,7 +952,8 @@ async function applyFilters() {
 
   // ---- Status constraint ----
   const wanted = statusFilter?.value || 'all';
-  if (wanted !== 'all') query = query.eq('status', wanted);
+  if (wanted === 'Cancelled') query = query.in('status', ['Cancelled', 'Canceled', 'cancelled', 'canceled']);
+  else if (wanted !== 'all') query = query.eq('status', wanted);
 
   // ---- Client constraint (MUST be before await) ----
   const clientWanted = clientFilter?.value || 'all';
@@ -966,6 +976,7 @@ async function applyFilters() {
 statusFilter?.addEventListener('change', applyFilters);
 clientFilter?.addEventListener('change', applyFilters); // NEW
 dateFilter  ?.addEventListener('change', applyFilters);
+includeCancelledFilter?.addEventListener('change', renderTable);
 
 
 
@@ -1533,7 +1544,7 @@ async function saveInvoice(){
     if (progressMsg) progressMsg.textContent = 'Finalizing…';
     await sb.from('invoices').update({ docx_url: docxUrl }).eq('id', id);
     if (docxLinkA) { docxLinkA.href = docxUrl; docxLinkA.removeAttribute('download'); }
-    await loadInvoices();
+    await applyFilters();
 
     // --- UI: swap modals
     hide(progressModal);
@@ -1746,7 +1757,7 @@ pdfForm?.addEventListener("submit", async (e) => {
       .eq("id", invoiceId);
     if (updateErr) throw updateErr;
 
-    await loadInvoices();
+    await applyFilters();
     hide(pdfModal);
     // optional: clear id so a stale one can't leak
     // activePdfInvoiceId = null;

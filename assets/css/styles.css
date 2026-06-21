@@ -2206,6 +2206,33 @@ select.pm-input option { background: #0b1220; color: rgba(212,232,255,.9); borde
 #invoices #clientFilter { width: 330px; }
 #invoices #dateFilter    { width: 150px; }
 #invoices .filter-select { height: 44px; padding: 10px 34px 10px 14px; line-height: normal; }
+#invoices .cancelled-filter-toggle {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  background: rgba(255,255,255,.045);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+#invoices .cancelled-filter-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: #2c8ecd;
+}
+#invoices .cancelled-filter-toggle:has(input:checked) {
+  border-color: rgba(44,142,205,.5);
+  background: rgba(44,142,205,.12);
+  color: var(--text);
+}
 #invoices #newInvoiceBtn { flex: 0 0 auto; white-space: nowrap; min-width: 120px; align-self: center; }
 #invoices .filters #newInvoiceBtn { margin-left: 8px; }
 
@@ -3178,6 +3205,7 @@ textarea.ai-input { display: block; padding: 8px 0; margin: 0; box-sizing: borde
   #invoices #clientFilter { flex: 1 1 100%; width: 100%; }
   #invoices #statusFilter,
   #invoices #dateFilter { flex: 1 1 calc(50% - 4px); width: auto; }
+  #invoices .cancelled-filter-toggle { flex: 1 1 100%; justify-content: center; width: 100%; }
   #invoices .filters #newInvoiceBtn { margin-left: 0; }
 
   #subcontractors .sub-filters { flex-wrap: wrap; align-items: stretch; }
@@ -3398,6 +3426,7 @@ textarea.ai-input { display: block; padding: 8px 0; margin: 0; box-sizing: borde
   #invoices .filters .select-wrap:has(#statusFilter),
   #invoices .filters .select-wrap:has(#clientFilter) { flex: 1 1 calc(50% - 4px); width: auto; margin-right: 0 !important; }
   #invoices .filters .select-wrap:has(#dateFilter) { flex: 1 1 100%; width: 100%; margin-right: 0 !important; }
+  #invoices .cancelled-filter-toggle { flex: 1 1 100%; justify-content: center; width: 100%; }
   #invoices #newInvoiceBtn { width: 100%; flex: 1 1 100%; }
   /* Recent invoices layout */
   .dash-inv-row {

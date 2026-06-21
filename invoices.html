@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="assets/img/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/styles.css?v=28">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=29">
 
   <!-- App scripts (keep your order) -->
   <script type="module" src="./assets/js/firebase.js"></script>
@@ -26,7 +26,7 @@
 
   <!-- Supabase + page logic -->
   <script type="module" src="./assets/js/supabase.js"></script>
-  <script type="module" src="./assets/js/invoices.js?v=6"></script>
+  <script type="module" src="./assets/js/invoices.js?v=7"></script>
 </head>
 <body>
 
@@ -145,6 +145,11 @@
                 <option value="y2022">Year 2022</option>
               </select>
             </div>
+
+            <label class="cancelled-filter-toggle" for="includeCancelledFilter">
+              <input type="checkbox" id="includeCancelledFilter">
+              <span>Show cancelled</span>
+            </label>
           </div>
           <button id="newInvoiceBtn" class="btn2 btn-important"><span>New Invoice +</span></button>
         </div>
